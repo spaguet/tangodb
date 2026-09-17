@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Link } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import { fieldCls as baseFieldCls } from "../components/ui/AppSelect";
@@ -10,12 +10,18 @@ interface AuthLayoutProps {
   subtitle: string;
   children: React.ReactNode;
   footer?: React.ReactNode;
+  /** Tighter card for long forms (e.g. register) on ~640px viewports */
+  compact?: boolean;
 }
 
-export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProps) {
+export function AuthLayout({ title, subtitle, children, footer, compact }: AuthLayoutProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 px-6 py-10">
-      <div className="w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm p-8 space-y-6">
+    <div
+      className={`min-h-screen flex items-center justify-center bg-slate-50 px-4 ${compact ? "py-4 sm:py-6" : "px-6 py-10"}`}
+    >
+      <div
+        className={`w-full max-w-md bg-white border border-slate-200 rounded-xl shadow-sm ${compact ? "p-5 space-y-4" : "p-8 space-y-6"}`}
+      >
         <AuthLocalePicker />
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-indigo-600 rounded flex items-center justify-center text-white font-sans font-semibold text-[11px] tracking-tight leading-none shadow-xs">
@@ -23,7 +29,7 @@ export function AuthLayout({ title, subtitle, children, footer }: AuthLayoutProp
           </div>
           <div>
             <h1 className="text-lg font-semibold text-slate-800">{title}</h1>
-            <p className="text-xs text-slate-400 font-sans uppercase tracking-wider">{subtitle}</p>
+            <p className="text-xs text-slate-500 font-sans tracking-normal">{subtitle}</p>
           </div>
         </div>
 
@@ -78,6 +84,7 @@ export function AuthField({
   readOnly?: boolean;
 }) {
   const { t } = useGuestI18n();
+  const inputId = useId();
   const [passwordVisible, setPasswordVisible] = useState(false);
   const isPassword = type === "password";
   const inputType = isPassword && passwordVisible ? "text" : type;
@@ -87,9 +94,10 @@ export function AuthField({
 
   return (
     <div>
-      <label className={labelCls}>{label}</label>
+      <label htmlFor={inputId} className={labelCls}>{label}</label>
       <div className="relative">
         <input
+          id={inputId}
           type={inputType}
           value={value}
           onChange={(e) => onChange(e.target.value)}

@@ -23,6 +23,7 @@ import { normalizeTeacherScope } from "../lib/teacherScope";
 import { resetUIStore } from "../store/ui";
 import {
   clearOrganizationSelectionAfterLogin,
+  requestOrganizationSelectionAfterLogin,
   shouldSelectOrganizationAfterLogin,
 } from "./organizationSelectionIntent";
 import type {
@@ -67,7 +68,7 @@ const OrganizationContext = createContext<OrganizationContextValue | null>(null)
 
 /** Explicit member SELECT — never `"*"` (L18: extra columns like rental_billing_profile). */
 const ORGANIZATION_SETTINGS_MEMBER_COLUMNS =
-  "organization_id, locale, currency_code, currency_display, timezone, week_starts_on, org_preset, terminology, modules, freeze_max_count, freeze_min_lessons, freeze_enabled, low_balance_threshold, teachers_can_manage_disciplines, teachers_can_sell_subscriptions, teachers_can_sell_personal_lessons, directors_can_mark_attendance, teachers_can_edit_clients, teachers_can_add_clients, teachers_can_export, teachers_can_view_full_schedule, teachers_can_accept_payments, teachers_can_add_group_lessons, admin_can_export, admin_can_manage_team, admin_can_accept_payments, admin_can_manage_renter_balance, admin_can_edit_schedule, teachers_can_record_single_visits, admin_can_record_single_visits, pair_cycle_enabled, branding_name, branding_logo_url, finance_period_closed_until, updated_at";
+  "organization_id, locale, currency_code, currency_display, timezone, week_starts_on, org_preset, terminology, modules, freeze_max_count, freeze_min_lessons, freeze_enabled, low_balance_threshold, teachers_can_manage_disciplines, teachers_can_sell_subscriptions, teachers_can_sell_personal_lessons, directors_can_mark_attendance, teachers_can_edit_clients, teachers_can_add_clients, teachers_can_export, teachers_can_view_full_schedule, teachers_can_accept_payments, teachers_can_add_group_lessons, admin_can_export, admin_can_manage_team, admin_can_accept_payments, admin_can_manage_renter_balance, admin_can_edit_schedule, teachers_can_record_single_visits, admin_can_record_single_visits, pair_cycle_enabled, branding_name, branding_logo_url, finance_period_closed_until, show_beginner_hints, updated_at";
 
 function mapMemberMeta(raw: unknown): MemberMeta {
   if (!raw || typeof raw !== "object") return {};
@@ -80,7 +81,10 @@ function mapMemberMeta(raw: unknown): MemberMeta {
   };
 }
 
-function mapMembership(row: Record<string, unknown>): OrganizationMember {
+function mapMembership(
+  row: Record<string, unknown>,
+  brandingName?: string | null
+): OrganizationMember {
   const orgRaw = row.organizations as Record<string, unknown> | null | undefined;
   const organization = orgRaw
     ? {
@@ -103,6 +107,7 @@ function mapMembership(row: Record<string, unknown>): OrganizationMember {
     display_name: (row.display_name as string | null) ?? null,
     is_active: row.is_active as boolean,
     joined_at: (row.joined_at as string | null) ?? null,
+    branding_name: brandingName ?? null,
     organization,
   };
 }
@@ -146,6 +151,7 @@ function mapSettings(row: Record<string, unknown>): OrganizationSettings {
       row.finance_period_closed_until != null
         ? String(row.finance_period_closed_until).slice(0, 10)
         : null,
+    show_beginner_hints: (row.show_beginner_hints as boolean | undefined) ?? true,
     updated_at: row.updated_at as string,
   };
 }
@@ -154,6 +160,7 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
   const { session } = useAuth();
   const queryClient = useQueryClient();
   const autoSelectAttempted = useRef<string | null>(null);
+  const multiOrgSelectionGateRef = useRef(false);
 
   const sessionOrganizationId = getOrganizationIdFromSession(session);
 
@@ -193,7 +200,25 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         .order("joined_at", { ascending: true });
 
       if (error) throw error;
-      return (data ?? []).map((row) => mapMembership(row as Record<string, unknown>));
+      const rows = data ?? [];
+      const orgIds = [...new Set(rows.map((row) => row.organization_id as string))];
+      let brandingByOrg = new Map<string, string | null>();
+      if (orgIds.length > 0) {
+        const { data: settingsRows, error: settingsError } = await supabase
+          .from("organization_settings")
+          .select("organization_id, branding_name")
+          .in("organization_id", orgIds);
+        if (settingsError) throw settingsError;
+        brandingByOrg = new Map(
+          (settingsRows ?? []).map((s) => [s.organization_id, s.branding_name])
+        );
+      }
+      return rows.map((row) =>
+        mapMembership(
+          row as Record<string, unknown>,
+          brandingByOrg.get(row.organization_id as string) ?? null
+        )
+      );
     },
   });
 
@@ -329,6 +354,20 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
     await refetchMemberships();
     await refetchOrgBundle();
   }, [refetchMemberships, refetchOrgBundle]);
+
+  useEffect(() => {
+    if (!session?.user.id || membershipsLoading) {
+      if (!session?.user.id) multiOrgSelectionGateRef.current = false;
+      return;
+    }
+    if (memberships.length <= 1) {
+      multiOrgSelectionGateRef.current = false;
+      return;
+    }
+    if (multiOrgSelectionGateRef.current) return;
+    multiOrgSelectionGateRef.current = true;
+    requestOrganizationSelectionAfterLogin(session.user.id);
+  }, [session?.user.id, membershipsLoading, memberships.length]);
 
   useEffect(() => {
     if (!session?.user.id || membershipsLoading || memberships.length !== 1) return;

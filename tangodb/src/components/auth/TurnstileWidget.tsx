@@ -12,6 +12,7 @@ declare global {
           "expired-callback"?: () => void;
           "error-callback"?: () => void;
           theme?: "light" | "dark" | "auto";
+          size?: "normal" | "compact";
         }
       ) => string;
       remove: (widgetId: string) => void;
@@ -60,6 +61,7 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
   const onTokenRef = useRef(onToken);
   const onErrorRef = useRef(onError);
   const [loadFailed, setLoadFailed] = useState(false);
+  const [verified, setVerified] = useState(false);
 
   useEffect(() => {
     onTokenRef.current = onToken;
@@ -68,6 +70,7 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
 
   useEffect(() => {
     onTokenRef.current(null);
+    setVerified(false);
 
     if (!SITE_KEY) {
       onTokenRef.current("dev-bypass");
@@ -89,9 +92,17 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
         widgetIdRef.current = window.turnstile.render(containerRef.current, {
           sitekey: SITE_KEY,
           theme: "light",
-          callback: (token) => onTokenRef.current(token),
-          "expired-callback": () => onTokenRef.current(null),
+          size: "compact",
+          callback: (token) => {
+            setVerified(true);
+            onTokenRef.current(token);
+          },
+          "expired-callback": () => {
+            setVerified(false);
+            onTokenRef.current(null);
+          },
           "error-callback": () => {
+            setVerified(false);
             onTokenRef.current(null);
             onErrorRef.current?.();
           },
@@ -127,7 +138,15 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
     return <p className="text-xs text-red-500">{t("auth.captcha.loadFailed")}</p>;
   }
 
-  return <div ref={containerRef} className="min-h-[65px]" />;
+  if (verified) {
+    return (
+      <p className="text-xs text-slate-600" role="status" aria-live="polite">
+        {t("auth.captcha.verified")}
+      </p>
+    );
+  }
+
+  return <div ref={containerRef} className="min-h-[50px]" aria-hidden="true" />;
 }
 
 export function isTurnstileConfigured(): boolean {

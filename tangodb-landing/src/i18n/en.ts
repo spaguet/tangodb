@@ -14,6 +14,7 @@ export const en = {
     "Schedule, passes, attendance, finance and team roles in one CRM. Start free.",
   "hero.demoHint": "See the demo first",
   "hero.imageAlt": "TangoDB desktop CRM interface: sidebar and Studio Ritmo overview panel",
+  "hero.previewNote": "Sample UI — not interactive",
   "trust.trial.title": "30 days free",
   "trust.trial.text":
     "Self-service signup: confirm your email, no card required. Full CRM for 30 days.",

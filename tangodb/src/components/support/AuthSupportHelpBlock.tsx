@@ -2,22 +2,32 @@ import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import type { SupportTicketKind } from "../../hooks/useSubmitSupportTicket";
 import { useGuestI18n } from "../../hooks/useI18n";
+import type { I18nKey } from "../../lib/i18n/keys";
 import SupportDeveloperMessageModal from "./SupportDeveloperMessageModal";
 
 interface AuthSupportHelpBlockProps {
   ticketKind: Extract<SupportTicketKind, "login_help" | "forgot_password">;
   pagePath: string;
+  titleKey?: I18nKey;
+  hintKey?: I18nKey;
 }
 
-export default function AuthSupportHelpBlock({ ticketKind, pagePath }: AuthSupportHelpBlockProps) {
+export default function AuthSupportHelpBlock({
+  ticketKind,
+  pagePath,
+  titleKey,
+  hintKey,
+}: AuthSupportHelpBlockProps) {
   const { t } = useGuestI18n();
   const [expanded, setExpanded] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
 
-  const title =
-    ticketKind === "login_help"
+  const title = titleKey
+    ? t(titleKey)
+    : ticketKind === "login_help"
       ? t("support.ticket.loginHelpTitle")
       : t("support.ticket.forgotHelpTitle");
+  const hint = hintKey ? t(hintKey) : t("support.ticket.authHelpHint");
 
   return (
     <div className="rounded-lg border border-slate-200 bg-slate-50/80 overflow-hidden">
@@ -31,7 +41,7 @@ export default function AuthSupportHelpBlock({ ticketKind, pagePath }: AuthSuppo
       </button>
       {expanded && (
         <div className="px-3 pb-3 space-y-2 border-t border-slate-200/80">
-          <p className="text-xs text-slate-500 pt-2">{t("support.ticket.authHelpHint")}</p>
+          <p className="text-xs text-slate-500 pt-2">{hint}</p>
           <button
             type="button"
             onClick={() => setModalOpen(true)}

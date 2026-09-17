@@ -395,7 +395,5 @@ export function formatAuditActor(
   const { translate, memberNameByUserId } = ctx;
   if (!changedBy) return translate("team.auditSystem");
   const name = memberNameByUserId.get(changedBy);
-  return name
-    ? translate("team.auditActor", { name, id: changedBy })
-    : translate("team.auditActorIdOnly", { id: changedBy });
+  return name ? translate("team.auditActor", { name }) : translate("team.auditActorUnknown");
 }

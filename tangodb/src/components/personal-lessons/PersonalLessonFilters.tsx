@@ -1,5 +1,5 @@
-import { ChevronLeft, ChevronRight, Search } from "lucide-react";
-import { useMemo } from "react";
+import { ChevronDown, ChevronLeft, ChevronRight, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { normalizeOrgModules, shouldShowDisciplinePicker, shouldShowLocationPicker } from "../../lib/orgModules";
 import { addDays, formatWeekRangeLabel, getWeekRange, toISODateLocal } from "../../lib/scheduleWeek";
@@ -79,6 +79,14 @@ export default function PersonalLessonFilters({
     const { weekStart } = getWeekRange(new Date());
     onChange({ weekStart: toISODateLocal(weekStart) });
   };
+
+  const hasDetailFilters =
+    Boolean(filters.locationId) ||
+    Boolean(filters.disciplineId) ||
+    Boolean(filters.teacherMemberId) ||
+    filters.search.trim().length > 0;
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const showDetailFilters = detailsOpen || hasDetailFilters;
 
   return (
     <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
@@ -218,6 +226,19 @@ export default function PersonalLessonFilters({
         </div>
       </div>
 
+      <button
+        type="button"
+        onClick={() => setDetailsOpen((open) => !open)}
+        className="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 hover:text-indigo-700 cursor-pointer"
+        aria-expanded={showDetailFilters}
+      >
+        <ChevronDown
+          className={`w-4 h-4 transition-transform ${showDetailFilters ? "rotate-180" : ""}`}
+        />
+        {showDetailFilters ? t("personal.filters.collapse") : t("personal.filters.expand")}
+      </button>
+
+      {showDetailFilters ? (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         {showLocationFilter && (
         <AppSelect
@@ -276,6 +297,7 @@ export default function PersonalLessonFilters({
           </div>
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

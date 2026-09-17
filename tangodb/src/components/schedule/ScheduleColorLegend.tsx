@@ -13,6 +13,7 @@ import {
 
 interface ScheduleColorLegendProps {
   modules: OrgModules;
+  className?: string;
 }
 
 type LegendEntryId =
@@ -111,7 +112,7 @@ function LegendItem({ entry, label }: { entry: LegendEntry; label: string }) {
   );
 }
 
-export default function ScheduleColorLegend({ modules }: ScheduleColorLegendProps) {
+export default function ScheduleColorLegend({ modules, className = "" }: ScheduleColorLegendProps) {
   const { t } = useI18n();
   const entryMap = buildLegendEntryMap(modules);
   const rows = LEGEND_ROWS.map((ids) =>
@@ -124,7 +125,7 @@ export default function ScheduleColorLegend({ modules }: ScheduleColorLegendProp
 
   return (
     <div
-      className="pt-3 mt-3 border-t border-slate-100"
+      className={`pt-3 mt-3 border-t border-slate-100 ${className}`}
       aria-label={t("schedule.legend.title")}
     >
       <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 mb-2">

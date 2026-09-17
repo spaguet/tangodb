@@ -1,12 +1,20 @@
-import { useEffect, useState } from "react";
-import { Loader2, Send, X, Edit } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
+import { Loader2, MessageSquare, Send, TicketPlus, X, Edit } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import type { Client } from "../types";
 import type { ToastType } from "../App";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useCan } from "../hooks/usePermissions";
 import { useClientCard, useUpdateClient } from "../hooks/useClients";
+import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
 import { useOrganization } from "../organization/OrganizationProvider";
+import {
+  formatClientName,
+  isClientNameRelationshipLabel,
+} from "../lib/clientDisplay";
+import { formatCurrency } from "../lib/utils";
+import { useClientFieldPlaceholders } from "../hooks/useClientFieldPlaceholders";
 import {
   translateConnectionBlockReason,
   translateMutationBlockedMessage,
@@ -112,8 +120,11 @@ export default function ClientCardModal({
   stackLayer = "default",
 }: ClientCardModalProps) {
   const { t } = useI18n();
+  const fieldPlaceholders = useClientFieldPlaceholders();
   const { role } = useOrganization();
   const canReadNotes = useCan("client_notes.read");
+  const canSellSubscription = useCan("subscriptions.sell");
+  const debtorsQuery = useFinancialDebtors({ enabled: Boolean(client) });
   const { connectionState } = useOnlineStatus();
   const updateClient = useUpdateClient();
   const loadFullCard = role === "teacher";
@@ -121,6 +132,7 @@ export default function ClientCardModal({
   const displayClient = loadFullCard ? (cardQuery.data ?? client) : client;
   const cardPending = Boolean(loadFullCard && cardQuery.isFetching && !cardQuery.data);
   const [mode, setMode] = useState<"view" | "edit">("view");
+  const [detailTab, setDetailTab] = useState<"profile" | "notes">("profile");
   const [editFirst, setEditFirst] = useState("");
   const [editLast, setEditLast] = useState("");
   const [editTg, setEditTg] = useState("");
@@ -159,7 +171,24 @@ export default function ClientCardModal({
     setEditGuardian2Telegram(fields.guardian2Telegram);
     setEditGuardian2Address(fields.guardian2Address);
     setMode("view");
+    setDetailTab("profile");
   }, [displayClient]);
+
+  const clientDebtTotal = useMemo(() => {
+    if (!displayClient?.id) return 0;
+    const rows = debtorsQuery.data ?? [];
+    const id = displayClient.id;
+    return rows
+      .filter(
+        (row) =>
+          row.payerClientId === id ||
+          row.clientId1 === id ||
+          row.clientId2 === id ||
+          row.clientId3 === id ||
+          row.clientId4 === id
+      )
+      .reduce((sum, row) => sum + Math.max(0, row.amount), 0);
+  }, [debtorsQuery.data, displayClient?.id]);
 
   useEffect(() => {
     if (!client) return;
@@ -237,12 +266,11 @@ export default function ClientCardModal({
     <AnimatePresence>
       {client && (
         <div className={`fixed inset-0 ${zClass} flex items-center justify-center p-4`} role="dialog" aria-modal="true">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+          <button
+            type="button"
+            aria-label={t("common.close")}
             onClick={() => (mode === "edit" ? setMode("view") : onClose())}
-            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs"
+            className="absolute inset-0 bg-slate-900/40 backdrop-blur-xs cursor-default"
           />
           <motion.div
             initial={{ scale: 0.97, opacity: 0, y: 8 }}
@@ -252,9 +280,18 @@ export default function ClientCardModal({
             className="relative bg-white rounded-xl border border-slate-200 shadow-xl overflow-hidden max-w-md w-full p-4 panel-card-stack max-h-[90vh] overflow-y-auto"
           >
             <div className="flex items-center justify-between border-b border-slate-100 pb-3 gap-2">
-              <h2 className="text-base font-semibold tracking-tight text-slate-900 min-w-0 truncate">
-                {mode === "edit" ? t("clients.modal.editTitle") : `${(displayClient ?? client).lastName} ${(displayClient ?? client).firstName}`}
-              </h2>
+              <div className="min-w-0">
+                <h2 className="text-base font-semibold tracking-tight text-slate-900 truncate">
+                  {mode === "edit"
+                    ? t("clients.modal.editTitle")
+                    : formatClientName((displayClient ?? client).lastName, (displayClient ?? client).firstName)}
+                </h2>
+                {mode === "view" && displayClient && isClientNameRelationshipLabel(displayClient) ? (
+                  <p className="text-[10px] font-semibold uppercase tracking-wide text-amber-800 mt-0.5">
+                    {t("clientCard.nameLabelBadge")}
+                  </p>
+                ) : null}
+              </div>
               <div className="flex items-center gap-1 shrink-0">
                 {mode === "view" ? (
                   <RequirePermission action="clients.write">
@@ -283,69 +320,146 @@ export default function ClientCardModal({
 
             {mode === "view" && displayClient ? (
               <>
-                <div className="space-y-3 font-sans">
-                  {cardPending ? (
-                    <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
-                      <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
-                      {t("clients.loading")}
-                    </div>
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {canSellSubscription ? (
+                    <Link
+                      to={`/subscriptions/sell?client=${displayClient.id}`}
+                      onClick={onClose}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold transition-colors"
+                    >
+                      <TicketPlus className="w-3.5 h-3.5" />
+                      {t("clientCard.sellCta")}
+                    </Link>
                   ) : null}
-                  <div className="grid grid-cols-1 gap-3">
-                    <ProfileField label={t("clients.form.firstName")} value={displayClient.firstName} />
-                    <ProfileField label={t("clients.form.lastName")} value={displayClient.lastName} />
-                    <ProfileField label={t("clients.form.phone")} value={displayClient.phone} />
-                    <ProfileField label={t("clients.form.email")} value={displayClient.email} />
-                  </div>
-
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">Telegram</p>
-                    {displayClient.telegram && normalizeTelegramContact(displayClient.telegram) ? (
-                      <a
-                        href={normalizeTelegramContact(displayClient.telegram)!}
-                        target="_blank"
-                        rel="noreferrer"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          openTelegramContact(displayClient.telegram);
-                        }}
-                        className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-0.5 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans transition-colors"
-                      >
-                        <Send className="w-3 h-3" />
-                        {formatTelegramDisplay(displayClient.telegram)}
-                      </a>
-                    ) : cardPending ? null : (
-                      <span className="text-xs text-slate-400 italic">{t("clientCard.telegramNotSet")}</span>
-                    )}
-                  </div>
-
-                  {displayClient.isMinor ? (
-                    <div className="space-y-2 border-t border-slate-100 pt-3">
-                      <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
-                        {t("clients.form.isMinor")}
-                      </p>
-                      <GuardianBlock
-                        title={t("clients.form.guardian1")}
-                        name={displayClient.guardian1Name}
-                        phone={displayClient.guardian1Phone}
-                        telegram={displayClient.guardian1Telegram}
-                        address={displayClient.guardian1Address}
-                        t={t}
-                      />
-                      <GuardianBlock
-                        title={t("clients.form.guardian2")}
-                        name={displayClient.guardian2Name}
-                        phone={displayClient.guardian2Phone}
-                        telegram={displayClient.guardian2Telegram}
-                        address={displayClient.guardian2Address}
-                        t={t}
-                      />
-                    </div>
+                  {displayClient.telegram && normalizeTelegramContact(displayClient.telegram) ? (
+                    <button
+                      type="button"
+                      onClick={() => openTelegramContact(displayClient.telegram)}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-[#229ED9]/30 bg-[#229ED9]/10 text-[#1C82B4] text-xs font-semibold transition-colors cursor-pointer"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      {t("clientCard.writeCta")}
+                    </button>
+                  ) : displayClient.phone.trim() ? (
+                    <a
+                      href={`tel:${displayClient.phone.replace(/\s/g, "")}`}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 text-xs font-semibold"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      {t("clientCard.writeCta")}
+                    </a>
                   ) : null}
                 </div>
 
-                <ClientSubscriptionParticipationPanel clientId={displayClient.id} />
+                {canReadNotes ? (
+                  <div className="flex gap-1 border-b border-slate-100 mt-3">
+                    <button
+                      type="button"
+                      onClick={() => setDetailTab("profile")}
+                      className={`px-3 py-2 text-xs font-semibold rounded-t-lg cursor-pointer ${
+                        detailTab === "profile"
+                          ? "text-indigo-700 bg-indigo-50 border border-b-white border-slate-200 -mb-px"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      {t("clientCard.tab.profile")}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setDetailTab("notes")}
+                      className={`px-3 py-2 text-xs font-semibold rounded-t-lg cursor-pointer ${
+                        detailTab === "notes"
+                          ? "text-indigo-700 bg-indigo-50 border border-b-white border-slate-200 -mb-px"
+                          : "text-slate-500 hover:text-slate-700"
+                      }`}
+                    >
+                      {t("clientCard.tab.notes")}
+                    </button>
+                  </div>
+                ) : null}
 
-                {canReadNotes && <ClientNotesPanel clientId={displayClient.id} toast={toast} />}
+                {detailTab === "profile" || !canReadNotes ? (
+                  <div className="space-y-3 font-sans pt-3">
+                    {cardPending ? (
+                      <div className="flex items-center gap-2 text-xs text-slate-400 py-2">
+                        <Loader2 className="w-4 h-4 text-indigo-500 animate-spin" />
+                        {t("clients.loading")}
+                      </div>
+                    ) : null}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                          {t("clients.form.phone")}
+                        </p>
+                        <p className="text-slate-700 mt-0.5">
+                          {displayClient.phone.trim() ? displayClient.phone : t("clientCard.phoneNotSet")}
+                        </p>
+                      </div>
+                      {clientDebtTotal > 0 ? (
+                        <div>
+                          <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                            {t("clientCard.debt")}
+                          </p>
+                          <p className="text-rose-700 font-semibold mt-0.5">{formatCurrency(clientDebtTotal)}</p>
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <ProfileField label={t("clients.form.email")} value={displayClient.email} />
+
+                    <div>
+                      <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">Telegram</p>
+                      {displayClient.telegram && normalizeTelegramContact(displayClient.telegram) ? (
+                        <a
+                          href={normalizeTelegramContact(displayClient.telegram)!}
+                          target="_blank"
+                          rel="noreferrer"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            openTelegramContact(displayClient.telegram);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 mt-0.5 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans transition-colors"
+                        >
+                          <Send className="w-3 h-3" />
+                          {formatTelegramDisplay(displayClient.telegram)}
+                        </a>
+                      ) : cardPending ? null : (
+                        <span className="text-xs text-slate-400 italic">{t("clientCard.telegramNotSet")}</span>
+                      )}
+                    </div>
+
+                    {displayClient.isMinor ? (
+                      <div className="space-y-2 border-t border-slate-100 pt-3">
+                        <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                          {t("clients.form.isMinor")}
+                        </p>
+                        <GuardianBlock
+                          title={t("clients.form.guardian1")}
+                          name={displayClient.guardian1Name}
+                          phone={displayClient.guardian1Phone}
+                          telegram={displayClient.guardian1Telegram}
+                          address={displayClient.guardian1Address}
+                          t={t}
+                        />
+                        <GuardianBlock
+                          title={t("clients.form.guardian2")}
+                          name={displayClient.guardian2Name}
+                          phone={displayClient.guardian2Phone}
+                          telegram={displayClient.guardian2Telegram}
+                          address={displayClient.guardian2Address}
+                          t={t}
+                        />
+                      </div>
+                    ) : null}
+
+                    <ClientSubscriptionParticipationPanel clientId={displayClient.id} />
+                  </div>
+                ) : (
+                  <div className="pt-3">
+                    <ClientNotesPanel clientId={displayClient.id} toast={toast} />
+                  </div>
+                )}
               </>
             ) : (
               <div className="panel-form-stack font-sans">
@@ -365,7 +479,7 @@ export default function ClientCardModal({
                     type="tel"
                     value={editPhone}
                     onChange={(e) => setEditPhone(e.target.value)}
-                    placeholder={t("clients.placeholder.phone")}
+                    placeholder={fieldPlaceholders.phone}
                     className={inputCls}
                   />
                 </div>
@@ -376,7 +490,7 @@ export default function ClientCardModal({
                     type="email"
                     value={editEmail}
                     onChange={(e) => setEditEmail(e.target.value)}
-                    placeholder={t("clients.placeholder.email")}
+                    placeholder={fieldPlaceholders.email}
                     className={inputCls}
                   />
                 </div>

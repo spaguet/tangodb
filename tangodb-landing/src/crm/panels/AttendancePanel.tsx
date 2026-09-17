@@ -1,5 +1,12 @@
 import { Check, ChevronLeft, ChevronRight, MapPin, Snowflake, X } from "lucide-react";
 import type { Locale } from "../../i18n";
+import {
+  demoAttendanceLessonDate,
+  demoToday,
+  formatDemoMonthHeader,
+  formatLessonDateTime,
+  startOfMonth,
+} from "../demoDates";
 import { attendanceStudents } from "../data";
 import { crmStrings } from "../strings";
 
@@ -13,6 +20,9 @@ const statusBtn = {
 
 export function AttendancePanel({ locale }: Props) {
   const s = crmStrings(locale);
+  const monthLabel = formatDemoMonthHeader(startOfMonth(demoToday()), locale);
+  const lessonDate = demoAttendanceLessonDate();
+  const lessonTitle = formatLessonDateTime(locale, lessonDate, "18:00", "Сальса");
 
   return (
     <div id="panel-attendance" className="panel-page-stack demo-field-disabled">
@@ -37,7 +47,7 @@ export function AttendancePanel({ locale }: Props) {
             <button type="button" className="p-1 rounded-lg text-slate-500" aria-label="Prev month">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm font-semibold text-slate-800">June 2026</span>
+            <span className="text-sm font-semibold text-slate-800">{monthLabel}</span>
             <button type="button" className="p-1 rounded-lg text-slate-500" aria-label="Next month">
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -49,10 +59,8 @@ export function AttendancePanel({ locale }: Props) {
         </div>
 
         <div className="rounded-lg border border-indigo-200 bg-indigo-50 px-3 py-2">
-          <p className="text-xs font-semibold text-indigo-800">
-            {locale === "ru" ? "30 июня (Пн) · 18:00" : "Jun 30 (Mon) · 18:00"} — Salsa
-          </p>
-          <p className="text-[10px] text-indigo-600/80">Maria López · Hall A</p>
+          <p className="text-xs font-semibold text-indigo-800">{lessonTitle}</p>
+          <p className="text-[10px] text-indigo-600/80">Мария Лопес · Зал A</p>
         </div>
 
         <div className="space-y-2">

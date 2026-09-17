@@ -13,7 +13,8 @@ import {
   UserPlus,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { addMonths, demoToday, formatDemoMonthHeader, startOfMonth } from "../demoDates";
 import type { Locale } from "../../i18n";
 import {
   activeSubsSummary,
@@ -64,18 +65,12 @@ export function DashboardPanel({ locale, onNavigate }: Props) {
     locale === "ru" ? row.methodRu : row.methodEn;
   const [tab, setTab] = useState<"operational" | "financial">("operational");
   const [statsMonthOffset, setStatsMonthOffset] = useState(0);
-  const statsMonthLabel =
-    locale === "ru"
-      ? statsMonthOffset === 0
-        ? "Июнь 2026"
-        : statsMonthOffset < 0
-          ? "Май 2026"
-          : "Июль 2026"
-      : statsMonthOffset === 0
-        ? "June 2026"
-        : statsMonthOffset < 0
-          ? "May 2026"
-          : "July 2026";
+  const statsMonthDate = useMemo(
+    () => addMonths(startOfMonth(demoToday()), statsMonthOffset),
+    [statsMonthOffset],
+  );
+  const statsMonthLabel = formatDemoMonthHeader(statsMonthDate, locale);
+  const financialMonthLabel = formatDemoMonthHeader(startOfMonth(demoToday()), locale);
   const tabs = [
     { id: "operational", label: s.dashboard.operational, icon: BarChart3 },
     { id: "financial", label: s.dashboard.financial, icon: TrendingUp },
@@ -261,10 +256,7 @@ export function DashboardPanel({ locale, onNavigate }: Props) {
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <div className="flex flex-col items-center min-w-0">
-                    <span className="text-xs font-semibold text-slate-800">{s.dashboard.monthTitle}</span>
-                    <span className="text-[10px] font-semibold text-indigo-600 whitespace-nowrap">
-                      {s.dashboard.currentMonth}
-                    </span>
+                    <span className="text-xs font-semibold text-slate-800">{financialMonthLabel}</span>
                   </div>
                   <button
                     type="button"

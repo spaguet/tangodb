@@ -1,10 +1,11 @@
 import { useRef, useState, useMemo } from "react";
-import { Mail, UserMinus, Users, Edit, LifeBuoy, UserPlus, CalendarOff, ChevronDown, Copy } from "lucide-react";
+import { Mail, UserMinus, Users, Edit, UserPlus, CalendarOff, ChevronDown, Copy, CircleHelp } from "lucide-react";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import LoadingState from "../../components/ui/LoadingState";
 import QueryErrorState from "../../components/ui/QueryErrorState";
 import AuditLogSection from "../components/AuditLogSection";
+import SettingsAccessNotice from "../components/SettingsAccessNotice";
 import MemberProfileModal from "../components/MemberProfileModal";
 import TeacherScopeFields from "../components/TeacherScopeFields";
 import { useToast } from "../../App";
@@ -97,7 +98,8 @@ export default function TeamSettingsPage() {
   const [inviteMetaOverride, setInviteMetaOverride] = useState<MemberMeta | null>(null);
   const [reinviteSourceId, setReinviteSourceId] = useState<string | null>(null);
   const [deactivateTarget, setDeactivateTarget] = useState<TeamMemberRow | null>(null);
-  const [inviteExpanded, setInviteExpanded] = useState(true);
+  const [inviteExpanded, setInviteExpanded] = useState(false);
+  const [recoveryOpen, setRecoveryOpen] = useState(false);
   const [copiedInviteIds, setCopiedInviteIds] = useState<Record<string, boolean>>({});
   const inviteFormRef = useRef<HTMLFormElement>(null);
 
@@ -264,24 +266,191 @@ export default function TeamSettingsPage() {
 
   return (
     <div className="panel-card-stack max-w-2xl">
+      <SettingsAccessNotice />
       <div>
-        <h2 className="text-base font-semibold text-slate-900">{t("team.title")}</h2>
+        <div className="flex items-start gap-2">
+          <h2 className="text-base font-semibold text-slate-900 flex-1">{t("team.title")}</h2>
+          {canShowRecoveryGuide ? (
+            <button
+              type="button"
+              onClick={() => setRecoveryOpen((open) => !open)}
+              aria-expanded={recoveryOpen}
+              aria-label={t("team.recoveryTitle")}
+              title={t("team.recoveryTitle")}
+              className="shrink-0 w-7 h-7 flex items-center justify-center rounded-full border border-sky-200 bg-sky-50 text-sky-700 text-xs font-bold hover:bg-sky-100 cursor-pointer"
+            >
+              <CircleHelp className="w-3.5 h-3.5" aria-hidden />
+            </button>
+          ) : null}
+        </div>
         <p className="text-xs text-slate-500 mt-1">{t("team.subtitle")}</p>
-      </div>
-
-      {canShowRecoveryGuide && (
-        <div className="bg-sky-50/80 rounded-xl border border-sky-100 p-3.5 space-y-2">
-          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <LifeBuoy className="w-4 h-4 text-sky-600" />
-            {t("team.recoveryTitle")}
-          </h3>
-          <ul className="text-[11px] text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed">
+        {canShowRecoveryGuide && recoveryOpen ? (
+          <ul className="mt-3 text-[11px] text-slate-600 space-y-1.5 list-disc pl-4 leading-relaxed bg-sky-50/80 rounded-xl border border-sky-100 p-3.5">
             <li>{t("team.recoveryForgotPassword")}</li>
             <li>{t("team.recoveryLostEmail")}</li>
             <li className="text-slate-500">{t("team.recoveryOwnerNote")}</li>
           </ul>
+        ) : null}
+      </div>
+
+      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
+        <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
+          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <Users className="w-4 h-4 text-indigo-500" />
+            {t("team.members")}
+          </h3>
+          <div className="flex items-center gap-2 shrink-0">
+            {canManageTeacherVacation ? (
+              <button
+                type="button"
+                onClick={() => {
+                  setVacationTeacherId("");
+                  setTeacherVacationOpen(true);
+                }}
+                className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg cursor-pointer"
+              >
+                <CalendarOff className="w-3.5 h-3.5" />
+                {t("schedule.vacation.action")}
+              </button>
+            ) : null}
+            <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
+              {activeMembers.length}
+            </span>
+          </div>
         </div>
-      )}
+
+        <div className="space-y-1.5">
+          {activeMembers.length === 0 && (
+            <p className="text-sm text-slate-400 py-2">{t("team.noMembers")}</p>
+          )}
+          {activeMembers.map((member) => {
+            const preset = memberPreset(member);
+            return (
+            <div
+              key={member.id}
+              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-100"
+            >
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-800 truncate">
+                  {memberListLabel(member, locale)}
+                </p>
+                <p className="text-[11px] text-slate-400 mt-0.5">
+                  {memberRoleLabel(member.role, member.meta, locale)} ·{" "}
+                  {t("settings.team.memberSince", { date: formatJoined(member.joined_at, formatDate) })}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {canManageTeacherVacation && isActiveLessonConductingMember(member) ? (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setVacationTeacherId(member.id);
+                      setTeacherVacationOpen(true);
+                    }}
+                    className={iconBtnCls}
+                    title={t("schedule.vacation.action")}
+                    aria-label={t("schedule.vacation.actionFor", {
+                      name: memberListLabel(member, locale),
+                    })}
+                  >
+                    <CalendarOff className="w-4 h-4" />
+                  </button>
+                ) : null}
+                {canInvite && (
+                  <button
+                    type="button"
+                    onClick={() => setProfileMember(member)}
+                    className={iconBtnCls}
+                    title={t("settings.team.editMember")}
+                    aria-label={t("settings.team.editMemberAria", { name: memberListLabel(member, locale) })}
+                  >
+                    <Edit className="w-4 h-4" />
+                  </button>
+                )}
+                {canManageMember(member.role) && isEditableMemberPreset(preset) && (
+                  <>
+                    <AppSelect
+                      value={preset}
+                      onChange={async (e) => {
+                        const next = presetToRoleMeta(e.target.value as MemberPreset);
+                        try {
+                          await updateMember.mutateAsync({
+                            memberId: member.id,
+                            role: next.role,
+                            meta: next.meta,
+                          });
+                        } catch (err) {
+                          const message = err instanceof Error ? err.message : "";
+                          if (!showDirectorSlotError(message)) {
+                            showToast(message || t("team.inviteError"), "error");
+                          }
+                        }
+                      }}
+                    >
+                      {EDITABLE_PRESETS.filter((p) => canAssignPreset(p, member.id) || p === preset).map(
+                        (p) => (
+                          <option key={p} value={p}>
+                            {invitePresets.find((item) => item.value === p)?.label ??
+                              memberRoleLabel(presetToRoleMeta(p).role, presetToRoleMeta(p).meta, locale)}
+                          </option>
+                        )
+                      )}
+                    </AppSelect>
+                    <button
+                      type="button"
+                      onClick={() => setDeactivateTarget(member)}
+                      disabled={updateMember.isPending}
+                      className="flex items-center gap-1 text-[10px] font-semibold uppercase text-rose-600 hover:bg-rose-50 px-2 py-1.5 rounded cursor-pointer"
+                      title={t("team.deactivate")}
+                    >
+                      <UserMinus className="w-3.5 h-3.5" />
+                    </button>
+                  </>
+                )}
+                {canManageMember(member.role) && !isEditableMemberPreset(preset) && (
+                  <span className="text-xs font-semibold text-slate-600 px-2.5 py-1.5 bg-slate-100 rounded-lg shrink-0">
+                    {memberRoleLabel(member.role, member.meta, locale)}
+                  </span>
+                )}
+              </div>
+            </div>
+          );
+          })}
+        </div>
+
+        {inactiveMembers.length > 0 && (
+          <div className="pt-2 border-t border-slate-100 space-y-1">
+            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
+              {t("team.inactive")}
+            </p>
+            {inactiveMembers.map((member) => {
+              const preset = memberPreset(member);
+              const canReinvite =
+                canInvite && isEditableMemberPreset(preset) && canAssignPreset(preset);
+              return (
+              <div
+                key={member.id}
+                className="flex items-center justify-between gap-2 text-xs text-slate-400 px-2 py-1"
+              >
+                <span>
+                  {memberListLabel(member, locale)} · {memberRoleLabel(member.role, member.meta, locale)}
+                </span>
+                {canReinvite && (
+                  <button
+                    type="button"
+                    onClick={() => handleReinvite(member)}
+                    className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded cursor-pointer"
+                  >
+                    <UserPlus className="w-3 h-3" />
+                    {t("team.reinvite")}
+                  </button>
+                )}
+              </div>
+            );
+            })}
+          </div>
+        )}
+      </div>
 
       {canInvite && (
       <form
@@ -443,165 +612,6 @@ export default function TeamSettingsPage() {
           </div>
         </div>
       )}
-
-      <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-3.5 space-y-2">
-        <div className="flex items-center justify-between border-b border-slate-100 pb-2 gap-2">
-          <h3 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
-            <Users className="w-4 h-4 text-indigo-500" />
-            {t("team.members")}
-          </h3>
-          <div className="flex items-center gap-2 shrink-0">
-            {canManageTeacherVacation ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setVacationTeacherId("");
-                  setTeacherVacationOpen(true);
-                }}
-                className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg cursor-pointer"
-              >
-                <CalendarOff className="w-3.5 h-3.5" />
-                {t("schedule.vacation.action")}
-              </button>
-            ) : null}
-            <span className="text-[10px] bg-slate-100 text-slate-500 font-sans px-2 py-0.5 rounded-full font-semibold">
-              {activeMembers.length}
-            </span>
-          </div>
-        </div>
-
-        <div className="space-y-1.5">
-          {activeMembers.length === 0 && (
-            <p className="text-sm text-slate-400 py-2">{t("team.noMembers")}</p>
-          )}
-          {activeMembers.map((member) => {
-            const preset = memberPreset(member);
-            return (
-            <div
-              key={member.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-2.5 bg-slate-50 rounded-lg border border-slate-100"
-            >
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-slate-800 truncate">
-                  {memberListLabel(member, locale)}
-                </p>
-                <p className="text-[11px] text-slate-400 mt-0.5">
-                  {memberRoleLabel(member.role, member.meta, locale)} ·{" "}
-                  {t("settings.team.memberSince", { date: formatJoined(member.joined_at, formatDate) })}
-                </p>
-              </div>
-              <div className="flex items-center gap-2 shrink-0">
-                {canManageTeacherVacation && isActiveLessonConductingMember(member) ? (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setVacationTeacherId(member.id);
-                      setTeacherVacationOpen(true);
-                    }}
-                    className={iconBtnCls}
-                    title={t("schedule.vacation.action")}
-                    aria-label={t("schedule.vacation.actionFor", {
-                      name: memberListLabel(member, locale),
-                    })}
-                  >
-                    <CalendarOff className="w-4 h-4" />
-                  </button>
-                ) : null}
-                {canInvite && (
-                  <button
-                    type="button"
-                    onClick={() => setProfileMember(member)}
-                    className={iconBtnCls}
-                    title={t("settings.team.editMember")}
-                    aria-label={t("settings.team.editMemberAria", { name: memberListLabel(member, locale) })}
-                  >
-                    <Edit className="w-4 h-4" />
-                  </button>
-                )}
-                {canManageMember(member.role) && isEditableMemberPreset(preset) && (
-                  <>
-                    <AppSelect
-                      value={preset}
-                      onChange={async (e) => {
-                        const next = presetToRoleMeta(e.target.value as MemberPreset);
-                        try {
-                          await updateMember.mutateAsync({
-                            memberId: member.id,
-                            role: next.role,
-                            meta: next.meta,
-                          });
-                        } catch (err) {
-                          const message = err instanceof Error ? err.message : "";
-                          if (!showDirectorSlotError(message)) {
-                            showToast(message || t("team.inviteError"), "error");
-                          }
-                        }
-                      }}
-                    >
-                      {EDITABLE_PRESETS.filter((p) => canAssignPreset(p, member.id) || p === preset).map(
-                        (p) => (
-                          <option key={p} value={p}>
-                            {invitePresets.find((item) => item.value === p)?.label ??
-                              memberRoleLabel(presetToRoleMeta(p).role, presetToRoleMeta(p).meta, locale)}
-                          </option>
-                        )
-                      )}
-                    </AppSelect>
-                    <button
-                      type="button"
-                      onClick={() => setDeactivateTarget(member)}
-                      disabled={updateMember.isPending}
-                      className="flex items-center gap-1 text-[10px] font-semibold uppercase text-rose-600 hover:bg-rose-50 px-2 py-1.5 rounded cursor-pointer"
-                      title={t("team.deactivate")}
-                    >
-                      <UserMinus className="w-3.5 h-3.5" />
-                    </button>
-                  </>
-                )}
-                {canManageMember(member.role) && !isEditableMemberPreset(preset) && (
-                  <span className="text-xs font-semibold text-slate-600 px-2.5 py-1.5 bg-slate-100 rounded-lg shrink-0">
-                    {memberRoleLabel(member.role, member.meta, locale)}
-                  </span>
-                )}
-              </div>
-            </div>
-          );
-          })}
-        </div>
-
-        {inactiveMembers.length > 0 && (
-          <div className="pt-2 border-t border-slate-100 space-y-1">
-            <p className="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">
-              {t("team.inactive")}
-            </p>
-            {inactiveMembers.map((member) => {
-              const preset = memberPreset(member);
-              const canReinvite =
-                canInvite && isEditableMemberPreset(preset) && canAssignPreset(preset);
-              return (
-              <div
-                key={member.id}
-                className="flex items-center justify-between gap-2 text-xs text-slate-400 px-2 py-1"
-              >
-                <span>
-                  {memberListLabel(member, locale)} · {memberRoleLabel(member.role, member.meta, locale)}
-                </span>
-                {canReinvite && (
-                  <button
-                    type="button"
-                    onClick={() => handleReinvite(member)}
-                    className="shrink-0 inline-flex items-center gap-1 text-[10px] font-semibold uppercase text-indigo-600 hover:bg-indigo-50 px-2 py-1 rounded cursor-pointer"
-                  >
-                    <UserPlus className="w-3 h-3" />
-                    {t("team.reinvite")}
-                  </button>
-                )}
-              </div>
-            );
-            })}
-          </div>
-        )}
-      </div>
 
       <MemberProfileModal
         member={profileMember}

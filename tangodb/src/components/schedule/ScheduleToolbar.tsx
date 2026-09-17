@@ -11,12 +11,7 @@ export interface TeacherFilterOption {
   label: string;
 }
 
-interface ScheduleToolbarProps {
-  weekStart: Date;
-  onWeekChange: (weekStart: Date) => void;
-  teacherFilter: string;
-  onTeacherFilterChange: (teacherId: string) => void;
-  teacherFilterOptions: TeacherFilterOption[];
+export interface ScheduleManageActionsProps {
   canManageTeacherVacation?: boolean;
   onTeacherVacationClick?: () => void;
   canManageCalendarEvents?: boolean;
@@ -26,6 +21,76 @@ interface ScheduleToolbarProps {
   onExportPngClick?: () => void;
   exportingPng?: boolean;
   exportPngDisabled?: boolean;
+  className?: string;
+}
+
+interface ScheduleToolbarProps extends ScheduleManageActionsProps {
+  weekStart: Date;
+  onWeekChange: (weekStart: Date) => void;
+  teacherFilter: string;
+  onTeacherFilterChange: (teacherId: string) => void;
+  teacherFilterOptions: TeacherFilterOption[];
+  showManageActions?: boolean;
+}
+
+export function ScheduleManageActions({
+  canManageTeacherVacation = false,
+  onTeacherVacationClick,
+  canManageCalendarEvents = false,
+  onCreateEventClick,
+  canManageRentals = false,
+  onCreateRentalClick,
+  onExportPngClick,
+  exportingPng = false,
+  exportPngDisabled = false,
+  className = "",
+}: ScheduleManageActionsProps) {
+  const { t } = useI18n();
+
+  const hasAny =
+    onExportPngClick ||
+    (canManageCalendarEvents && onCreateEventClick) ||
+    (canManageRentals && onCreateRentalClick) ||
+    (canManageTeacherVacation && onTeacherVacationClick);
+
+  if (!hasAny) return null;
+
+  return (
+    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+      {onExportPngClick ? (
+        <button
+          type="button"
+          onClick={onExportPngClick}
+          disabled={exportingPng || exportPngDisabled}
+          className={btnOpenCls}
+        >
+          <ImageDown className={`w-4 h-4 ${exportingPng ? "animate-pulse" : ""}`} />
+          {t("schedule.export.png")}
+        </button>
+      ) : null}
+
+      {canManageCalendarEvents && onCreateEventClick ? (
+        <button type="button" onClick={onCreateEventClick} className={btnOpenCls}>
+          <CalendarPlus className="w-4 h-4" />
+          {t("schedule.event.action")}
+        </button>
+      ) : null}
+
+      {canManageRentals && onCreateRentalClick ? (
+        <button type="button" onClick={onCreateRentalClick} className={btnOpenCls}>
+          <Building2 className="w-4 h-4" />
+          {t("schedule.rental.action")}
+        </button>
+      ) : null}
+
+      {canManageTeacherVacation && onTeacherVacationClick ? (
+        <button type="button" onClick={onTeacherVacationClick} className={btnOpenCls}>
+          <CalendarOff className="w-4 h-4" />
+          {t("schedule.vacation.action")}
+        </button>
+      ) : null}
+    </div>
+  );
 }
 
 export default function ScheduleToolbar({
@@ -34,6 +99,7 @@ export default function ScheduleToolbar({
   teacherFilter,
   onTeacherFilterChange,
   teacherFilterOptions,
+  showManageActions = true,
   canManageTeacherVacation = false,
   onTeacherVacationClick,
   canManageCalendarEvents = false,
@@ -147,49 +213,20 @@ export default function ScheduleToolbar({
         </AppSelect>
       )}
 
-      {onExportPngClick ? (
-        <button
-          type="button"
-          onClick={onExportPngClick}
-          disabled={exportingPng || exportPngDisabled}
-          className={btnOpenCls}
-        >
-          <ImageDown className={`w-4 h-4 ${exportingPng ? "animate-pulse" : ""}`} />
-          {t("schedule.export.png")}
-        </button>
-      ) : null}
-
-      {canManageCalendarEvents && onCreateEventClick ? (
-        <button
-          type="button"
-          onClick={onCreateEventClick}
-          className={btnOpenCls}
-        >
-          <CalendarPlus className="w-4 h-4" />
-          {t("schedule.event.action")}
-        </button>
-      ) : null}
-
-      {canManageRentals && onCreateRentalClick ? (
-        <button
-          type="button"
-          onClick={onCreateRentalClick}
-          className={btnOpenCls}
-        >
-          <Building2 className="w-4 h-4" />
-          {t("schedule.rental.action")}
-        </button>
-      ) : null}
-
-      {canManageTeacherVacation && onTeacherVacationClick ? (
-        <button
-          type="button"
-          onClick={onTeacherVacationClick}
-          className={btnOpenCls}
-        >
-          <CalendarOff className="w-4 h-4" />
-          {t("schedule.vacation.action")}
-        </button>
+      {showManageActions ? (
+        <div className="hidden sm:flex sm:flex-wrap sm:items-center sm:gap-2">
+          <ScheduleManageActions
+            canManageTeacherVacation={canManageTeacherVacation}
+            onTeacherVacationClick={onTeacherVacationClick}
+            canManageCalendarEvents={canManageCalendarEvents}
+            onCreateEventClick={onCreateEventClick}
+            canManageRentals={canManageRentals}
+            onCreateRentalClick={onCreateRentalClick}
+            onExportPngClick={onExportPngClick}
+            exportingPng={exportingPng}
+            exportPngDisabled={exportPngDisabled}
+          />
+        </div>
       ) : null}
     </div>
   );

@@ -8,7 +8,11 @@ import { usePrices } from "../../hooks/usePrices";
 import { useAccessibleLocations } from "../../hooks/useLocations";
 import { useTeamMembers, memberDisplayName, memberListLabel } from "../../hooks/useTeamMembers";
 import { usePermissions } from "../../hooks/usePermissions";
-import { normalizeOrgModules } from "../../lib/orgModules";
+import { isModuleEnabled, normalizeOrgModules } from "../../lib/orgModules";
+import {
+  scheduleLocationDisplayName,
+  shouldHideEmptyDraftLocation,
+} from "../../lib/locationDisplay";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useToast } from "../../App";
 import { useI18n } from "../../hooks/useI18n";
@@ -28,8 +32,9 @@ import { parseScheduleFocusParams, weekStartFromFocusDate } from "../../lib/sche
 import type { DisplayLesson, EventDisplayLesson, GroupDisplayLesson, PersonalDisplayLesson, RentalDisplayLesson } from "../../types";
 import LoadingState from "../ui/LoadingState";
 import AddLocationsInSettingsHint from "../ui/AddLocationsInSettingsHint";
+import BeginnerPanelHint from "../onboarding/BeginnerPanelHint";
 import QueryErrorState from "../ui/QueryErrorState";
-import ScheduleToolbar from "./ScheduleToolbar";
+import ScheduleToolbar, { ScheduleManageActions } from "./ScheduleToolbar";
 import ScheduleColorLegend from "./ScheduleColorLegend";
 import LocationScheduleSection from "./LocationScheduleSection";
 import LessonInfoPopup from "./LessonInfoPopup";
@@ -109,7 +114,8 @@ export default function SchedulePageContainer() {
   );
 
   const canManageTeacherVacation = can("schedule.write");
-  const canManageRentals = can("rentals.write");
+  const locationsModuleEnabled = isModuleEnabled(scheduleGridAddOptions.modules, "locations");
+  const canManageRentals = can("rentals.write") && locationsModuleEnabled;
   const canManageCalendarEvents =
     can("schedule.write") && (role === "owner" || role === "director" || role === "admin");
   const canAddGroup = canOfferGroupLessonAdd(role, can, scheduleGridAddOptions);
@@ -333,6 +339,44 @@ export default function SchedulePageContainer() {
     return grouped;
   }, [displayLessons, locationsQuery.locations]);
 
+  const scheduleLocations = useMemo(() => {
+    return locationsQuery.locations.filter((loc) => {
+      const count = lessonsByLocation.get(loc.id)?.length ?? 0;
+      return !shouldHideEmptyDraftLocation(loc, count);
+    });
+  }, [locationsQuery.locations, lessonsByLocation]);
+
+  const defaultExpandedLocationIds = useMemo(() => {
+    const ids = new Set<string>();
+    const locs = scheduleLocations;
+    if (locs.length === 0) return ids;
+
+    if (locs.length === 1) {
+      ids.add(locs[0].id);
+      return ids;
+    }
+
+    const withLessons = locs
+      .map((loc) => ({ loc, count: lessonsByLocation.get(loc.id)?.length ?? 0 }))
+      .filter((row) => row.count > 0);
+
+    if (withLessons.length === 1) {
+      ids.add(withLessons[0].loc.id);
+      return ids;
+    }
+
+    if (withLessons.length > 0) {
+      const best = withLessons.reduce((a, b) => (a.count >= b.count ? a : b));
+      ids.add(best.loc.id);
+      return ids;
+    }
+
+    ids.add(locs[0].id);
+    return ids;
+  }, [scheduleLocations, lessonsByLocation]);
+
+  const draftLocationBadge = t("schedule.location.draftBadge");
+
   const scheduleSlots = scheduleQuery.data?.slots ?? [];
   const personalLessonRefs = useMemo(
     () =>
@@ -347,40 +391,58 @@ export default function SchedulePageContainer() {
     [scheduleQuery.data?.personalLessons]
   );
 
-  const getLessonTitle = useCallback((lesson: DisplayLesson): string => {
-    if (lesson.scheduleRestricted) return t("schedule.occupied");
-    return `${lesson.timeStart}–${lesson.timeEnd}`;
-  }, [t]);
+  const lessonTimeRange = useCallback(
+    (lesson: DisplayLesson) => `${lesson.timeStart}–${lesson.timeEnd}`,
+    []
+  );
 
-  const getLessonSubtitle = useCallback(
-    (lesson: DisplayLesson): string | undefined => {
-      if (lesson.scheduleRestricted) return undefined;
-      const parts: string[] = [];
+  const getLessonTitle = useCallback(
+    (lesson: DisplayLesson): string => {
+      if (lesson.scheduleRestricted) return t("schedule.occupied");
 
       if (lesson.kind === "group") {
         const groupLabel = lesson.groupName?.trim();
-        if (groupLabel) {
-          parts.push(groupLabel);
-        } else {
-          const disciplineName = lesson.disciplineId
-            ? disciplineMap.get(lesson.disciplineId)
-            : undefined;
-          parts.push(disciplineName ?? t("common.groupLesson"));
-        }
+        if (groupLabel) return groupLabel;
+        const disciplineName = lesson.disciplineId ? disciplineMap.get(lesson.disciplineId) : undefined;
+        return disciplineName ?? t("common.groupLesson");
+      }
+
+      if (lesson.kind === "event") {
+        const title = lesson.title?.trim();
+        return title || t("schedule.event.untitled");
+      }
+
+      if (lesson.kind === "rental") {
+        if (lesson.bookingStatus === "cancelled") return t("schedule.rental.statusCancelled");
+        if (lesson.purpose?.trim()) return lesson.purpose.trim();
+        if (lesson.renterName?.trim()) return lesson.renterName.trim();
+        return t("schedule.rental.blockTitle");
+      }
+
+      const clientLabel = lesson.clientDisplay;
+      return clientLabel && clientLabel !== t("schedule.lessonInfo.clientNotSpecified")
+        ? clientLabel
+        : t("common.personalLabel");
+    },
+    [disciplineMap, t]
+  );
+
+  const getLessonSubtitle = useCallback(
+    (lesson: DisplayLesson): string | undefined => {
+      const parts: string[] = [lessonTimeRange(lesson)];
+
+      if (lesson.scheduleRestricted) {
+        return parts.join(" · ");
+      }
+
+      if (lesson.kind === "group") {
+        const groupLabel = lesson.groupName?.trim();
+        const disciplineName = lesson.disciplineId ? disciplineMap.get(lesson.disciplineId) : undefined;
+        if (!groupLabel && disciplineName) parts.push(disciplineName);
       } else if (lesson.kind === "event") {
-        parts.push(lesson.title);
         if (lesson.guestTeacher) parts.push(lesson.guestTeacher);
       } else if (lesson.kind === "rental") {
-        if (lesson.bookingStatus === "cancelled") {
-          parts.push(t("schedule.rental.statusCancelled"));
-        } else {
-          if (lesson.purpose) parts.push(lesson.purpose);
-          if (lesson.renterName) {
-            parts.push(lesson.renterName);
-          } else if (!lesson.purpose) {
-            parts.push(t("schedule.rental.blockTitle"));
-          }
-        }
+        if (lesson.renterName && lesson.purpose) parts.push(lesson.renterName);
         if (lesson.paymentStatus && lesson.renterName && !isMiniAppRentalChannel(lesson)) {
           const statusKey =
             lesson.paymentStatus === "paid"
@@ -402,17 +464,9 @@ export default function SchedulePageContainer() {
             }
           }
         }
-      } else {
-        const clientLabel = lesson.clientDisplay;
-        parts.push(
-          clientLabel && clientLabel !== t("schedule.lessonInfo.clientNotSpecified")
-            ? clientLabel
-            : t("common.personalLabel")
-        );
-        if (lesson.disciplineId) {
-          const disciplineName = disciplineMap.get(lesson.disciplineId);
-          if (disciplineName) parts.push(disciplineName);
-        }
+      } else if (lesson.disciplineId) {
+        const disciplineName = disciplineMap.get(lesson.disciplineId);
+        if (disciplineName) parts.push(disciplineName);
       }
 
       if (lesson.kind !== "event" && lesson.kind !== "rental" && lesson.teacherMemberId) {
@@ -427,9 +481,9 @@ export default function SchedulePageContainer() {
         if (substitute) parts.push(t("schedule.substitute.short", { name: substitute }));
       }
 
-      return parts.length > 0 ? parts.join(" · ") : undefined;
+      return parts.join(" · ");
     },
-    [disciplineMap, teamMap, t, can]
+    [disciplineMap, teamMap, lessonTimeRange, t, can]
   );
 
   const handleLessonClick = useCallback((lesson: DisplayLesson) => {
@@ -678,7 +732,19 @@ export default function SchedulePageContainer() {
 
   const noLocationLessons = lessonsByLocation.get(NO_LOCATION_KEY) ?? [];
   const hasAnyLessons = filteredLessons.length > 0;
-  const hasLocations = locationsQuery.locations.length > 0;
+  const hasLocations = scheduleLocations.length > 0;
+
+  const manageActionsProps = {
+    canManageTeacherVacation,
+    onTeacherVacationClick: () => setTeacherVacationOpen(true),
+    canManageCalendarEvents,
+    onCreateEventClick: () => setCreateEventOpen(true),
+    canManageRentals,
+    onCreateRentalClick: () => openRentalChannel(null),
+    onExportPngClick: () => setPngExportPickerOpen(true),
+    exportingPng,
+    exportPngDisabled: pngExportLocationOptions.length === 0,
+  };
 
   return (
     <div className="panel-page-stack">
@@ -692,38 +758,43 @@ export default function SchedulePageContainer() {
           teacherFilter={teacherFilter}
           onTeacherFilterChange={handleTeacherFilterChange}
           teacherFilterOptions={teacherFilterOptions}
-          canManageTeacherVacation={canManageTeacherVacation}
-          onTeacherVacationClick={() => setTeacherVacationOpen(true)}
-          canManageCalendarEvents={canManageCalendarEvents}
-          onCreateEventClick={() => setCreateEventOpen(true)}
-          canManageRentals={canManageRentals}
-          onCreateRentalClick={() => openRentalChannel(null)}
-          onExportPngClick={() => setPngExportPickerOpen(true)}
-          exportingPng={exportingPng}
-          exportPngDisabled={pngExportLocationOptions.length === 0}
+          {...manageActionsProps}
         />
-        <ScheduleColorLegend modules={scheduleGridAddOptions.modules} />
+        <ScheduleColorLegend
+          modules={scheduleGridAddOptions.modules}
+          className="hidden sm:block"
+        />
       </div>
 
       {!hasLocations && noLocationLessons.length === 0 && !hasAnyLessons ? (
-        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs text-center py-20 text-slate-400 space-y-3">
-          <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
-          <p className="text-sm">{t("schedule.empty")}</p>
-          <AddLocationsInSettingsHint />
+        <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs py-10 px-4 space-y-4 max-w-lg mx-auto">
+          <BeginnerPanelHint
+            hintId="schedule"
+            titleKey="beginnerHints.schedule.title"
+            bodyKey="beginnerHints.schedule.body"
+            actionLabelKey="beginnerHints.schedule.action"
+            actionTo="/settings/locations"
+          />
+          <div className="text-center text-slate-400 space-y-2">
+            <CalendarDays className="w-8 h-8 mx-auto text-slate-300" />
+            <p className="text-sm text-slate-600 leading-relaxed">{t("schedule.emptyHint")}</p>
+            <AddLocationsInSettingsHint className="text-xs text-slate-500 font-sans" />
+          </div>
         </div>
       ) : (
         <div className="space-y-4">
-          {locationsQuery.locations.map((location) => (
+          {scheduleLocations.map((location) => (
             <LocationScheduleSection
               key={location.id}
               locationId={location.id}
-              locationName={location.name}
+              locationName={scheduleLocationDisplayName(location, draftLocationBadge)}
               weekStart={selectedWeekStart}
               lessons={lessonsByLocation.get(location.id) ?? []}
               getLessonTitle={getLessonTitle}
               getLessonSubtitle={getLessonSubtitle}
               onLessonClick={handleLessonClick}
               canClickEmpty={canClickEmpty}
+              defaultExpanded={defaultExpandedLocationIds.has(location.id)}
               forceExpanded={focusLocationId === location.id}
               highlightedLesson={highlightedLesson}
               onEmptyCellClick={(dateISO, dayOfWeek, timeStart) =>
@@ -746,6 +817,11 @@ export default function SchedulePageContainer() {
           )}
         </div>
       )}
+
+      <div className="sm:hidden bg-white rounded-xl p-3 border border-slate-200/90 shadow-xs space-y-3">
+        <ScheduleManageActions {...manageActionsProps} />
+        <ScheduleColorLegend modules={scheduleGridAddOptions.modules} className="!mt-0 !pt-0 border-t-0" />
+      </div>
 
       {exportingPng ? (
         <div

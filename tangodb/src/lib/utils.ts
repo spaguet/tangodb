@@ -1,4 +1,5 @@
 import type { PriceCategory } from "../types";
+import { formatClientName } from "./clientDisplay";
 import { t, resolveLocale } from "./i18n";
 import type { I18nKey } from "./i18n/keys";
 import { formatCurrencyActive } from "./format";
@@ -111,9 +112,7 @@ export function findBookingScheduleConflict(
 
 export { formatCurrencyActive as formatCurrency } from "./format";
 
-export function formatClientName(lastName: string, firstName: string): string {
-  return `${lastName} ${firstName}`.trim();
-}
+export { formatClientName };
 
 /** «June 2026» / «Июнь 2026 г.» — month capitalized; Russian adds «г.» */
 export function formatMonthTitle(yearMonth: string, locale?: string | null): string {
@@ -517,6 +516,61 @@ export function filterGroupTariffsForSale<T extends PriceTariffRef>(
   }
 ): T[] {
   return filterTariffsForSale(getGroupTariffs(prices), options);
+}
+
+export type GroupTariffSaleFilter = {
+  localPriceList: boolean;
+  locationId?: string | null;
+  disciplineId?: string | null;
+  teacherMemberId?: string | null;
+};
+
+/** True when there are no global-location group tariffs but at least one location-bound tariff for `locationId`. */
+export function shouldEnableLocalPriceListForSale<T extends PriceTariffRef>(
+  prices: T[],
+  options: { locationId?: string | null; teacherMemberId?: string | null }
+): boolean {
+  if (!options.locationId) return false;
+  const globals = filterGroupTariffsForSale(prices, {
+    localPriceList: false,
+    disciplineId: null,
+    teacherMemberId: options.teacherMemberId ?? null,
+  });
+  if (globals.length > 0) return false;
+  const atLocation = filterGroupTariffsForSale(prices, {
+    localPriceList: true,
+    locationId: options.locationId,
+    disciplineId: null,
+    teacherMemberId: options.teacherMemberId ?? null,
+  });
+  return atLocation.some((p) => !isGlobalLocationTariff(p));
+}
+
+export function pickDisciplineWithGroupTariffs<T extends { id: string; name: string }>(
+  disciplines: T[],
+  prices: PriceTariffRef[],
+  options: GroupTariffSaleFilter
+): string | null {
+  const sorted = [...disciplines].sort((a, b) => a.name.localeCompare(b.name, "ru"));
+  for (const discipline of sorted) {
+    const tariffs = filterGroupTariffsForSale(prices, {
+      ...options,
+      disciplineId: discipline.id,
+    });
+    if (tariffs.length > 0) return discipline.id;
+  }
+  return sorted[0]?.id ?? null;
+}
+
+export function listDisciplinesWithGroupTariffs<T extends { id: string; name: string }>(
+  disciplines: T[],
+  prices: PriceTariffRef[],
+  options: GroupTariffSaleFilter
+): T[] {
+  return disciplines.filter(
+    (discipline) =>
+      filterGroupTariffsForSale(prices, { ...options, disciplineId: discipline.id }).length > 0
+  );
 }
 
 export function filterPrivateLessonTariffsForSale<T extends PriceTariffRef>(

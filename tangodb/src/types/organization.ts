@@ -71,6 +71,8 @@ export interface OrganizationMember {
   display_name: string | null;
   is_active: boolean;
   joined_at: string | null;
+  /** From organization_settings — for labels in select-org / switcher. */
+  branding_name?: string | null;
   organization?: OrganizationSummary | null;
 }
 
@@ -120,6 +122,8 @@ export interface OrganizationSettings {
   branding_logo_url: string | null;
   /** Inclusive last day of closed cash period (org calendar); null = no closure. */
   finance_period_closed_until: string | null;
+  /** UX16: dismissible in-app hints and first-day checklist. */
+  show_beginner_hints: boolean;
   updated_at: string;
 }
 

@@ -1,10 +1,11 @@
-import { Navigate } from "react-router-dom";
+import { Navigate, useLocation } from "react-router-dom";
 import { usePermissions } from "../hooks/usePermissions";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { findFirstAccessibleSettingsSection, permissionOptionsFromSettings } from "../lib/permissions";
 import { normalizeOrgModules } from "../lib/orgModules";
 
 export default function SettingsIndexRedirect() {
+  const location = useLocation();
   const { role, scope, isReadOnly, membership } = usePermissions();
   const { settings } = useOrganization();
   const modules = normalizeOrgModules(settings?.modules);
@@ -15,5 +16,5 @@ export default function SettingsIndexRedirect() {
   });
 
   const first = findFirstAccessibleSettingsSection(role, modules, options);
-  return <Navigate to={first ? `/settings/${first}` : "/"} replace />;
+  return <Navigate to={first ? `/settings/${first}` : "/"} replace state={location.state} />;
 }

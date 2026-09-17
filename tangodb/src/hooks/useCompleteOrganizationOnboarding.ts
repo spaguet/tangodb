@@ -9,6 +9,7 @@ export interface CompleteOrganizationOnboardingInput {
   orgPreset: OrgPreset;
   locale: string;
   currencyCode: string;
+  timezone: string;
   modules: OrgModules;
 }
 
@@ -32,6 +33,14 @@ export function useCompleteOrganizationOnboarding() {
       if (!data || (data as { ok?: boolean }).ok !== true) {
         throw new Error("onboarding_save_failed");
       }
+
+      const timezone = input.timezone.trim() || "Europe/Moscow";
+      const { error: timezoneError } = await supabase
+        .from("organization_settings")
+        .update({ timezone, updated_at: new Date().toISOString() })
+        .eq("organization_id", input.organizationId);
+
+      if (timezoneError) throw timezoneError;
 
       const { error: postRefreshError } = await supabase.auth.refreshSession();
       if (postRefreshError) throw postRefreshError;

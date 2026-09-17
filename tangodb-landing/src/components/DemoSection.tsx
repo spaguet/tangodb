@@ -8,7 +8,7 @@ type Props = {
 
 export function DemoSection({ locale, t }: Props) {
   return (
-    <section id="demo" className="bg-white">
+    <section id="demo" className="scroll-mt-[var(--landing-header-height)] bg-white">
       <div className="mx-auto max-w-6xl px-4 py-16 sm:px-6 sm:py-20">
         <div className="max-w-3xl">
           <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">{t("demo.title")}</h2>

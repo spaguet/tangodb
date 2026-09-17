@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { Link, useSearchParams } from "react-router-dom";
 import { CalendarDays, ChevronDown, Landmark, Pencil, Search, Trash2 } from "lucide-react";
@@ -23,6 +23,7 @@ import { useSingleVisits } from "../hooks/useSingleVisits";
 import { useI18n } from "../hooks/useI18n";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { useRentalPayments } from "../hooks/useRentalPayments";
+import { useFinanceRentalScreensEnabled } from "../hooks/useFinanceRentalScreensEnabled";
 import {
   aggregateRentalMoneyRegisterStats,
   buildClassLocationMap,
@@ -656,6 +657,7 @@ function matchesSourceFilter(payment: PaymentWithCorrectionMeta, source: Payment
 export default function FinancePaymentsPage() {
   const { t, locale, formatDateTime, formatDate, plural } = useI18n();
   const { can } = usePermissions();
+  const rentalFinanceEnabled = useFinanceRentalScreensEnabled();
   const canCorrectPayments = can("finance.read");
   const [searchParams] = useSearchParams();
   const initialMonth = readFinanceMonthFromSearch(searchParams) ?? currentYearMonth();
@@ -676,6 +678,12 @@ export default function FinancePaymentsPage() {
   const [expandedMonths, setExpandedMonths] = useState<Set<string>>(() => new Set());
   const [expandedRentalMonths, setExpandedRentalMonths] = useState<Set<string>>(() => new Set());
   const [toastMsg, setToastMsg] = useState<{ msg: string; type: "success" | "error" | "info" } | null>(null);
+
+  useEffect(() => {
+    if (!rentalFinanceEnabled && sourceFilter === "rental") {
+      setSourceFilter("all");
+    }
+  }, [rentalFinanceEnabled, sourceFilter]);
 
   const toast = (msg: string, type: "success" | "error" | "info" = "success") => {
     setToastMsg({ msg, type });
@@ -744,7 +752,9 @@ export default function FinancePaymentsPage() {
 
   const showClientPayments = sourceFilter !== "rental";
   const showRentalPayments =
-    (sourceFilter === "all" || sourceFilter === "rental") && teacherFilter === "all";
+    rentalFinanceEnabled &&
+    (sourceFilter === "all" || sourceFilter === "rental") &&
+    teacherFilter === "all";
 
   const filtered = useMemo(() => {
     if (!showClientPayments) return [];
@@ -901,7 +911,9 @@ export default function FinancePaymentsPage() {
               <option value="subscription">{t("common.payment.source.subscription")}</option>
               <option value="personal_lesson">{t("common.payment.source.personalLesson")}</option>
               <option value="single_visit">{t("common.payment.source.singleVisit")}</option>
-              <option value="rental">{t("common.payment.source.rental")}</option>
+              {rentalFinanceEnabled ? (
+                <option value="rental">{t("common.payment.source.rental")}</option>
+              ) : null}
             </AppSelect>
             <AppSelect
               label={t("common.method")}

@@ -1,7 +1,8 @@
 import { CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import { useMemo, useState } from "react";
 import type { Locale } from "../../i18n";
-import { dowShort, scheduleLessons, STUDIO_LOCATION } from "../data";
+import { formatWeekRangeLabel } from "../demoDates";
+import { dowShort, getScheduleLessons, STUDIO_LOCATION } from "../data";
 import { GROUP_LESSON_COLOR, PERSONAL_LESSON_COLOR } from "../scheduleColors";
 
 const ROW_H = 16;
@@ -28,7 +29,8 @@ export function SchedulePanel({ locale }: Props) {
   const weekDays = [1, 2, 3, 4, 5, 6, 7];
   const [expanded, setExpanded] = useState(true);
 
-  const { start: rangeStart, end: rangeEnd } = useMemo(() => computeRange(scheduleLessons), []);
+  const scheduleLessons = useMemo(() => getScheduleLessons(), []);
+  const { start: rangeStart, end: rangeEnd } = useMemo(() => computeRange(scheduleLessons), [scheduleLessons]);
   const gridH = ((rangeEnd - rangeStart) / SLOT_MIN) * ROW_H;
   const rowCount = (rangeEnd - rangeStart) / SLOT_MIN;
 
@@ -40,7 +42,7 @@ export function SchedulePanel({ locale }: Props) {
     });
   }
 
-  const weekLabel = locale === "ru" ? "23–29 июня 2026" : "Jun 23–29, 2026";
+  const weekLabel = formatWeekRangeLabel(locale);
 
   return (
     <div id="panel-schedule" className="panel-page-stack">

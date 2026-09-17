@@ -322,10 +322,6 @@ export default function ScheduleDebtorsBlock({
           </div>
         </button>
 
-        <p className="px-4 py-2 text-[11px] leading-snug text-slate-500 border-y border-rose-100/80">
-          {t("schedule.debtors.scopeHint")}
-        </p>
-
         <AnimatePresence initial={false}>
           {expanded ? (
             <motion.div
@@ -336,6 +332,9 @@ export default function ScheduleDebtorsBlock({
               transition={{ duration: 0.2 }}
               className="overflow-hidden"
             >
+              <p className="px-4 py-2 text-[11px] leading-snug text-slate-500 border-b border-rose-100/80">
+                {t("schedule.debtors.scopeHint")}
+              </p>
               <div className="divide-y divide-slate-100">
                 {debtorGroups.map((group) => (
                   <section key={group.key}>

@@ -42,7 +42,7 @@ export function defaultPersonalLessonFilters(): PersonalLessonFilterState {
     paidFilter: "all",
     attendanceFilter: "all",
     search: "",
-    dateSort: "desc",
+    dateSort: "asc",
   };
 }
 

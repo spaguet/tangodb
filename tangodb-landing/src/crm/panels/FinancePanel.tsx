@@ -10,6 +10,7 @@ import {
   paymentJournal,
   payrollRows,
 } from "../data";
+import { demoToday, formatDemoMonthHeader, startOfMonth } from "../demoDates";
 import { panelStrings } from "../panelStrings";
 
 type Tab = "payments" | "revenue" | "debtors" | "expenses" | "payroll";
@@ -20,6 +21,7 @@ export function FinancePanel({ locale }: Props) {
   const p = panelStrings(locale);
   const money = (n: number) => formatMoney(n, locale);
   const [tab, setTab] = useState<Tab>("payments");
+  const monthLabel = formatDemoMonthHeader(startOfMonth(demoToday()), locale);
 
   const nav = [
     { id: "payments", label: p.financePayments, icon: Landmark },
@@ -75,7 +77,7 @@ export function FinancePanel({ locale }: Props) {
               <TrendingUp className="w-4 h-4 text-indigo-500" />
               <h2 className="font-sans text-sm font-semibold text-slate-800">{p.revenueTitle}</h2>
             </div>
-            <span className="text-xs font-semibold text-slate-800">June 2026</span>
+            <span className="text-xs font-semibold text-slate-800">{monthLabel}</span>
           </div>
           <div className="p-4 grid grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100 col-span-2 lg:col-span-1">
@@ -155,7 +157,7 @@ export function FinancePanel({ locale }: Props) {
           <div className="px-4 py-3 border-b border-slate-100 flex items-center gap-2">
             <Wallet className="w-4 h-4 text-indigo-500" />
             <h2 className="font-sans text-sm font-semibold text-slate-800">{p.payrollTitle}</h2>
-            <span className="text-xs text-slate-500 ml-auto">June 2026</span>
+            <span className="text-xs text-slate-500 ml-auto">{monthLabel}</span>
           </div>
           <div className="hidden sm:grid sm:grid-cols-4 gap-3 px-3 py-2 bg-slate-50 border-b border-slate-100 text-[10px] uppercase tracking-wider font-semibold text-slate-400">
             <span>{locale === "ru" ? "Преподаватель" : "Teacher"}</span>

@@ -1,18 +1,23 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Building2, ChevronDown } from "lucide-react";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useI18n } from "../hooks/useI18n";
+import { memberRoleLabel } from "../hooks/useTeamMembers";
+import { organizationPublicName } from "../lib/organizationDisplayName";
 
 export default function OrgSwitcher() {
   const navigate = useNavigate();
-  const { t } = useI18n();
-  const { memberships, organization, setActiveOrganization } = useOrganization();
+  const location = useLocation();
+  const { t, locale } = useI18n();
+  const { memberships, organization, settings, setActiveOrganization } = useOrganization();
   const [open, setOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const activeMembership = memberships.find((m) => m.organization_id === organization?.id) ?? null;
 
   if (memberships.length <= 1) return null;
+
+  const activeLabel = organizationPublicName(organization, settings?.branding_name);
 
   const handleSwitch = async (organizationId: string) => {
     if (organizationId === organization?.id) {
@@ -24,11 +29,13 @@ export default function OrgSwitcher() {
     try {
       await setActiveOrganization(organizationId);
       setOpen(false);
-      navigate("/", { replace: true });
+      navigate(location.pathname, { replace: true });
     } finally {
       setLoadingId(null);
     }
   };
+
+  const showAllOrganizationsEntry = memberships.length > 2;
 
   return (
     <div className="relative block">
@@ -39,10 +46,10 @@ export default function OrgSwitcher() {
       >
         <Building2 className="w-3.5 h-3.5 text-indigo-600 shrink-0" />
         <span className="min-w-0 text-left">
-          <span className="block truncate">{organization?.name ?? t("orgSwitcher.defaultName")}</span>
+          <span className="block truncate">{activeLabel || t("orgSwitcher.defaultName")}</span>
           {activeMembership && (
             <span className="block text-[10px] uppercase tracking-wide text-slate-400">
-              {activeMembership.role}
+              {memberRoleLabel(activeMembership.role, activeMembership.meta, locale)}
             </span>
           )}
         </span>
@@ -59,7 +66,7 @@ export default function OrgSwitcher() {
           />
           <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1">
             {memberships.map((membership) => {
-              const label = membership.organization?.name ?? membership.display_name ?? membership.organization_id;
+              const label = organizationPublicName(membership.organization, membership.branding_name);
               const active = membership.organization_id === organization?.id;
               return (
                 <button
@@ -72,20 +79,24 @@ export default function OrgSwitcher() {
                   }`}
                 >
                   <span className="font-semibold block truncate">{label}</span>
-                  <span className="text-slate-400 uppercase tracking-wide">{membership.role}</span>
+                  <span className="text-slate-400 uppercase tracking-wide">
+                    {memberRoleLabel(membership.role, membership.meta, locale)}
+                  </span>
                 </button>
               );
             })}
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                navigate("/select-organization");
-              }}
-              className="w-full px-3 py-2 text-left text-xs text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 cursor-pointer"
-            >
-              {t("orgSwitcher.allOrgs")}
-            </button>
+            {showAllOrganizationsEntry && (
+              <button
+                type="button"
+                onClick={() => {
+                  setOpen(false);
+                  navigate("/select-organization");
+                }}
+                className="w-full px-3 py-2 text-left text-xs text-indigo-600 hover:bg-indigo-50 border-t border-slate-100 cursor-pointer"
+              >
+                {t("orgSwitcher.allOrgs")}
+              </button>
+            )}
           </div>
         </>
       )}

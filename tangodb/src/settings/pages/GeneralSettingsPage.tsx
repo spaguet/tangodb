@@ -4,25 +4,12 @@ import { btnAddCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
 import RequirePermission from "../../components/RequirePermission";
 import { useToast } from "../../App";
-import { CURRENCY_SELECT_OPTIONS, DEFAULT_CURRENCY_CODE } from "../../lib/currencies";
+import { CURRENCY_SELECT_OPTIONS, DEFAULT_CURRENCY_CODE, getCurrencySymbolHint } from "../../lib/currencies";
 import { getLocaleOptions, getWeekStartOptions, setGuestLocale } from "../../lib/i18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import { useI18n } from "../../hooks/useI18n";
 import { useSettings } from "../SettingsProvider";
-
-const TIMEZONE_OPTIONS = [
-  { value: "Europe/Moscow", label: "Europe/Moscow (UTC+3)" },
-  { value: "Europe/London", label: "Europe/London (UTC+0/+1)" },
-  { value: "Europe/Berlin", label: "Europe/Berlin (UTC+1/+2)" },
-  { value: "Europe/Paris", label: "Europe/Paris (UTC+1/+2)" },
-  { value: "America/New_York", label: "America/New_York (UTC-5/-4)" },
-  { value: "America/Los_Angeles", label: "America/Los_Angeles (UTC-8/-7)" },
-  { value: "Asia/Dubai", label: "Asia/Dubai (UTC+4)" },
-  { value: "Asia/Ho_Chi_Minh", label: "Asia/Ho_Chi_Minh (UTC+7)" },
-  { value: "Asia/Tokyo", label: "Asia/Tokyo (UTC+9)" },
-  { value: "Australia/Sydney", label: "Australia/Sydney (UTC+10/+11)" },
-  { value: "UTC", label: "UTC" },
-];
+import { TIMEZONE_OPTIONS } from "../../lib/timezoneOptions";
 
 export default function GeneralSettingsPage() {
   const { t } = useI18n();
@@ -38,6 +25,7 @@ export default function GeneralSettingsPage() {
   const [timezone, setTimezone] = useState("Europe/Moscow");
   const [weekStartsOn, setWeekStartsOn] = useState("1");
   const [brandingName, setBrandingName] = useState("");
+  const [showBeginnerHints, setShowBeginnerHints] = useState(true);
   const [dirty, setDirty] = useState(false);
 
   useEffect(() => {
@@ -48,10 +36,13 @@ export default function GeneralSettingsPage() {
     setTimezone(settings.timezone);
     setWeekStartsOn(String(settings.week_starts_on));
     setBrandingName(settings.branding_name ?? "");
+    setShowBeginnerHints(settings.show_beginner_hints !== false);
     setDirty(false);
   }, [settings]);
 
   if (isLoading || !settings) return <LoadingState label={t("settings.general.loading")} />;
+
+  const currencySymbolHint = getCurrencySymbolHint(currencyCode);
 
   const markDirty = () => setDirty(true);
 
@@ -63,6 +54,7 @@ export default function GeneralSettingsPage() {
       timezone,
       week_starts_on: Number(weekStartsOn),
       branding_name: brandingName.trim() || null,
+      show_beginner_hints: showBeginnerHints,
     });
     if (!res.success) {
       toast(resolveMutationError(res.error, "settings.saveError", t), "error");
@@ -106,8 +98,12 @@ export default function GeneralSettingsPage() {
           value={currencyDisplay}
           onChange={(e) => { setCurrencyDisplay(e.target.value as "symbol" | "code"); markDirty(); }}
         >
-          <option value="symbol">{t("settings.general.currencyDisplay.symbol")}</option>
-          <option value="code">{t("settings.general.currencyDisplay.code")}</option>
+          <option value="symbol">
+            {t("settings.general.currencyDisplay.symbolFor", { symbol: currencySymbolHint })}
+          </option>
+          <option value="code">
+            {t("settings.general.currencyDisplay.codeFor", { code: currencyCode })}
+          </option>
         </AppSelect>
 
         <AppSelect
@@ -147,15 +143,37 @@ export default function GeneralSettingsPage() {
           {t("settings.general.currencyPreview", { value: formatCurrency(1250000) })}
         </p>
 
+        <label className="flex items-start gap-3 rounded-lg border border-slate-100 bg-slate-50/80 px-3 py-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={showBeginnerHints}
+            onChange={(e) => {
+              setShowBeginnerHints(e.target.checked);
+              markDirty();
+            }}
+            className="mt-0.5 h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span className="min-w-0">
+            <span className="block text-sm font-semibold text-slate-800">
+              {t("settings.general.beginnerHints")}
+            </span>
+            <span className="block text-xs text-slate-500 mt-0.5 leading-relaxed">
+              {t("settings.general.beginnerHintsHint")}
+            </span>
+          </span>
+        </label>
+
         <RequirePermission action="settings.manage" mode="hide">
-          <button
-            type="button"
-            onClick={handleSave}
-            disabled={!dirty || isUpdating}
-            className={`w-full ${btnAddCls}`}
-          >
-            {isUpdating ? t("common.saving") : t("common.save")}
-          </button>
+          <div className="sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-30 -mx-4 px-4 py-2 bg-white/95 backdrop-blur-sm border-t border-slate-100 md:static md:mx-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:border-t-0">
+            <button
+              type="button"
+              onClick={handleSave}
+              disabled={!dirty || isUpdating}
+              className={`w-full ${btnAddCls}`}
+            >
+              {isUpdating ? t("common.saving") : t("common.save")}
+            </button>
+          </div>
         </RequirePermission>
       </div>
     </div>

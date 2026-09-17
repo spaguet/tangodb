@@ -1,6 +1,7 @@
 import { BadgePlus, ChevronLeft, ChevronRight, FolderClosed, Search, Sparkles, Ticket } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import type { Locale } from "../../i18n";
+import { formatWeekRangeLabel } from "../demoDates";
 import { formatMoney, personalLessons, personalSellForm, type DemoPersonalLesson } from "../data";
 import PageTabs, { pageTabPanelCls } from "../PageTabs";
 import { PERSONAL_LESSON_COLOR } from "../scheduleColors";
@@ -113,7 +114,7 @@ export function PersonalLessonsPanel({ locale, initialTab = "view" }: Props) {
                   <ChevronLeft className="w-4 h-4" />
                 </button>
                 <span className="text-sm font-semibold text-slate-800 min-w-[140px] text-center">
-                  {locale === "ru" ? "23–29 июня 2026" : "Jun 23–29, 2026"}
+                  {formatWeekRangeLabel(locale)}
                 </span>
                 <button type="button" disabled className="p-1.5 rounded-lg text-slate-400">
                   <ChevronRight className="w-4 h-4" />

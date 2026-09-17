@@ -32,7 +32,7 @@ interface PersonalLessonsListProps {
 
 export default function PersonalLessonsList({
   lessons,
-  dateSort = "desc",
+  dateSort = "asc",
   role,
   memberId,
   isReadOnly,

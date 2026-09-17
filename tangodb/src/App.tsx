@@ -5,7 +5,6 @@ import {
   LayoutDashboard,
   Menu,
   X,
-  LogOut,
   CheckCircle2,
   AlertTriangle,
   Info,
@@ -19,6 +18,7 @@ import { AuthProvider, useAuth } from "./auth/AuthProvider";
 import {
   AuthFlowRoute,
   GuestRoute,
+  RegisterRoute,
   OrgWorkspaceRoute,
   PanelAccessRoute,
   RecoveryGate,
@@ -48,6 +48,7 @@ import TeamSettingsPage from "./settings/pages/TeamSettingsPage";
 import LicenseSettingsPage from "./settings/pages/LicenseSettingsPage";
 import IntegrationsSettingsPage from "./settings/pages/IntegrationsSettingsPage";
 import OrgSwitcher from "./organization/OrgSwitcher";
+import SettingsAccessNotice from "./settings/components/SettingsAccessNotice";
 import { useUIStore } from "./store/ui";
 import DashboardPage from "./pages/DashboardPage";
 import ClientsPage from "./pages/ClientsPage";
@@ -101,7 +102,8 @@ import { useCrmLicensePurchaseUi } from "./hooks/useCrmLicensePurchaseUi";
 import { usePlatformPaymentConfig } from "./hooks/usePlatformPaymentConfig";
 import DeveloperContacts from "./components/license/DeveloperContacts";
 import SupportDeveloperMessageButton from "./components/support/SupportDeveloperMessageButton";
-import { btnHeaderSignOutCls } from "./components/ui/buttonStyles";
+import AccountBeginnerHintsMenu from "./components/onboarding/AccountBeginnerHintsMenu";
+import PanelBeginnerHelpButton from "./components/onboarding/PanelBeginnerHelpButton";
 
 export type ToastType = "success" | "error" | "info";
 
@@ -190,7 +192,6 @@ function AppLayout() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
-  const { signOut } = useAuth();
   const { canAccessPanel, role, scope, isReadOnly, membership, can } = usePermissions();
   const subscriptionsTab = useUIStore((s) => s.subscriptionsTab);
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
@@ -423,7 +424,9 @@ function AppLayout() {
           })}
         </div>
 
-        <main className="flex-1 flex flex-col min-h-screen min-w-0 pb-14 md:pb-0 font-sans">
+        <main
+          className="flex-1 flex flex-col min-h-screen min-w-0 pb-[calc(3.5rem+env(safe-area-inset-bottom,0px))] md:pb-0 font-sans"
+        >
           <header className="sticky top-0 bg-white border-b border-slate-200 px-4 sm:px-6 py-3 flex items-center justify-between z-20 shadow-xs">
             <div className="flex items-center gap-3">
               <button
@@ -434,6 +437,7 @@ function AppLayout() {
                 <Menu className="w-5 h-5" />
               </button>
               <h2 className="text-base font-semibold text-slate-800 tracking-tight leading-tight">{panelTitle}</h2>
+              <PanelBeginnerHelpButton />
             </div>
             <div className="flex items-center gap-2">
               <OrgSwitcher />
@@ -444,13 +448,9 @@ function AppLayout() {
                 <DeveloperContacts contacts={paymentConfig.contacts} embedded />
                 <SupportDeveloperMessageButton ticketKind="other" pagePath={location.pathname} />
               </div>
-              <button
-                onClick={() => signOut()}
-                className={`hidden sm:inline-flex ${btnHeaderSignOutCls.replace(/^inline-flex /, "")}`}
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                {t("nav.signOut")}
-              </button>
+              <div className="hidden sm:block">
+                <AccountBeginnerHintsMenu />
+              </div>
             </div>
           </header>
 
@@ -465,6 +465,7 @@ function AppLayout() {
           <CrmSubscriptionRenewalBanner />
           <GoogleCalendarSyncStoppedNotifier />
           <ClaimsMismatchBanner />
+          <SettingsAccessNotice />
 
           <OfflineReconciliationDialog
             open={reconciliationOpen}
@@ -472,7 +473,9 @@ function AppLayout() {
             onComplete={() => void invalidateAfterOfflineSync()}
           />
 
-          <section className="flex-1 min-w-0 p-4 sm:p-5 md:p-6 xl:p-8 max-w-7xl w-full mx-auto panel-page-stack overflow-y-auto overflow-x-hidden">
+          <section
+            className="flex-1 min-w-0 p-4 sm:p-5 md:p-6 xl:p-8 pb-8 max-w-7xl w-full mx-auto panel-page-stack overflow-y-auto overflow-x-hidden md:pb-6"
+          >
             <ErrorBoundary>
               <Outlet />
             </ErrorBoundary>
@@ -515,15 +518,12 @@ function AppLayout() {
                   </button>
                 </div>
 
-                {renderNav(mobileDrawerOpen, () => setMobileDrawerOpen(false))}
+                <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                  {renderNav(mobileDrawerOpen, () => setMobileDrawerOpen(false))}
+                </div>
 
-                <div className="p-3 border-t border-slate-100">
-                  <button
-                    onClick={() => signOut()}
-                    className="w-full inline-flex items-center gap-3 h-8 box-border px-3 rounded-md text-xs font-semibold text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer"
-                  >
-                    <LogOut className="w-3.5 h-3.5" /> {t("nav.signOut")}
-                  </button>
+                <div className="shrink-0 p-3 border-t border-slate-100 bg-white">
+                  <AccountBeginnerHintsMenu fullWidth />
                 </div>
               </motion.div>
             </div>
@@ -598,11 +598,11 @@ export default function App() {
               <Route
                 path="/register"
                 element={
-                  <GuestRoute>
+                  <RegisterRoute>
                     <ErrorBoundary>
                       <RegisterPage />
                     </ErrorBoundary>
-                  </GuestRoute>
+                  </RegisterRoute>
                 }
               />
               <Route path="/auth/forgot-password" element={<ErrorBoundary><ForgotPasswordPage /></ErrorBoundary>} />

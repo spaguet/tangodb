@@ -58,6 +58,12 @@ export default function HallRentSettingsPage() {
         </section>
       )}
 
+      {canReadTariffs && !canManageChannel && (
+        <p className="text-xs text-slate-500 bg-amber-50/80 border border-amber-100 rounded-xl px-3.5 py-2.5 leading-relaxed">
+          {t("settings.adminLimitedHint")}
+        </p>
+      )}
+
       {canManageChannel && (
         <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
           <div>

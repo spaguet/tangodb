@@ -31,7 +31,15 @@ export default function ClientSubscriptionParticipationPanel({
   }
 
   if (participations.length === 0) {
-    return null;
+    return (
+      <div className="border-t border-slate-100 pt-3">
+        <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold flex items-center gap-1.5">
+          <Ticket className="w-3 h-3" />
+          {t("clientCard.subscriptions.title")}
+        </p>
+        <p className="text-xs text-slate-500 mt-2">{t("clientCard.subscriptions.none")}</p>
+      </div>
+    );
   }
 
   const prices = pricesQuery.data ?? [];

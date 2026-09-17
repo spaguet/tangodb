@@ -9,7 +9,7 @@ import {
 import { useSchedule } from "../../hooks/useSchedule";
 import { useDisciplines } from "../../hooks/useDisciplines";
 import { useAccessibleLocations } from "../../hooks/useLocations";
-import { memberDisplayName, useTeamMembers } from "../../hooks/useTeamMembers";
+import { memberListLabel, useTeamMembers } from "../../hooks/useTeamMembers";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import { useUIStore } from "../../store/ui";
@@ -74,7 +74,7 @@ export default function PersonalLessonsPageContainer({
   initialTab = "view",
   toast,
 }: PersonalLessonsPageContainerProps) {
-  const { t } = useI18n();
+  const { t, locale, formatDate } = useI18n();
   const navigate = useNavigate();
   const { memberId, role } = useOrganization();
   const { can, canAccessPanel, isReadOnly, canEditPastSchedule } = usePermissions();
@@ -146,9 +146,9 @@ export default function PersonalLessonsPageContainer({
   const teacherMap = useMemo(
     () =>
       new Map(
-        (teamQuery.data ?? []).map((m) => [m.id, memberDisplayName(m)])
+        (teamQuery.data ?? []).map((m) => [m.id, memberListLabel(m, locale)])
       ),
-    [teamQuery.data]
+    [teamQuery.data, locale]
   );
 
   const teacherOptions = useMemo(
@@ -291,7 +291,7 @@ export default function PersonalLessonsPageContainer({
 
         {activeTab === "view" ? (
           <div
-            className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "view")}`}
+            className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack pb-6 ${pageTabPanelCls(activeTab, "view")}`}
           >
             <PersonalLessonFilters
               filters={filters}
@@ -363,7 +363,7 @@ export default function PersonalLessonsPageContainer({
           deleteTarget ? (
             <span>
               {t("personal.confirm.deleteBody", {
-                date: deleteTarget.date,
+                date: formatDate(deleteTarget.date),
                 time: deleteTarget.timeStart,
               })}
             </span>

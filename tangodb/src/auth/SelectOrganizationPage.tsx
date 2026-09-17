@@ -1,19 +1,32 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Building2 } from "lucide-react";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { useGuestI18n } from "../hooks/useI18n";
+import { useAuth } from "./AuthProvider";
+import { memberRoleLabel } from "../hooks/useTeamMembers";
+import {
+  organizationPublicName,
+  organizationStatusLabel,
+} from "../lib/organizationDisplayName";
 import {
   AuthError,
   AuthLayout,
+  AuthLink,
 } from "./AuthLayout";
 
 export default function SelectOrganizationPage() {
-  const { t } = useGuestI18n();
+  const { t, locale } = useGuestI18n();
   const navigate = useNavigate();
+  const { signOut } = useAuth();
   const { memberships, membershipsLoading, setActiveOrganization } = useOrganization();
   const [error, setError] = useState<string | null>(null);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
+
+  useEffect(() => {
+    document.title = t("auth.selectOrg.pageTitle");
+  }, [t, locale]);
 
   const handleSelect = async (organizationId: string) => {
     setLoadingId(organizationId);
@@ -25,6 +38,19 @@ export default function SelectOrganizationPage() {
       setError(err instanceof Error ? err.message : t("auth.selectOrg.error"));
     } finally {
       setLoadingId(null);
+    }
+  };
+
+  const handleNotMe = async () => {
+    setSigningOut(true);
+    setError(null);
+    try {
+      await signOut();
+      navigate("/login", { replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : t("auth.selectOrg.error"));
+    } finally {
+      setSigningOut(false);
     }
   };
 
@@ -43,13 +69,15 @@ export default function SelectOrganizationPage() {
       <div className="space-y-2">
         {memberships.map((membership) => {
           const org = membership.organization;
-          const label = org?.name ?? membership.display_name ?? membership.organization_id;
+          const label = organizationPublicName(org, membership.branding_name);
           const status = org?.status ?? "licensed";
+          const roleLabel = memberRoleLabel(membership.role, membership.meta, locale);
+          const statusLabel = organizationStatusLabel(status, locale);
           return (
             <button
               key={membership.id}
               type="button"
-              disabled={!!loadingId}
+              disabled={!!loadingId || signingOut}
               onClick={() => handleSelect(membership.organization_id)}
               className="w-full flex items-center gap-3 rounded-lg border border-slate-200 px-4 py-3 text-left hover:border-indigo-300 hover:bg-indigo-50/40 transition-colors cursor-pointer disabled:opacity-60"
             >
@@ -58,8 +86,9 @@ export default function SelectOrganizationPage() {
               </div>
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-semibold text-slate-800 truncate">{label}</p>
-                <p className="text-xs text-slate-400 uppercase tracking-wide">
-                  {membership.role} · {status.replace("_", " ")}
+                <p className="text-xs text-slate-500">
+                  {roleLabel}
+                  {statusLabel ? ` · ${statusLabel}` : null}
                 </p>
               </div>
               {loadingId === membership.organization_id && (
@@ -68,6 +97,19 @@ export default function SelectOrganizationPage() {
             </button>
           );
         })}
+      </div>
+
+      <div className="flex flex-col gap-2 pt-2 border-t border-slate-100">
+        <AuthLink to="/activate-key">{t("auth.register.hasLicenseKey")}</AuthLink>
+        <AuthLink to="/register">{t("auth.register.newStudio")}</AuthLink>
+        <button
+          type="button"
+          disabled={signingOut || !!loadingId}
+          onClick={() => void handleNotMe()}
+          className="text-sm font-semibold text-slate-600 hover:text-slate-800 text-left cursor-pointer disabled:opacity-60"
+        >
+          {t("auth.register.notMe")}
+        </button>
       </div>
     </AuthLayout>
   );

@@ -15,7 +15,6 @@ import {
   GraduationCap,
   ClipboardCheck,
   Loader2,
-  RefreshCw,
 } from "lucide-react";
 import {
   buildClassLocationMap,
@@ -39,7 +38,6 @@ import {
   paymentsInMonth,
   revenueTrendMonthCount,
   shiftMonth,
-  sumDebtorAmounts,
   monthDateRange,
   monthTrendRange,
   type MonthlyRevenuePoint,
@@ -55,16 +53,15 @@ import {
   formatMonthTitle,
 } from "../lib/utils";
 import { useI18n } from "../hooks/useI18n";
-import { useToast } from "../App";
 import { useAttendanceRecords } from "../hooks/useAttendance";
 import { useClients } from "../hooks/useClients";
-import { useFinancialDebtors } from "../hooks/useFinancialDebtors";
+import { useDashboardDebtorMetrics } from "../hooks/useDashboardDebtorMetrics";
 import { usePersonalLessons } from "../hooks/usePersonalLessons";
 import { usePaymentsTrend, getPaymentMethodLabel } from "../hooks/usePayments";
 import { useSubscriptionRefunds } from "../hooks/useSubscriptionRefunds";
 import type { PaymentMethod } from "../types";
 import { sumExpenses, useExpensesForMonth } from "../hooks/useExpenses";
-import { useFinanceCosts, useRecalculatePendingVenueCosts } from "../hooks/useVenueCosts";
+import { useFinanceCosts } from "../hooks/useVenueCosts";
 import { useOtherIncome } from "../hooks/useOtherIncome";
 import { useRentalPayments } from "../hooks/useRentalPayments";
 import { usePermissions } from "../hooks/usePermissions";
@@ -434,13 +431,11 @@ function RevenueRankList({
 
 export default function FinancialDashboard() {
   const navigate = useNavigate();
-  const toast = useToast();
   const { t, locale, plural } = useI18n();
   const { can } = usePermissions();
   const { settings } = useOrganization();
   const timezone = settings?.timezone ?? "UTC";
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
-  const canReadFinance = can("finance.read");
   const canShowOperationalAnalytics = can("reports.operational");
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
   const [trendPeriod, setTrendPeriod] = useState<RevenueTrendPeriod>("6months");
@@ -466,9 +461,7 @@ export default function FinancialDashboard() {
     dateTo: trendDataRange.dateTo,
   });
   const payrollQuery = useTeacherSettlements(statsMonth);
-  const recalculateVenueCosts = useRecalculatePendingVenueCosts();
-  const venueRecalcIdempotencyKey = useMemo(() => crypto.randomUUID(), [statsMonth]);
-  const debtorsQuery = useFinancialDebtors();
+  const debtorsQuery = useDashboardDebtorMetrics();
   const clientsQuery = useClients({ enabled: canShowOperationalAnalytics });
   const attendanceQuery = useAttendanceRecords(statsMonth, { enabled: canShowOperationalAnalytics });
   const personalLessonsQuery = usePersonalLessons({
@@ -574,27 +567,6 @@ export default function FinancialDashboard() {
   const venueCostsTotal = financeCostsQuery.data?.venueTotal ?? 0;
   const manualExpensesTotal = financeCostsQuery.data?.manualTotal ?? sumExpenses(expensesQuery.data ?? []);
 
-  const handleRecalculateVenueCosts = async () => {
-    if (!canReadFinance) return;
-    const result = await recalculateVenueCosts.mutateAsync({
-      dateFrom: monthRange.dateFrom,
-      dateTo: monthRange.dateTo,
-      idempotencyKey: venueRecalcIdempotencyKey,
-    });
-    if (!result.success) {
-      toast(t("dashboard.venueCostsRecalculateFailed"), "error");
-      return;
-    }
-    if (result.alreadyApplied) {
-      toast(t("dashboard.venueCostsRecalculateAlready"), "info");
-      return;
-    }
-    toast(
-      t("dashboard.venueCostsRecalculateSuccess", { count: result.resolvedCount }),
-      "success"
-    );
-  };
-
   const payrollAccrued = useMemo(
     () => (payrollQuery.data ?? []).reduce((sum, settlement) => sum + settlement.amountAccrued, 0),
     [payrollQuery.data]
@@ -690,18 +662,11 @@ export default function FinancialDashboard() {
     return t("finance.revenue.other");
   };
 
-  const debtors = useMemo(
-    () =>
-      personalLessonsEnabled
-        ? (debtorsQuery.data ?? [])
-        : (debtorsQuery.data ?? []).filter((entry) => entry.kind !== "personal"),
-    [debtorsQuery.data, personalLessonsEnabled]
-  );
-  const totalDebt = sumDebtorAmounts(debtors);
-  const lowBalanceCount = debtors.filter((d) => d.kind === "subscription").length;
-  const unpaidPersonalCount = personalLessonsEnabled
-    ? debtors.filter((d) => d.kind === "personal").length
-    : 0;
+  const debtorSummary = debtorsQuery.summary;
+  const totalDebt = debtorSummary.totalAmount;
+  const debtorRecordCount = debtorSummary.recordCount;
+  const lowBalanceCount = debtorSummary.subscriptionCount;
+  const unpaidPersonalCount = debtorSummary.personalCount;
 
   const momPositive = momPercent !== null && momPercent > 0;
   const momNegative = momPercent !== null && momPercent < 0;
@@ -821,7 +786,10 @@ export default function FinancialDashboard() {
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
             <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">{t("dashboard.receivables")}</p>
             <DashboardStatValue loading={receivablesLoading} className="text-xl font-semibold text-rose-700 mt-0.5">
-              {formatCurrency(totalDebt)}
+              {t("dashboard.receivablesCountAmount", {
+                count: debtorRecordCount,
+                amount: formatCurrency(totalDebt),
+              })}
             </DashboardStatValue>
             {!receivablesLoading ? (
               <p className="text-[10px] text-slate-500 mt-0.5">
@@ -835,26 +803,9 @@ export default function FinancialDashboard() {
 
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 pt-1 border-t border-slate-100">
           <div className="bg-slate-50 rounded-lg px-3 py-2.5 border border-slate-100">
-            <div className="flex items-start justify-between gap-2">
-              <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
-                {t("dashboard.expensesMonth")}
-              </p>
-              {canReadFinance ? (
-                <button
-                  type="button"
-                  onClick={() => void handleRecalculateVenueCosts()}
-                  disabled={recalculateVenueCosts.isPending}
-                  aria-label={t("dashboard.venueCostsRecalculate")}
-                  title={t("dashboard.venueCostsRecalculate")}
-                  className="inline-flex items-center gap-1 text-[10px] font-sans font-semibold text-indigo-600 hover:text-indigo-800 disabled:opacity-50 shrink-0"
-                >
-                  <RefreshCw
-                    className={`w-3 h-3 ${recalculateVenueCosts.isPending ? "animate-spin" : ""}`}
-                  />
-                  <span className="hidden sm:inline">{t("dashboard.venueCostsRecalculate")}</span>
-                </button>
-              ) : null}
-            </div>
+            <p className="text-[10px] text-slate-400 uppercase font-semibold tracking-wider">
+              {t("dashboard.expensesMonth")}
+            </p>
             <DashboardStatValue loading={expensesLoading} className="text-xl font-semibold text-rose-700 mt-0.5">
               {formatCurrency(expensesTotal)}
             </DashboardStatValue>
@@ -1046,11 +997,12 @@ export default function FinancialDashboard() {
           </div>
           <p className="text-xs font-semibold text-slate-800 mt-2">{t("dashboard.debtors")}</p>
           <p className="text-[10px] text-slate-500 mt-0.5">
-            {plural(debtors.length, [
-              t("common.records.one", { count: debtors.length }),
-              t("common.records.few", { count: debtors.length }),
-              t("common.records.many", { count: debtors.length }),
-            ])}
+            {receivablesLoading
+              ? t("common.loading.default")
+              : t("dashboard.receivablesCountAmount", {
+                  count: debtorRecordCount,
+                  amount: formatCurrency(totalDebt),
+                })}
           </p>
         </motion.button>
 

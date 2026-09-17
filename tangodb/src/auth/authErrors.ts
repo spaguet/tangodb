@@ -99,7 +99,7 @@ export function parseAuthError(err: unknown, locale?: string): string {
     return t(loc, "auth.error.emailNotConfirmed");
   }
   if (isUserAlreadyRegistered(err)) {
-    return t(loc, "auth.register.checkEmailDemo");
+    return t(loc, "auth.register.emailAlreadyRegistered");
   }
   if (message === DEMO_ALREADY_USED_EMAIL || lower.includes("demo already used for this email")) {
     return t(loc, "auth.error.generic");

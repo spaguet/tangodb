@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useMemo, useState } from "react";
-import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Users, Archive, RotateCcw } from "lucide-react";
+import { Search, UserPlus, FileText, Send, Edit, Trash2, X, Users, Archive, RotateCcw, ChevronDown } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import {
   fetchClientCard,
@@ -21,11 +21,19 @@ import {
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { resolveMutationError } from "../lib/resolveMutationError";
+import {
+  clientMatchesSearch,
+  formatClientName,
+  isClientNameRelationshipLabel,
+  isImportDeletedStubClient,
+} from "../lib/clientDisplay";
 import { formatTelegramDisplay, normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
+import { useClientFieldPlaceholders } from "../hooks/useClientFieldPlaceholders";
 import { useCan } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
 import { useOrganization } from "../organization/OrganizationProvider";
 import ClientCardModal from "./ClientCardModal";
+import BeginnerPanelHint from "./onboarding/BeginnerPanelHint";
 import ConfirmDialog from "./ui/ConfirmDialog";
 import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
@@ -45,8 +53,25 @@ const checkboxCls = "rounded border-slate-300 text-indigo-600 focus:ring-indigo-
 
 type ClientTab = "active" | "archive";
 
+function ClientNameDisplay({ client }: { client: Client }) {
+  const { t } = useI18n();
+  const name = formatClientName(client.lastName, client.firstName);
+  const showLabel = isClientNameRelationshipLabel(client);
+  return (
+    <span className="inline-flex items-center gap-1.5 flex-wrap">
+      <span>{name}</span>
+      {showLabel ? (
+        <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-800 bg-amber-50 border border-amber-100 px-1.5 py-0.5 rounded">
+          {t("clientCard.nameLabelBadge")}
+        </span>
+      ) : null}
+    </span>
+  );
+}
+
 export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const { t, formatDateTime } = useI18n();
+  const fieldPlaceholders = useClientFieldPlaceholders();
   const { role } = useOrganization();
   const { connectionState } = useOnlineStatus();
 
@@ -121,6 +146,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   const [deleteTarget, setDeleteTarget] = useState<Client | null>(null);
   const [restoreTarget, setRestoreTarget] = useState<Client | null>(null);
   const [cardClient, setCardClient] = useState<Client | null>(null);
+  const [addFormOpen, setAddFormOpen] = useState(false);
 
   useEffect(() => {
     if (!editingClient) return;
@@ -309,6 +335,11 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
     [directoryClients]
   );
 
+  const activeClients = useMemo(
+    () => clients.filter((c) => !isImportDeletedStubClient(c)),
+    [clients]
+  );
+
   const isLoading = activeTab === "active" ? activeLoading : directoryLoading;
   const isError = activeTab === "active" ? activeError : directoryError;
   const error = activeTab === "active" ? activeQueryError : directoryQueryError;
@@ -316,30 +347,255 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
   if (isLoading) return <LoadingState label={t("clients.loading")} />;
   if (isError) return <QueryErrorState error={error} />;
 
-  const filteredClients = clients.filter(
-    (c) =>
-      c.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      c.lastName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredClients = activeClients.filter((c) => clientMatchesSearch(c, search));
 
-  const filteredArchivedClients = archivedClients.filter(
-    (c) =>
-      c.firstName.toLowerCase().includes(search.toLowerCase()) ||
-      c.lastName.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredArchivedClients = archivedClients.filter((c) => clientMatchesSearch(c, search));
 
   return (
     <div id="panel-newClient" className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-      {/* Sidebar form: Add Guest */}
+      {/* Main list first on mobile (U-210) */}
+      <div className="lg:col-span-8 flex flex-col order-1 lg:order-2">
+        <PageTabs tabs={[...clientTabs]} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as ClientTab)} />
+
+        <div
+          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
+        >
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2.5 text-slate-800">
+              <FileText className="w-4.5 h-4.5 text-indigo-500" />
+              <h2 className="text-base font-semibold tracking-tight">
+                {activeTab === "active" ? t("clients.list.activeTitle") : t("clients.list.archiveTitle")}
+              </h2>
+              <span className="text-[10px] font-sans bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">
+                {activeTab === "active" ? activeClients.length : archivedClients.length}
+              </span>
+            </div>
+
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto font-sans">
+              <div className="relative w-full sm:w-72">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  placeholder={t("clients.search.placeholder")}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className={searchFieldCls}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto min-h-[200px] pb-2">
+            {activeTab === "active" ? (
+              filteredClients.length === 0 ? (
+                <div className="py-12 space-y-4 max-w-md mx-auto">
+                  {!search.trim() ? (
+                    <BeginnerPanelHint
+                      hintId="clients"
+                      titleKey="beginnerHints.clients.title"
+                      bodyKey="beginnerHints.clients.body"
+                      actionLabelKey="beginnerHints.clients.action"
+                      actionTo="/clients#panel-newClient"
+                    />
+                  ) : null}
+                  <div className="text-center text-slate-400 space-y-1 px-2">
+                    <p className="text-sm text-slate-600">
+                      {search.trim()
+                        ? t("clients.search.noResults", { query: search })
+                        : t("clients.empty.activeHint")}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <table className="w-full font-sans text-slate-700 text-left">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
+                      <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
+                      <th className="pb-3 font-semibold">{t("clients.table.clientName")}</th>
+                      <th className="pb-3 font-semibold text-center">{t("clients.table.contact")}</th>
+                      <th className="pb-3 text-right pr-2 font-semibold">{t("clients.table.actions")}</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredClients.map((c, i) => (
+                      <tr
+                        key={c.id}
+                        className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
+                      >
+                        <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
+                        <td className="py-3 font-normal text-slate-800">
+                          {canOpenClientCard ? (
+                            <button
+                              type="button"
+                              onClick={() => openClientCard(c)}
+                              className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
+                            >
+                              <ClientNameDisplay client={c} />
+                            </button>
+                          ) : (
+                            <ClientNameDisplay client={c} />
+                          )}
+                        </td>
+                        <td className="py-3 text-center">
+                          {c.telegram && normalizeTelegramContact(c.telegram) ? (
+                            <a
+                              href={normalizeTelegramContact(c.telegram)!}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                openTelegramContact(c.telegram);
+                              }}
+                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans font-normal transition-colors"
+                            >
+                              <Send className="w-3 h-3" />
+                              {formatTelegramDisplay(c.telegram)}
+                            </a>
+                          ) : c.phone.trim() ? (
+                            <a href={`tel:${c.phone.replace(/\s/g, "")}`} className="text-xs text-slate-600">
+                              {c.phone}
+                            </a>
+                          ) : (
+                            <span className="text-xs text-slate-300 italic font-sans">{t("clients.contact.notSet")}</span>
+                          )}
+                        </td>
+                        <td className="py-3 text-right pr-2">
+                          <RequirePermission action="clients.write">
+                          <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                            <button
+                              onClick={() => void startEdit(c)}
+                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
+                              title={t("clients.action.edit")}
+                              aria-label={`${t("clients.action.edit")} ${formatClientName(c.lastName, c.firstName)}`}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => setDeleteTarget(c)}
+                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                              title={t("clients.action.archive")}
+                              aria-label={`${t("clients.action.archive")} ${formatClientName(c.lastName, c.firstName)}`}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          </RequirePermission>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )
+            ) : filteredArchivedClients.length === 0 ? (
+              <div className="text-center py-20 text-slate-400 space-y-1">
+                <p className="text-sm">
+                  {search.trim()
+                    ? t("clients.search.noResults", { query: search })
+                    : t("clients.empty.archive")}
+                </p>
+              </div>
+            ) : (
+              <table className="w-full font-sans text-slate-700 text-left">
+                <thead>
+                  <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
+                    <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
+                    <th className="pb-3 font-semibold">{t("clients.table.clientName")}</th>
+                    <th className="pb-3 font-semibold text-center">Telegram</th>
+                    <th className="pb-3 font-semibold">{t("clients.table.archivedAt")}</th>
+                    <th className="pb-3 text-right pr-2 font-semibold">{t("clients.table.actions")}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredArchivedClients.map((c, i) => (
+                    <tr
+                      key={c.id}
+                      className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
+                    >
+                      <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
+                      <td className="py-3 font-normal text-slate-800">
+                        {canOpenClientCard ? (
+                          <button
+                            type="button"
+                            onClick={() => openClientCard(c)}
+                            className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
+                          >
+                            <ClientNameDisplay client={c} />
+                          </button>
+                        ) : (
+                          <ClientNameDisplay client={c} />
+                        )}
+                      </td>
+                      <td className="py-3 text-center">
+                        {c.telegram && normalizeTelegramContact(c.telegram) ? (
+                          <a
+                            href={normalizeTelegramContact(c.telegram)!}
+                            target="_blank"
+                            rel="noreferrer"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              openTelegramContact(c.telegram);
+                            }}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans font-normal transition-colors"
+                          >
+                            <Send className="w-3 h-3" />
+                            {formatTelegramDisplay(c.telegram)}
+                          </a>
+                        ) : (
+                          <span className="text-xs text-slate-300 italic font-sans">{t("clients.contact.notSet")}</span>
+                        )}
+                      </td>
+                      <td className="py-3 text-xs text-slate-500">{formatArchivedAt(c.archivedAt ?? "")}</td>
+                      <td className="py-3 text-right pr-2">
+                        <RequirePermission action="clients.write">
+                        <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
+                          <button
+                            onClick={() => setRestoreTarget(c)}
+                            disabled={connectionState !== "online"}
+                            title={translateConnectionBlockReason(connectionState, t) ?? t("clients.action.restore")}
+                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
+                            aria-label={`${t("clients.action.restore")} ${formatClientName(c.lastName, c.firstName)}`}
+                          >
+                            <RotateCcw className="w-4 h-4" />
+                          </button>
+                        </div>
+                        </RequirePermission>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Add form — secondary on mobile (U-210) */}
       <RequirePermission
         action="clients.create"
         fallback={
-          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
+          <div className="lg:col-span-4 order-2 lg:order-1 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
             {t("clients.readOnlyHint")}
           </div>
         }
       >
-      <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+      <div className="lg:col-span-4 order-2 lg:order-1">
+        <button
+          type="button"
+          onClick={() => setAddFormOpen((v) => !v)}
+          className="lg:hidden w-full mb-3 flex items-center justify-between gap-2 px-4 py-3 bg-white border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 shadow-xs cursor-pointer"
+          aria-expanded={addFormOpen}
+        >
+          <span className="inline-flex items-center gap-2">
+            <UserPlus className="w-4 h-4 text-indigo-500" />
+            {addFormOpen ? t("clients.addForm.toggleClose") : t("clients.addForm.toggle")}
+          </span>
+          <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${addFormOpen ? "rotate-180" : ""}`} />
+        </button>
+        <div
+          className={`bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack ${
+            addFormOpen ? "block" : "hidden lg:block"
+          }`}
+        >
         <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
           <UserPlus className="w-4.5 h-4.5 text-indigo-500" />
           <h2 className="text-base font-semibold tracking-tight">{t("clients.form.addTitle")}</h2>
@@ -353,7 +609,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               required
               value={firstName}
               onChange={(e) => setFirstName(e.target.value)}
-              placeholder={t("clients.placeholder.firstName")}
+              placeholder={fieldPlaceholders.firstName}
               className={inputCls}
             />
           </div>
@@ -365,7 +621,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               required
               value={lastName}
               onChange={(e) => setLastName(e.target.value)}
-              placeholder={t("clients.placeholder.lastName")}
+              placeholder={fieldPlaceholders.lastName}
               className={inputCls}
             />
           </div>
@@ -376,7 +632,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               type="tel"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              placeholder={t("clients.placeholder.phone")}
+              placeholder={fieldPlaceholders.phone}
               className={inputCls}
             />
           </div>
@@ -387,7 +643,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder={t("clients.placeholder.email")}
+              placeholder={fieldPlaceholders.email}
               className={inputCls}
             />
           </div>
@@ -499,227 +755,9 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
             {addClient.isPending ? t("clients.form.addPending") : t("clients.form.addSubmit")}
           </button>
         </form>
-      </div>
-      </RequirePermission>
-
-      {/* Main Table details */}
-      <div className="lg:col-span-8 flex flex-col">
-        <PageTabs tabs={[...clientTabs]} activeTab={activeTab} onChange={(tab) => setActiveTab(tab as ClientTab)} />
-
-        <div
-          className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
-        >
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2.5 text-slate-800">
-              <FileText className="w-4.5 h-4.5 text-indigo-500" />
-              <h2 className="text-base font-semibold tracking-tight">
-                {activeTab === "active" ? t("clients.list.activeTitle") : t("clients.list.archiveTitle")}
-              </h2>
-              <span className="text-[10px] font-sans bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full font-semibold">
-                {activeTab === "active" ? clients.length : archivedClients.length}
-              </span>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto font-sans">
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  placeholder={t("clients.search.placeholder")}
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className={searchFieldCls}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="overflow-x-auto min-h-[300px]">
-            {activeTab === "active" ? (
-              filteredClients.length === 0 ? (
-                <div className="text-center py-20 text-slate-400 space-y-1">
-                  <p className="text-sm">
-                    {search.trim()
-                      ? t("clients.search.noResults", { query: search })
-                      : t("clients.empty.active")}
-                  </p>
-                </div>
-              ) : (
-                <table className="w-full font-sans text-slate-700 text-left">
-                  <thead>
-                    <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
-                      <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
-                      <th className="pb-3 font-semibold">{t("clients.table.clientName")}</th>
-                      <th className="pb-3 font-semibold text-center">{t("clients.table.contact")}</th>
-                      <th className="pb-3 text-right pr-2 font-semibold">{t("clients.table.actions")}</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredClients.map((c, i) => (
-                      <tr
-                        key={c.id}
-                        className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
-                      >
-                        <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
-                        <td className="py-3 font-normal text-slate-800">
-                          {canOpenClientCard ? (
-                            <button
-                              type="button"
-                              onClick={() => openClientCard(c)}
-                              className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
-                            >
-                              {c.lastName} {c.firstName}
-                            </button>
-                          ) : (
-                            <>
-                              {c.lastName} {c.firstName}
-                            </>
-                          )}
-                        </td>
-                        <td className="py-3 text-center">
-                          {c.telegram && normalizeTelegramContact(c.telegram) ? (
-                            <a
-                              href={normalizeTelegramContact(c.telegram)!}
-                              target="_blank"
-                              rel="noreferrer"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                openTelegramContact(c.telegram);
-                              }}
-                              className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans font-normal transition-colors"
-                            >
-                              <Send className="w-3 h-3" />
-                              {formatTelegramDisplay(c.telegram)}
-                            </a>
-                          ) : (
-                            <span className="text-xs text-slate-300 italic font-sans">{t("clients.contact.notSet")}</span>
-                          )}
-                        </td>
-                        <td className="py-3 text-right pr-2">
-                          <RequirePermission action="clients.write">
-                          <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => void startEdit(c)}
-                              className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-                              title={t("clients.action.edit")}
-                              aria-label={`${t("clients.action.edit")} ${c.lastName} ${c.firstName}`}
-                            >
-                              <Edit className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteTarget(c)}
-                              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
-                              title={t("clients.action.archive")}
-                              aria-label={`${t("clients.action.archive")} ${c.lastName} ${c.firstName}`}
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                          </RequirePermission>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )
-            ) : filteredArchivedClients.length === 0 ? (
-              <div className="text-center py-20 text-slate-400 space-y-1">
-                <p className="text-sm">
-                  {search.trim()
-                    ? t("clients.search.noResults", { query: search })
-                    : t("clients.empty.archive")}
-                </p>
-              </div>
-            ) : (
-              <table className="w-full font-sans text-slate-700 text-left">
-                <thead>
-                  <tr className="border-b border-slate-100 text-[10px] font-sans uppercase text-slate-400 tracking-wider">
-                    <th className="pb-3 pl-2 pr-8 font-semibold w-12">#</th>
-                    <th className="pb-3 font-semibold">{t("clients.table.lastName")}</th>
-                    <th className="pb-3 font-semibold">{t("clients.table.firstName")}</th>
-                    <th className="pb-3 font-semibold text-center">Telegram</th>
-                    <th className="pb-3 font-semibold">{t("clients.table.archivedAt")}</th>
-                    <th className="pb-3 text-right pr-2 font-semibold">{t("clients.table.actions")}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredArchivedClients.map((c, i) => (
-                    <tr
-                      key={c.id}
-                      className="border-b border-slate-50 hover:bg-slate-50 transition-colors text-sm group"
-                    >
-                      <td className="py-3 pl-2 pr-8 font-sans text-xs text-slate-400">{i + 1}</td>
-                      <td className="py-3 font-normal text-slate-800">
-                        {canOpenClientCard ? (
-                          <button
-                            type="button"
-                            onClick={() => openClientCard(c)}
-                            className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
-                          >
-                            {c.lastName}
-                          </button>
-                        ) : (
-                          c.lastName
-                        )}
-                      </td>
-                      <td className="py-3 font-normal text-slate-800">
-                        {canOpenClientCard ? (
-                          <button
-                            type="button"
-                            onClick={() => openClientCard(c)}
-                            className="text-left hover:text-indigo-600 transition-colors cursor-pointer"
-                          >
-                            {c.firstName}
-                          </button>
-                        ) : (
-                          c.firstName
-                        )}
-                      </td>
-                      <td className="py-3 text-center">
-                        {c.telegram && normalizeTelegramContact(c.telegram) ? (
-                          <a
-                            href={normalizeTelegramContact(c.telegram)!}
-                            target="_blank"
-                            rel="noreferrer"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              openTelegramContact(c.telegram);
-                            }}
-                            className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#229ED9]/10 hover:bg-[#229ED9]/20 text-[#1C82B4] rounded-md text-xs font-sans font-normal transition-colors"
-                          >
-                            <Send className="w-3 h-3" />
-                            {formatTelegramDisplay(c.telegram)}
-                          </a>
-                        ) : (
-                          <span className="text-xs text-slate-300 italic font-sans">{t("clients.contact.notSet")}</span>
-                        )}
-                      </td>
-                      <td className="py-3 text-slate-600 text-xs font-sans">
-                        {c.archivedAt ? formatArchivedAt(c.archivedAt) : "—"}
-                      </td>
-                      <td className="py-3 text-right pr-2">
-                        <RequirePermission action="clients.write">
-                        <div className="flex items-center justify-end gap-1.5 opacity-60 group-hover:opacity-100 transition-opacity">
-                          <button
-                            onClick={() => setRestoreTarget(c)}
-                            disabled={connectionState !== "online"}
-                            title={translateConnectionBlockReason(connectionState, t) ?? t("clients.action.restore")}
-                            className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed"
-                            aria-label={`${t("clients.action.restore")} ${c.lastName} ${c.firstName}`}
-                          >
-                            <RotateCcw className="w-4 h-4" />
-                          </button>
-                        </div>
-                        </RequirePermission>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            )}
-          </div>
         </div>
       </div>
+      </RequirePermission>
 
       {/* Edit modal */}
       <AnimatePresence>

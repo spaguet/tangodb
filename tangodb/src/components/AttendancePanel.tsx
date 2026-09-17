@@ -18,11 +18,14 @@ import {
 } from "lucide-react";
 import {
   attendanceQueryKey,
+  computeScheduleDatesForMonth,
   useMarkAttendance,
   useScheduleDates,
   countPresentAttendeesFromSubs,
   useSubsForDate,
 } from "../hooks/useAttendance";
+import { useSchedule } from "../hooks/useSchedule";
+import { useDisciplines } from "../hooks/useDisciplines";
 import { useUndoAttendanceCorrection } from "../hooks/usePaymentCorrections";
 import AttendanceCorrectionDialog, {
   isWithinAttendanceUndoWindow,
@@ -45,6 +48,7 @@ import {
   useActiveGroupLessonClosure,
   useCloseGroupLessonOccurrence,
   useReopenLessonOccurrenceClosure,
+  useVenueCostRuleStatus,
   type VenueCostRuleStatus,
 } from "../hooks/useVenueCosts";
 import {
@@ -69,6 +73,10 @@ import {
 import { usePrices } from "../hooks/usePrices";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import {
+  scheduleLocationDisplayName,
+  shouldHideEmptyDraftLocation,
+} from "../lib/locationDisplay";
+import {
   formatCurrency,
   formatMonthTitle,
   getDowLabels,
@@ -89,6 +97,7 @@ import LoadingState from "./ui/LoadingState";
 import OfflineLimitedState from "./offline/OfflineLimitedState";
 import OfflineScopeNotice from "./offline/OfflineScopeNotice";
 import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
+import BeginnerPanelHint from "./onboarding/BeginnerPanelHint";
 import VirtualList from "./ui/VirtualList";
 import AppSelect, { fieldCls } from "./ui/AppSelect";
 import { btnAddCls, btnOpenCls } from "./ui/buttonStyles";
@@ -238,6 +247,13 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     isError: locationsError,
     error: locationsErr,
   } = useAccessibleLocations();
+  const scheduleListQuery = useSchedule();
+  const { data: disciplines = [] } = useDisciplines();
+  const disciplineMap = useMemo(
+    () => new Map(disciplines.map((d) => [d.id, d.name])),
+    [disciplines]
+  );
+  const draftLocationBadge = t("schedule.location.draftBadge");
 
   const [selectedLocationId, setSelectedLocationId] = useState<string | null>(null);
   const selectedLocation = locations.find((loc) => loc.id === selectedLocationId) ?? null;
@@ -304,10 +320,31 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   const closeGroupLesson = useCloseGroupLessonOccurrence();
   const reopenLessonClosure = useReopenLessonOccurrenceClosure();
 
+  const lessonsPerLocation = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const entry of computeScheduleDatesForMonth(
+      scheduleListQuery.data ?? [],
+      selectedMonth,
+      undefined
+    )) {
+      const id = entry.locationId;
+      if (id) counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return counts;
+  }, [scheduleListQuery.data, selectedMonth]);
+
+  const visibleLocations = useMemo(
+    () =>
+      locations.filter(
+        (loc) => !shouldHideEmptyDraftLocation(loc, lessonsPerLocation.get(loc.id) ?? 0)
+      ),
+    [locations, lessonsPerLocation]
+  );
+
   useEffect(() => {
-    if (selectedLocationId != null || locations.length !== 1) return;
-    setSelectedLocationId(locations[0].id);
-  }, [locations, selectedLocationId]);
+    if (selectedLocationId != null || visibleLocations.length !== 1) return;
+    setSelectedLocationId(visibleLocations[0].id);
+  }, [visibleLocations, selectedLocationId]);
 
   useEffect(() => {
     setSelectedLesson(null);
@@ -441,9 +478,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         scheduleGroupId: slot.scheduleGroupId ?? null,
         teacherMemberId: slot.teacherMemberId ?? null,
         substituteTeacherMemberId: slot.substituteTeacherMemberId ?? null,
-        label: slot.groupName
-          ? `${slot.groupName} · ${slot.time} – ${slot.timeEnd}`
-          : t("attendance.groupLessonTime", { time: slot.time, timeEnd: slot.timeEnd }),
+        label: (() => {
+          const disciplineName = slot.disciplineId
+            ? disciplineMap.get(slot.disciplineId)
+            : undefined;
+          if (disciplineName) return `${disciplineName} · ${slot.time}`;
+          if (slot.groupName) return `${slot.groupName} · ${slot.time}`;
+          return t("attendance.groupLessonTime", { time: slot.time, timeEnd: slot.timeEnd });
+        })(),
       })),
       ...(isOfflineMode
         ? []
@@ -456,7 +498,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           }))),
     ];
     return entries.sort((a, b) => a.start.localeCompare(b.start));
-  }, [accessibleGroupLessonsForDay, accessiblePersonalForDay, isOfflineMode, t]);
+  }, [accessibleGroupLessonsForDay, accessiblePersonalForDay, isOfflineMode, disciplineMap, t]);
 
   const subsOptions = useMemo(() => {
     if (!selectedLesson) return undefined;
@@ -822,6 +864,12 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     selectedGroupLesson ? selectedDate : null
   );
   const activeGroupClosure = groupClosureQuery.data ?? null;
+  const venueStatusQuery = useVenueCostRuleStatus({
+    enabled: connectionState === "online" && selectedLesson?.kind === "group",
+  });
+  const showVenueLessonClosePanel =
+    Boolean(activeGroupClosure) ||
+    (venueStatusQuery.data?.status != null && venueStatusQuery.data.status !== "not_configured");
   const canCloseGroupOccurrence =
     !isReadOnly &&
     (can("attendance.write", {
@@ -1142,10 +1190,21 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
   const modalTitle =
     selectedLesson?.kind === "group"
-      ? t("attendance.modalGroupTitle", {
-          time: selectedLesson.time,
-          timeEnd: selectedLesson.timeEnd,
-        })
+      ? (() => {
+          const disciplineName = selectedLesson.disciplineId
+            ? disciplineMap.get(selectedLesson.disciplineId)
+            : undefined;
+          if (disciplineName) {
+            return t("attendance.modalGroupDisciplineTitle", {
+              discipline: disciplineName,
+              time: selectedLesson.time,
+            });
+          }
+          return t("attendance.modalGroupTitle", {
+            time: selectedLesson.time,
+            timeEnd: selectedLesson.timeEnd,
+          });
+        })()
       : selectedLesson?.label ?? t("common.lessonDefault");
 
   const activePersonalLesson =
@@ -1213,12 +1272,16 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     });
   };
 
-  const renderSingleVisitPanel = () => {
+  const renderSingleVisitPanel = (placement: "inline" | "below" = "below") => {
     if (!selectedGroupLesson) return null;
+    const sectionCls =
+      placement === "below"
+        ? "mt-4 pt-4 border-t border-slate-100 space-y-3"
+        : "mb-4 space-y-3";
 
     if (isOfflineMode && canRecordSingleVisit) {
       return (
-        <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-2">
+        <div className={`${sectionCls} rounded-xl border border-amber-200 bg-amber-50/60 p-3 space-y-2`}>
           <p className="text-[11px] text-amber-800 font-sans leading-relaxed">
             {t("offline.restrictions.singleVisit")}
           </p>
@@ -1235,7 +1298,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     }
 
     return (
-      <div className="mb-4 rounded-xl border border-slate-100 bg-slate-50/70 p-3 space-y-3">
+      <div className={`${sectionCls} rounded-xl border border-slate-100 bg-slate-50/70 p-3 space-y-3`}>
         {canRecordSingleVisit && (
           <button
             type="button"
@@ -1335,7 +1398,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           </div>
         )}
 
-        {selectedGroupLesson.slotId &&
+        {showVenueLessonClosePanel &&
+          selectedGroupLesson.slotId &&
           connectionState === "online" &&
           (canCloseGroupOccurrence || (Boolean(activeGroupClosure) && canReopenGroupClosure)) && (
           <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-3 space-y-2">
@@ -1457,15 +1521,24 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
 
           {isLoading ? (
             <LoadingState label={t("attendance.loadingLocations")} />
-          ) : locations.length === 0 ? (
-            <div className="text-center py-16 text-slate-400 space-y-3">
-              <MapPin className="w-8 h-8 mx-auto text-slate-300" />
-              <p className="text-sm">{t("attendance.noLocations")}</p>
-              <AddLocationsInSettingsHint />
+          ) : visibleLocations.length === 0 ? (
+            <div className="py-8 space-y-4 max-w-md mx-auto">
+              <BeginnerPanelHint
+                hintId="attendance"
+                titleKey="beginnerHints.attendance.title"
+                bodyKey="beginnerHints.attendance.body"
+                actionLabelKey="beginnerHints.attendance.action"
+                actionTo="/settings/locations"
+              />
+              <div className="text-center text-slate-400 space-y-2">
+                <MapPin className="w-8 h-8 mx-auto text-slate-300" />
+                <p className="text-sm text-slate-600 leading-relaxed px-2">{t("attendance.emptyJournal")}</p>
+                <AddLocationsInSettingsHint className="text-xs text-slate-500 font-sans" />
+              </div>
             </div>
           ) : (
             <div className="space-y-2">
-              {locations.map((loc) => (
+              {visibleLocations.map((loc) => (
                 <button
                   key={loc.id}
                   type="button"
@@ -1473,7 +1546,9 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   className="w-full flex items-center justify-between gap-3 p-3.5 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/40 transition-all cursor-pointer text-left"
                 >
                   <div className="min-w-0">
-                    <p className="text-sm font-semibold text-slate-800">{loc.name}</p>
+                    <p className="text-sm font-semibold text-slate-800">
+                      {scheduleLocationDisplayName(loc, draftLocationBadge)}
+                    </p>
                     {loc.address ? (
                       <p className="text-[11px] text-slate-400 mt-0.5 truncate">{loc.address}</p>
                     ) : (
@@ -1521,7 +1596,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
               {selectedLocation && (
                 <p className="text-xs text-slate-500 font-sans flex items-center gap-1.5">
                   <MapPin className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
-                  {selectedLocation.name}
+                  {scheduleLocationDisplayName(selectedLocation, draftLocationBadge)}
                 </p>
               )}
             </div>
@@ -1552,6 +1627,53 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
         {isOfflineMode && snapshotMeta.hasSnapshot && !snapshotMeta.isExpired ? (
           <OfflineScopeNotice />
         ) : null}
+
+        {selectedDate && (
+          <div className="panel-card-stack relative z-10">
+            <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
+              <p className="text-xs font-semibold text-slate-700">{formatAttendanceDate(selectedDate)}</p>
+              <p className="text-[10px] text-slate-400 mt-0.5 font-sans">{t("attendance.daySchedule")}</p>
+              {!canMarkAttendance && (
+                <p className="text-[10px] text-amber-600 mt-1 font-sans">
+                  {t("attendance.error.pastOnly")}
+                </p>
+              )}
+            </div>
+
+            {dayScheduleEntries.length > 0 ? (
+              <div className="space-y-2">
+                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                  {t("attendance.lessonJournal")}
+                </h3>
+                {dayScheduleEntries.map((entry) => (
+                  <button
+                    key={entry.key}
+                    type="button"
+                    onClick={() => setSelectedLesson(entry)}
+                    className="w-full flex items-center justify-between gap-3 p-3 rounded-xl border border-slate-200 bg-white hover:border-indigo-300 hover:bg-indigo-50/40 transition-all cursor-pointer text-left touch-manipulation"
+                  >
+                    <div className="min-w-0">
+                      <p
+                        className={`text-[10px] font-sans font-semibold uppercase tracking-wider ${
+                          entry.kind === "group" ? "text-indigo-600" : "text-indigo-700"
+                        }`}
+                      >
+                        {entry.kind === "group" ? t("common.groupLabel") : t("common.personalLabel")}
+                        {entry.kind === "personal" && entry.lesson.subscriptionId
+                          ? t("common.packageSuffix")
+                          : ""}
+                      </p>
+                      <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">{entry.label}</p>
+                    </div>
+                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-slate-400 font-sans text-center py-4">{t("attendance.noLessonsDay")}</p>
+            )}
+          </div>
+        )}
 
         <div className="border border-slate-200 rounded-xl overflow-hidden">
           <div className="flex items-center justify-between gap-2 px-3 py-2.5 bg-slate-50 border-b border-slate-200">
@@ -1644,53 +1766,6 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
           </Link>
           .
         </p>
-
-        {selectedDate && (
-          <div className="panel-card-stack">
-            <div className="rounded-lg bg-slate-50 border border-slate-100 px-3 py-2.5">
-              <p className="text-xs font-semibold text-slate-700">{formatAttendanceDate(selectedDate)}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5 font-sans">{t("attendance.daySchedule")}</p>
-              {!canMarkAttendance && (
-                <p className="text-[10px] text-amber-600 mt-1 font-sans">
-                  {t("attendance.error.pastOnly")}
-                </p>
-              )}
-            </div>
-
-            {dayScheduleEntries.length > 0 ? (
-              <div className="space-y-2">
-                <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest">{t("attendance.lessonJournal")}</h3>
-                {dayScheduleEntries.map((entry) => (
-                  <button
-                    key={entry.key}
-                    type="button"
-                    onClick={() => setSelectedLesson(entry)}
-                    className={`w-full flex items-center justify-between gap-3 p-3 rounded-xl border transition-all cursor-pointer text-left ${
-                      entry.kind === "group"
-                        ? "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40"
-                        : "bg-white border-slate-200 hover:border-indigo-300 hover:bg-indigo-50/40"
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <p
-                        className={`text-[10px] font-sans font-semibold uppercase tracking-wider ${
-                          entry.kind === "group" ? "text-indigo-600" : "text-indigo-700"
-                        }`}
-                      >
-                        {entry.kind === "group" ? t("common.groupLabel") : t("common.personalLabel")}
-                        {entry.kind === "personal" && entry.lesson.subscriptionId ? t("common.packageSuffix") : ""}
-                      </p>
-                      <p className="text-sm font-semibold text-slate-800 mt-0.5 truncate">{entry.label}</p>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 shrink-0" />
-                  </button>
-                ))}
-              </div>
-            ) : (
-              <p className="text-xs text-slate-400 font-sans text-center py-6">{t("attendance.noLessonsDay")}</p>
-            )}
-          </div>
-        )}
       </div>
 
       <AnimatePresence>
@@ -1861,15 +1936,14 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                   </div>
                 ) : effectiveModalSubs.length === 0 ? (
                   <div>
-                    {renderSingleVisitPanel()}
-                    <div className="text-center py-20 text-slate-400 space-y-3">
+                    <div className="text-center py-12 text-slate-400 space-y-3">
                       <Ticket className="w-8 h-8 mx-auto text-slate-300" />
                       <p className="text-sm">{t("attendance.noSubscriptions")}</p>
                     </div>
+                    {renderSingleVisitPanel("below")}
                   </div>
                 ) : (
                   <div>
-                    {renderSingleVisitPanel()}
                     {!canMarkSelectedLesson && (
                       <p className="text-[11px] text-amber-600 font-sans mb-3">
                         {t("attendance.error.pastOnly")}
@@ -1891,7 +1965,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       <VirtualList
                         items={effectiveModalSubs}
                         estimateSize={96}
-                        maxHeight="min(60vh, 480px)"
+                        maxHeight="min(50vh, 420px)"
                         getKey={(st) => st.subId}
                         renderItem={(st) =>
                           renderAttendanceRow(st, selectedLesson.kind === "group")
@@ -1902,6 +1976,7 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                         renderAttendanceRow(st, selectedLesson.kind === "group")
                       )
                     )}
+                    {renderSingleVisitPanel("below")}
                   </div>
                 )}
               </div>

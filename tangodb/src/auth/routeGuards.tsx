@@ -55,6 +55,31 @@ function LoadingScreen({ label }: { label: string }) {
   );
 }
 
+/** CRM workspace boot — skeleton shell instead of a full-screen error-like flash. */
+function CrmWorkspaceLoading() {
+  const { t } = useGuestI18n();
+  return (
+    <div
+      className="min-h-screen bg-slate-50 flex flex-col font-sans"
+      role="status"
+      aria-busy="true"
+      aria-label={t("common.loading.default")}
+    >
+      <div className="h-14 border-b border-slate-200 bg-white px-4 flex items-center gap-3 shadow-xs">
+        <div className="h-9 w-9 rounded-lg bg-slate-200/80 animate-pulse md:hidden" />
+        <div className="h-4 w-36 max-w-[50vw] rounded bg-slate-200/80 animate-pulse" />
+        <div className="ml-auto h-8 w-24 rounded-lg bg-slate-200/80 animate-pulse hidden sm:block" />
+      </div>
+      <div className="flex-1 p-4 sm:p-6 max-w-7xl mx-auto w-full space-y-4">
+        <div className="h-7 w-48 max-w-full rounded bg-slate-200/80 animate-pulse" />
+        <div className="h-28 rounded-xl border border-slate-100 bg-white shadow-xs animate-pulse" />
+        <div className="h-40 rounded-xl border border-slate-100 bg-white shadow-xs animate-pulse" />
+        <div className="h-32 rounded-xl border border-slate-100 bg-white shadow-xs animate-pulse hidden sm:block" />
+      </div>
+    </div>
+  );
+}
+
 /** Recovery JWT must not open the CRM shell — only /auth/reset-password. */
 export function RecoveryGate({ children }: { children: React.ReactNode }) {
   const { t } = useGuestI18n();
@@ -88,6 +113,18 @@ export function GuestRoute({ children }: { children: React.ReactNode }) {
       return <RenterActorDenied />;
     }
     return <Navigate to="/" replace />;
+  }
+  return <>{children}</>;
+}
+
+/** `/register` — allow an existing session; RegisterPage handles «continue / not me». */
+export function RegisterRoute({ children }: { children: React.ReactNode }) {
+  const { t } = useGuestI18n();
+  const { session, loading } = useAuth();
+
+  if (loading) return <LoadingScreen label={t("common.loading.default")} />;
+  if (session && isRenterActorFromSession(session)) {
+    return <RenterActorDenied />;
   }
   return <>{children}</>;
 }
@@ -133,7 +170,7 @@ export function OrgWorkspaceRoute() {
   const jwtOrganizationId = getOrganizationIdFromSession(session);
 
   if (authLoading || membershipsLoading) {
-    return <LoadingScreen label={t("auth.loading.profile")} />;
+    return <CrmWorkspaceLoading />;
   }
 
   if (!session) return <Navigate to="/login" replace state={{ from: location }} />;
@@ -162,7 +199,7 @@ export function OrgWorkspaceRoute() {
     return <Navigate to="/select-organization" replace />;
   }
 
-  if (orgLoading) return <LoadingScreen label={t("common.loading.organization")} />;
+  if (orgLoading) return <CrmWorkspaceLoading />;
 
   if (needsOnboarding && location.pathname !== "/onboarding") {
     return <Navigate to="/onboarding" replace />;
@@ -210,7 +247,14 @@ export function PanelAccessRoute() {
     }
     if (!canAccessSettingsSection(role, settingsSection, options)) {
       const fallbackSection = findFirstAccessibleSettingsSection(role, modules, options);
-      return <Navigate to={fallbackSection ? `/settings/${fallbackSection}` : "/"} replace />;
+      const notice = settingsSection === "team" ? { settingsAccessNotice: "team" as const } : undefined;
+      return (
+        <Navigate
+          to={fallbackSection ? `/settings/${fallbackSection}` : "/"}
+          replace
+          state={notice}
+        />
+      );
     }
     return <Outlet />;
   }

@@ -75,7 +75,7 @@ export function ClientsPanel({ locale }: Props) {
         <div className="panel-form-stack font-sans space-y-3">
           <div className="field-stack">
             <label className={labelCls}>{p.firstName}</label>
-            <input disabled className={fieldCls} placeholder="Elena" />
+            <input disabled className={fieldCls} placeholder="Елена" />
           </div>
           <div className="field-stack">
             <label className={labelCls}>{p.lastName}</label>

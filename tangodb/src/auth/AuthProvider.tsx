@@ -12,8 +12,8 @@ import { setAuthRememberMe, supabase } from "../lib/supabase";
 import { requireSiteUrl } from "../lib/siteUrl";
 import { t, getGuestLocale } from "../lib/i18n";
 import { goTrueCaptchaToken, isTurnstileConfigured } from "../components/auth/TurnstileWidget";
-import { isUserAlreadyRegistered } from "./authErrors";
 import { clearOrganizationSelectionAfterLogin } from "../organization/organizationSelectionIntent";
+import { resetAppDocumentTitle } from "../lib/documentTitle";
 
 const PASSWORD_RECOVERY_FLAG = "tangodb.password_recovery";
 
@@ -72,6 +72,7 @@ interface AuthContextValue {
     displayName: string | undefined,
     captchaToken: string | null
   ) => Promise<{ needsEmailConfirmation: boolean }>;
+  resendSignupConfirmation: (email: string, captchaToken: string | null) => Promise<void>;
   resetPasswordForEmail: (email: string, captchaToken?: string | null) => Promise<void>;
   updatePassword: (password: string) => Promise<void>;
   signOut: () => Promise<void>;
@@ -184,16 +185,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           captchaToken: token,
         },
       });
-      if (error) {
-        if (isUserAlreadyRegistered(error)) {
-          return { needsEmailConfirmation: true };
-        }
-        throw error;
-      }
+      if (error) throw error;
       return { needsEmailConfirmation: !data.session };
     },
     []
   );
+
+  const resendSignupConfirmation = useCallback(async (email: string, captchaToken: string | null) => {
+    const token = requireGoTrueCaptcha(captchaToken);
+    const { error } = await supabase.auth.resend({
+      type: "signup",
+      email: email.trim().toLowerCase(),
+      options: {
+        emailRedirectTo: `${requireSiteUrl()}/auth/verify-email`,
+        captchaToken: token,
+      },
+    });
+    if (error) throw error;
+  }, []);
 
   const resetPasswordForEmail = useCallback(async (email: string, captchaToken?: string | null) => {
     const token = requireGoTrueCaptcha(captchaToken);
@@ -214,6 +223,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     clearOrganizationSelectionAfterLogin();
     setPasswordRecovery(false);
     setSession(null);
+    resetAppDocumentTitle();
     await supabase.auth.signOut();
   }, []);
 
@@ -224,6 +234,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordRecovery,
       signInWithEmail,
       signUpWithEmail,
+      resendSignupConfirmation,
       resetPasswordForEmail,
       updatePassword,
       signOut,
@@ -234,6 +245,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       passwordRecovery,
       signInWithEmail,
       signUpWithEmail,
+      resendSignupConfirmation,
       resetPasswordForEmail,
       updatePassword,
       signOut,

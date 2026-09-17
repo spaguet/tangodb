@@ -1,6 +1,7 @@
 export {
   ProtectedRoute,
   GuestRoute,
+  RegisterRoute,
   AuthFlowRoute,
   OrgWorkspaceRoute,
   PanelAccessRoute,

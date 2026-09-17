@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
 import {
@@ -28,6 +28,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+
+  useEffect(() => {
+    document.title = t("auth.login.pageTitle");
+  }, [t, locale]);
 
   const goAfterLogin = () => {
     navigate("/", { replace: true });

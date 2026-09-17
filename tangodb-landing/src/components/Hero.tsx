@@ -42,7 +42,7 @@ export function Hero({ locale, t }: Props) {
           </div>
 
           <div className="w-full max-w-xl animate-fade-in mx-auto lg:mx-0 lg:max-w-none">
-            <CrmDesktopPreview locale={locale} alt={t("hero.imageAlt")} />
+            <CrmDesktopPreview locale={locale} alt={t("hero.imageAlt")} caption={t("hero.previewNote")} />
           </div>
         </div>
       </div>

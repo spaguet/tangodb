@@ -16,7 +16,6 @@ import {
   useUnpaidPersonalLessonsCountByPrice,
   useUpdatePrice,
   useUpdatePriceMeta,
-  useUpdatePriceTeachers,
 } from "../hooks/usePrices";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { useDisciplines } from "../hooks/useDisciplines";
@@ -60,6 +59,7 @@ import TeacherTariffDropdown from "./ui/TeacherTariffDropdown";
 import RequirePermission from "./RequirePermission";
 import LoadingState from "./ui/LoadingState";
 import AddLocationsInSettingsHint from "./ui/AddLocationsInSettingsHint";
+import BeginnerPanelHint from "./onboarding/BeginnerPanelHint";
 import QueryErrorState from "./ui/QueryErrorState";
 import PersonalTariffDurationField, {
   isValidPersonalTariffDuration,
@@ -85,8 +85,7 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 
 type CreateTabId = "group" | "privateLesson" | "privatePackage" | "singleVisit";
 type CreateModalStep = "picker" | "form";
-type PriceListView = "active" | "archive";
-type PricesMainSection = "studio" | "hallRent";
+type PricesPanelTab = "services" | "archive" | "hallRent";
 
 function TariffCreateSection({
   title,
@@ -134,9 +133,9 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const { t, plural, formatDate } = useI18n();
   const { connectionState } = useOnlineStatus();
   const [searchParams, setSearchParams] = useSearchParams();
-  const [priceListView, setPriceListView] = useState<PriceListView>("active");
+  const [activeTab, setActiveTab] = useState<PricesPanelTab>("services");
   const { data: prices = [], isLoading, isError, error } = usePrices();
-  const archivedPricesQuery = useArchivedPrices(priceListView === "archive");
+  const archivedPricesQuery = useArchivedPrices(activeTab === "archive");
   const {
     locations,
     isLoading: locationsLoading,
@@ -158,19 +157,16 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const canWriteHallRentTariffs = canWriteRentalTariffs(role, options);
   const showStudioSection = canReadStudioPrices;
   const showHallRentSection = canReadHallRentTariffs;
-  const [mainSection, setMainSection] = useState<PricesMainSection>("studio");
   const updatePrice = useUpdatePrice();
   const updatePriceMeta = useUpdatePriceMeta();
-  const updatePriceTeachers = useUpdatePriceTeachers();
   const archivePrice = useArchivePrice();
   const restorePrice = useRestorePrice();
   const createPrice = useCreatePrice();
 
-  const [editedPrices, setEditedPrices] = useState<Record<string, string>>({});
-  const [syncingRows, setSyncingRows] = useState<Record<string, boolean>>({});
   const [editingPrice, setEditingPrice] = useState<Price | null>(null);
   const [editLabel, setEditLabel] = useState("");
   const [editDescription, setEditDescription] = useState("");
+  const [editPrice, setEditPrice] = useState("");
   const [archiveTarget, setArchiveTarget] = useState<Price | null>(null);
   const [createModalStep, setCreateModalStep] = useState<CreateModalStep | null>(null);
   const [groupForm, setGroupForm] = useState({
@@ -209,7 +205,6 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const [editTeacherMemberIds, setEditTeacherMemberIds] = useState<string[]>([]);
   const [editDurationSelect, setEditDurationSelect] = useState<PersonalTariffDurationSelect>("");
   const [editDurationCustom, setEditDurationCustom] = useState("");
-  const [syncingTeacherRows, setSyncingTeacherRows] = useState<Record<string, boolean>>({});
   const [creatingSection, setCreatingSection] = useState<CreateTabId | null>(null);
   const [activeCreateTab, setActiveCreateTab] = useState<CreateTabId>("group");
   const unpaidByPriceQuery = useUnpaidPersonalLessonsCountByPrice(editingPrice?.id);
@@ -258,29 +253,26 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   useEffect(() => {
     const section = searchParams.get("section");
     if (section === "hall-rent" && showHallRentSection) {
-      setMainSection("hallRent");
+      setActiveTab("hallRent");
       return;
     }
-    if (section === "studio" && showStudioSection) {
-      setMainSection("studio");
+    if (showStudioSection) {
+      setActiveTab("services");
+    } else if (showHallRentSection) {
+      setActiveTab("hallRent");
     }
   }, [searchParams, showHallRentSection, showStudioSection]);
 
-  useEffect(() => {
-    if (!showStudioSection && showHallRentSection) {
-      setMainSection("hallRent");
-    } else if (showStudioSection && !showHallRentSection) {
-      setMainSection("studio");
-    }
-  }, [showStudioSection, showHallRentSection]);
-
-  const setMainSectionWithUrl = (section: PricesMainSection) => {
-    setMainSection(section);
+  const setActiveTabWithUrl = (tab: PricesPanelTab) => {
+    setActiveTab(tab);
     const next = new URLSearchParams(searchParams);
-    if (section === "hallRent") next.set("section", "hall-rent");
+    if (tab === "hallRent") next.set("section", "hall-rent");
     else next.delete("section");
     setSearchParams(next, { replace: true });
   };
+
+  const pricesTabCount =
+    (showStudioSection ? 2 : 0) + (showHallRentSection ? 1 : 0);
 
   useEffect(() => {
     const create = searchParams.get("create");
@@ -345,49 +337,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [editingPrice]);
 
-  const handleInputChange = (id: string, val: string) => {
-    setEditedPrices({ ...editedPrices, [id]: val });
-  };
-
-  const handleSavePrice = async (id: string, originalValue: number) => {
-    if (connectionState !== "online") {
-      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
-      return;
-    }
-    const rawValue = editedPrices[id];
-    if (rawValue === undefined) return;
-
-    const parsed = parseFloat(rawValue);
-    if (isNaN(parsed) || parsed < 0) {
-      toast(t("prices.error.invalidAmount"), "error");
-      return;
-    }
-
-    if (parsed === originalValue) {
-      toast(t("prices.error.unchanged"), "info");
-      return;
-    }
-
-    setSyncingRows((prev) => ({ ...prev, [id]: true }));
-    const res = await updatePrice.mutateAsync({ id, newPrice: parsed });
-    setSyncingRows((prev) => ({ ...prev, [id]: false }));
-
-    if (!res.success) {
-      toast(resolveMutationError(res.error, "prices.error.saveFailed", t), "error");
-    } else {
-      toast(t("prices.success.saved"), "success");
-      setEditedPrices((prev) => {
-        const next = { ...prev };
-        delete next[id];
-        return next;
-      });
-    }
-  };
-
   const startEditMeta = (p: Price) => {
     setEditingPrice(p);
     setEditLabel(getPriceLabel(p, t));
     setEditDescription(getPriceDescription(p, t));
+    setEditPrice(String(p.price));
     setEditBindToLocation(!!p.locationId);
     setEditLocationId(p.locationId ?? locations[0]?.id ?? "");
     setEditBindToDiscipline(getPriceDisciplineIds(p).length > 0);
@@ -405,6 +359,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     if (!editingPrice?.id) return;
     if (connectionState !== "online") {
       toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+    const parsedPrice = parseFloat(editPrice);
+    if (isNaN(parsedPrice) || parsedPrice < 0) {
+      toast(t("prices.error.invalidAmount"), "error");
       return;
     }
     if (!editLabel.trim()) {
@@ -435,6 +394,14 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
       return;
     }
 
+    if (parsedPrice !== editingPrice.price) {
+      const priceRes = await updatePrice.mutateAsync({ id: editingPrice.id, newPrice: parsedPrice });
+      if (!priceRes.success) {
+        toast(resolveMutationError(priceRes.error, "prices.error.saveFailed", t), "error");
+        return;
+      }
+    }
+
     const res = await updatePriceMeta.mutateAsync({
       id: editingPrice.id,
       label: editLabel,
@@ -448,25 +415,11 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     if (!res.success) {
       toast(resolveMutationError(res.error, "prices.error.updateFailed", t), "error");
     } else {
-      toast(t("prices.success.updated"), "success");
+      toast(
+        parsedPrice !== editingPrice.price ? t("prices.success.saved") : t("prices.success.updated"),
+        "success"
+      );
       setEditingPrice(null);
-    }
-  };
-
-  const handleTeacherBindingChange = async (priceId: string, teacherMemberIds: string[]) => {
-    if (connectionState !== "online") {
-      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
-      return;
-    }
-
-    setSyncingTeacherRows((prev) => ({ ...prev, [priceId]: true }));
-    const res = await updatePriceTeachers.mutateAsync({ priceId, teacherMemberIds });
-    setSyncingTeacherRows((prev) => ({ ...prev, [priceId]: false }));
-
-    if (res.success === false) {
-      toast(resolveMutationError(res.error, "prices.error.updateFailed", t), "error");
-    } else {
-      toast(t("prices.success.teacherBindingUpdated"), "success");
     }
   };
 
@@ -685,13 +638,13 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
     />
   );
 
-  if (mainSection === "studio" && showStudioSection && (isLoading || locationsLoading)) {
+  if (activeTab === "services" && showStudioSection && (isLoading || locationsLoading)) {
     return <LoadingState label={t("prices.loading")} />;
   }
-  if (mainSection === "studio" && showStudioSection && (isError || locationsError)) {
+  if (activeTab === "services" && showStudioSection && (isError || locationsError)) {
     return <QueryErrorState error={error ?? locationsErr} />;
   }
-  if (mainSection === "studio" && showStudioSection && locations.length === 0 && !showHallRentSection) {
+  if (activeTab === "services" && showStudioSection && locations.length === 0 && !showHallRentSection) {
     return (
       <div id="panel-prices" className="panel-page-stack">
         <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
@@ -714,9 +667,6 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
   const renderPriceRow = (item: { priceObj: Price }) => {
     const p = item.priceObj;
     const priceId = p.id!;
-    const currentInputVal = editedPrices[priceId] !== undefined ? editedPrices[priceId] : p.price.toString();
-    const isSyncing = syncingRows[priceId] || false;
-    const isTouched = editedPrices[priceId] !== undefined && editedPrices[priceId] !== p.price.toString();
     const title = getPriceLabel(p, t);
     const description = getPriceDescription(p, t);
     const isPrivateCategory = isPrivateTariffWithDuration(p);
@@ -738,26 +688,15 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               {title}
             </h4>
             {canWritePrices && (
-            <div className="flex items-center gap-1 shrink-0">
-              <button
-                type="button"
-                onClick={() => startEditMeta(p)}
-                className="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all cursor-pointer"
-                title={t("prices.action.edit")}
-                aria-label={`${t("prices.action.edit")} ${title}`}
-              >
-                <Edit className="w-4 h-4" />
-              </button>
               <button
                 type="button"
                 onClick={() => setArchiveTarget(p)}
-                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer"
+                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-all cursor-pointer shrink-0"
                 title={t("prices.action.archive")}
                 aria-label={`${t("prices.action.archive")} ${title}`}
               >
                 <Archive className="w-4 h-4" />
               </button>
-            </div>
             )}
           </div>
           <p className="text-[11px] text-slate-400 font-sans tracking-tight font-normal">
@@ -768,8 +707,6 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 ? ` · ${t(lessonCountKey(p.lessons), { count: p.lessons })}`
                 : ""}
             {durationSuffix}
-            {" · "}
-            {formatCurrency(p.price)}
           </p>
           <p className="text-[10px] font-sans mt-1 space-x-2">
             {!p.locationId && getPriceDisciplineIds(p).length === 0 ? (
@@ -800,49 +737,19 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
               </span>
             ) : null}
           </p>
-          {canWritePrices && (
-            <TeacherTariffDropdown
-              label={t("ui.tariff.bindTeacher")}
-              teachers={teacherOptions}
-              selectedTeacherIds={p.teacherMemberIds ?? []}
-              onChange={(teacherMemberIds) => handleTeacherBindingChange(priceId, teacherMemberIds)}
-              disabled={syncingTeacherRows[priceId] || updatePriceTeachers.isPending}
-              compact
-            />
-          )}
         </div>
 
-        <div className="flex items-center gap-2 w-full justify-end shrink-0 mt-auto">
-          {canWritePrices ? (
-          <>
-          <div className="relative font-sans w-36 text-right">
-            <input
-              type="number"
-              value={currentInputVal}
-              disabled={isSyncing}
-              onChange={(e) => handleInputChange(priceId, e.target.value)}
-              aria-label={t("prices.aria.price", { title })}
-              className="w-full bg-white border border-slate-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 outline-none rounded-lg px-2.5 py-1.5 text-xs text-right font-semibold pr-6 transition-all disabled:opacity-60"
-            />
-            <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-sans font-normal text-slate-400">
-              {currencySuffix}
-            </span>
-          </div>
-
-          <button
-            onClick={() => handleSavePrice(priceId, p.price)}
-            disabled={isSyncing || !isTouched}
-            className={`px-3 py-1.5 rounded-lg text-xs font-sans font-semibold uppercase transition-colors flex items-center gap-1.5 border ${
-              isTouched
-                ? "bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600 cursor-pointer"
-                : "bg-slate-100 text-slate-300 border-slate-200 cursor-not-allowed"
-            }`}
-          >
-            {isSyncing ? t("common.saving") : t("common.save")}
-          </button>
-          </>
-          ) : (
-            <span className="text-sm font-semibold text-slate-700">{formatCurrency(p.price)}</span>
+        <div className="flex items-center gap-2 w-full justify-between shrink-0 mt-auto">
+          <span className="text-sm font-semibold text-slate-800 tabular-nums">{formatCurrency(p.price)}</span>
+          {canWritePrices && (
+            <button
+              type="button"
+              onClick={() => startEditMeta(p)}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
+            >
+              <Edit className="w-3.5 h-3.5" />
+              {t("common.change")}
+            </button>
           )}
         </div>
       </div>
@@ -873,44 +780,70 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </div>
           <h2 className="text-base font-semibold tracking-tight text-slate-900">{t("prices.pageTitle")}</h2>
           <p className="text-slate-400 text-[11px] leading-snug">
-            {mainSection === "hallRent" ? t("rentalTariffs.pageSubtitle") : t("prices.pageSubtitle")}
+            {activeTab === "hallRent" ? t("rentalTariffs.pageSubtitle") : t("prices.pageSubtitle")}
           </p>
         </div>
 
-        {showStudioSection && showHallRentSection ? (
-          <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1" role="tablist" aria-label={t("prices.mainSectionLabel")}>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mainSection === "studio"}
-              onClick={() => setMainSectionWithUrl("studio")}
-              className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-                mainSection === "studio"
-                  ? "bg-white text-indigo-700 shadow-xs"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <Coins className="w-4 h-4 shrink-0" />
-              {t("prices.tab.studio")}
-            </button>
-            <button
-              type="button"
-              role="tab"
-              aria-selected={mainSection === "hallRent"}
-              onClick={() => setMainSectionWithUrl("hallRent")}
-              className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-                mainSection === "hallRent"
-                  ? "bg-white text-indigo-700 shadow-xs"
-                  : "text-slate-500 hover:text-slate-700"
-              }`}
-            >
-              <Warehouse className="w-4 h-4 shrink-0" />
-              {t("prices.tab.hallRent")}
-            </button>
+        {pricesTabCount > 0 ? (
+          <div
+            className={`grid gap-1 rounded-lg bg-slate-100 p-1 ${
+              pricesTabCount === 3 ? "grid-cols-3" : pricesTabCount === 2 ? "grid-cols-2" : "grid-cols-1"
+            }`}
+            role="tablist"
+            aria-label={t("prices.mainSectionLabel")}
+          >
+            {showStudioSection ? (
+              <>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "services"}
+                  onClick={() => setActiveTabWithUrl("services")}
+                  className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 min-w-0 px-1 ${
+                    activeTab === "services"
+                      ? "bg-white text-indigo-700 shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <Coins className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{t("prices.view.active")}</span>
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  aria-selected={activeTab === "archive"}
+                  onClick={() => setActiveTabWithUrl("archive")}
+                  className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 min-w-0 px-1 ${
+                    activeTab === "archive"
+                      ? "bg-white text-indigo-700 shadow-xs"
+                      : "text-slate-500 hover:text-slate-700"
+                  }`}
+                >
+                  <Archive className="w-4 h-4 shrink-0" />
+                  <span className="truncate">{t("prices.view.archive")}</span>
+                </button>
+              </>
+            ) : null}
+            {showHallRentSection ? (
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === "hallRent"}
+                onClick={() => setActiveTabWithUrl("hallRent")}
+                className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 min-w-0 px-1 ${
+                  activeTab === "hallRent"
+                    ? "bg-white text-indigo-700 shadow-xs"
+                    : "text-slate-500 hover:text-slate-700"
+                }`}
+              >
+                <Warehouse className="w-4 h-4 shrink-0" />
+                <span className="truncate">{t("prices.tab.hallRent")}</span>
+              </button>
+            ) : null}
           </div>
         ) : null}
 
-        {mainSection === "hallRent" && showHallRentSection ? (
+        {activeTab === "hallRent" && showHallRentSection ? (
           <div className="space-y-3 pt-1">
             <div>
               <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.rentersTitle")}</h3>
@@ -924,46 +857,16 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
           </div>
         ) : null}
 
-        {mainSection === "studio" && showStudioSection ? (
+        {(activeTab === "services" || activeTab === "archive") && showStudioSection ? (
         <>
-        {locations.length === 0 ? (
+        {activeTab === "services" && locations.length === 0 ? (
           <div className="text-center py-20 text-slate-400 space-y-3">
             <Ticket className="w-8 h-8 mx-auto text-slate-300" />
             <AddLocationsInSettingsHint />
           </div>
         ) : (
         <>
-        <div className="grid grid-cols-2 gap-1 rounded-lg bg-slate-100 p-1" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={priceListView === "active"}
-            onClick={() => setPriceListView("active")}
-            className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-              priceListView === "active"
-                ? "bg-white text-indigo-700 shadow-xs"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            {t("prices.view.active")}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={priceListView === "archive"}
-            onClick={() => setPriceListView("archive")}
-            className={`h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer flex items-center justify-center gap-1.5 ${
-              priceListView === "archive"
-                ? "bg-white text-indigo-700 shadow-xs"
-                : "text-slate-500 hover:text-slate-700"
-            }`}
-          >
-            <Archive className="w-4 h-4" />
-            {t("prices.view.archive")}
-          </button>
-        </div>
-
-        {priceListView === "active" && (
+        {activeTab === "services" && (
         <>
         <RequirePermission action="prices.write">
         <button
@@ -977,18 +880,28 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         </RequirePermission>
 
         {prices.length === 0 ? (
-          <div className="text-center py-20 text-slate-400 space-y-3">
-            <Ticket className="w-8 h-8 mx-auto text-slate-300" />
-            <p className="text-sm">{t("prices.empty")}</p>
-            {canWritePrices && (
-              <button
-                type="button"
-                onClick={openCreatePicker}
-                className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
-              >
-                {t("prices.addFirst")}
-              </button>
-            )}
+          <div className="py-10 space-y-4 max-w-md mx-auto">
+            <BeginnerPanelHint
+              hintId="prices"
+              titleKey="beginnerHints.prices.title"
+              bodyKey="beginnerHints.prices.body"
+              actionLabelKey="beginnerHints.prices.action"
+              actionOnClick={canWritePrices ? openCreatePicker : undefined}
+              actionTo="/prices"
+            />
+            <div className="text-center text-slate-400 space-y-2">
+              <Ticket className="w-8 h-8 mx-auto text-slate-300" />
+              <p className="text-sm text-slate-600">{t("prices.emptyHint")}</p>
+              {canWritePrices && (
+                <button
+                  type="button"
+                  onClick={openCreatePicker}
+                  className="text-xs font-semibold text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer"
+                >
+                  {t("prices.addFirst")}
+                </button>
+              )}
+            </div>
           </div>
         ) : (
           <div className="space-y-6">
@@ -1005,7 +918,7 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
         </>
         )}
 
-        {priceListView === "archive" && (
+        {activeTab === "archive" && (
           archivedPricesQuery.isLoading ? (
             <LoadingState label={t("prices.archive.loading")} />
           ) : archivedPricesQuery.isError ? (
@@ -1042,13 +955,12 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                         </span>
                       </div>
                       <p className="text-[11px] text-slate-400">{getPriceDescription(price, t)}</p>
+                      <p className="text-sm font-semibold text-slate-800 tabular-nums">{formatCurrency(price.price)}</p>
                       {isPrivateTariffWithDuration(price) && (
                         <p className="text-[11px] text-slate-400">
                           {price.durationMinutes != null
                             ? formatLessonDuration(price.durationMinutes, t)
                             : t("prices.tariffDurationLegacy")}
-                          {" · "}
-                          {formatCurrency(price.price)}
                         </p>
                       )}
                     </div>
@@ -1134,6 +1046,22 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                     className={descriptionFieldCls}
                   />
                 </div>
+                <div className="field-stack">
+                  <label className={labelCls}>{t("prices.form.cost")}</label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      value={editPrice}
+                      onChange={(e) => setEditPrice(e.target.value)}
+                      className={`${inputCls} text-right font-semibold pr-8`}
+                      min={0}
+                      step="any"
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-sans text-slate-400 pointer-events-none">
+                      {currencySuffix}
+                    </span>
+                  </div>
+                </div>
                 {editingPrice && isPrivateTariffWithDuration(editingPrice) && (
                   <>
                     <PersonalTariffDurationField
@@ -1176,10 +1104,12 @@ export default function PricesPanel({ toast }: PricesPanelProps) {
                 <button
                   type="button"
                   onClick={handleSaveMeta}
-                  disabled={updatePriceMeta.isPending}
+                  disabled={updatePriceMeta.isPending || updatePrice.isPending}
                   className={`flex-1 ${btnAddCls}`}
                 >
-                  {updatePriceMeta.isPending ? t("common.saving") : t("prices.modal.accept")}
+                  {updatePriceMeta.isPending || updatePrice.isPending
+                    ? t("common.saving")
+                    : t("prices.modal.accept")}
                 </button>
                 <button
                   type="button"

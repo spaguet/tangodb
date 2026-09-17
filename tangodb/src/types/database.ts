@@ -2513,6 +2513,7 @@ export type Database = {
           organization_id: string
           pair_cycle_enabled: boolean
           rental_billing_profile: Json
+          show_beginner_hints: boolean
           teachers_can_accept_payments: boolean
           teachers_can_add_clients: boolean
           teachers_can_add_group_lessons: boolean
@@ -2551,6 +2552,7 @@ export type Database = {
           organization_id: string
           pair_cycle_enabled?: boolean
           rental_billing_profile?: Json
+          show_beginner_hints?: boolean
           teachers_can_accept_payments?: boolean
           teachers_can_add_clients?: boolean
           teachers_can_add_group_lessons?: boolean
@@ -2589,6 +2591,7 @@ export type Database = {
           organization_id?: string
           pair_cycle_enabled?: boolean
           rental_billing_profile?: Json
+          show_beginner_hints?: boolean
           teachers_can_accept_payments?: boolean
           teachers_can_add_clients?: boolean
           teachers_can_add_group_lessons?: boolean

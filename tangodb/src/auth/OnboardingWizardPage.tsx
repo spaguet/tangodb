@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import AppSelect from "../components/ui/AppSelect";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -9,14 +9,20 @@ import { ORG_MODULE_GROUPS, type OrgModuleGroupId } from "../lib/orgModules";
 import { useCompleteOrganizationOnboarding } from "../hooks/useCompleteOrganizationOnboarding";
 import { useGuestI18n } from "../hooks/useI18n";
 import type { I18nKey } from "../lib/i18n/keys";
+import { guessBrowserTimezone, TIMEZONE_OPTIONS } from "../lib/timezoneOptions";
+import {
+  clearOnboardingWizardDraft,
+  loadOnboardingWizardDraft,
+  saveOnboardingWizardDraft,
+  type OnboardingWizardStep,
+} from "../lib/onboardingWizardDraft";
+import { seedOnboardingStarterData } from "../lib/onboardingStarterData";
 import {
   AuthButton,
   AuthError,
   AuthField,
   AuthLayout,
 } from "./AuthLayout";
-
-type WizardStep = "name" | "preset" | "locale" | "modules";
 
 const PRESET_I18N: Record<OrgPreset, { label: I18nKey; hint: I18nKey }> = {
   dance_school: {
@@ -42,8 +48,8 @@ const PRESET_I18N: Record<OrgPreset, { label: I18nKey; hint: I18nKey }> = {
 };
 
 const PRESET_VALUES: OrgPreset[] = [
-  "dance_school",
   "solo_teacher",
+  "dance_school",
   "sport_section",
   "gymnastics_club",
   "custom",
@@ -75,17 +81,60 @@ export default function OnboardingWizardPage() {
   const navigate = useNavigate();
   const { organizationId, refreshOrganization } = useOrganization();
   const completeOnboarding = useCompleteOrganizationOnboarding();
-  const [step, setStep] = useState<WizardStep>("name");
+  const [step, setStep] = useState<OnboardingWizardStep>("name");
   const [orgName, setOrgName] = useState("");
-  const [preset, setPreset] = useState<OrgPreset>("dance_school");
+  const [preset, setPreset] = useState<OrgPreset>("solo_teacher");
   const [locale, setLocale] = useState("ru-RU");
   const [currencyCode, setCurrencyCode] = useState<string>(DEFAULT_CURRENCY_CODE);
-  const [modules, setModules] = useState<OrgModules>(PRESET_MODULES.dance_school);
+  const [timezone, setTimezone] = useState(() => guessBrowserTimezone());
+  const [modules, setModules] = useState<OrgModules>(PRESET_MODULES.solo_teacher);
   const [error, setError] = useState<string | null>(null);
+  const [draftRestored, setDraftRestored] = useState(false);
   const loading = completeOnboarding.isPending;
 
+  useEffect(() => {
+    if (!organizationId || draftRestored) return;
+    const draft = loadOnboardingWizardDraft(organizationId);
+    if (draft) {
+      setStep(draft.step);
+      setOrgName(draft.orgName);
+      setPreset(draft.preset);
+      setLocale(draft.locale);
+      setCurrencyCode(draft.currencyCode);
+      setTimezone(draft.timezone);
+      setModules(draft.modules);
+    }
+    setDraftRestored(true);
+  }, [organizationId, draftRestored]);
+
+  useEffect(() => {
+    if (!organizationId || !draftRestored) return;
+    saveOnboardingWizardDraft({
+      version: 1,
+      savedAt: Date.now(),
+      organizationId,
+      step,
+      orgName,
+      preset,
+      locale,
+      currencyCode,
+      timezone,
+      modules,
+    });
+  }, [
+    organizationId,
+    draftRestored,
+    step,
+    orgName,
+    preset,
+    locale,
+    currencyCode,
+    timezone,
+    modules,
+  ]);
+
   const stepIndex = useMemo(() => {
-    const order: WizardStep[] = ["name", "preset", "locale", "modules"];
+    const order: OnboardingWizardStep[] = ["name", "preset", "locale", "modules"];
     return order.indexOf(step);
   }, [step]);
 
@@ -116,8 +165,11 @@ export default function OnboardingWizardPage() {
         orgPreset: preset,
         locale,
         currencyCode,
+        timezone,
         modules,
       });
+      await seedOnboardingStarterData(organizationId);
+      clearOnboardingWizardDraft();
       await refreshOrganization();
       navigate("/", { replace: true });
     } catch (err) {
@@ -162,107 +214,131 @@ export default function OnboardingWizardPage() {
     else if (step === "modules") setStep("locale");
   };
 
+  const onFormSubmit = (e: FormEvent) => {
+    e.preventDefault();
+    next();
+  };
+
   return (
     <AuthLayout
       title="TangoDB"
       subtitle={t("onboarding.subtitleStep", { step: stepIndex + 1, total: 4 })}
     >
-      <AuthError message={error} />
+      <form onSubmit={onFormSubmit} className="space-y-4">
+        <AuthError message={error} />
 
-      {step === "name" && (
-        <AuthField
-          label={t("onboarding.field.orgName")}
-          value={orgName}
-          onChange={setOrgName}
-          placeholder="Studio Tango N"
-          required
-        />
-      )}
-
-      {step === "preset" && (
-        <div className="space-y-2">
-          {PRESET_VALUES.map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => applyPreset(value)}
-              className={`w-full rounded-lg border px-4 py-3 text-left transition-colors cursor-pointer ${
-                preset === value
-                  ? "border-indigo-400 bg-indigo-50"
-                  : "border-slate-200 hover:border-indigo-200"
-              }`}
-            >
-              <p className="text-sm font-semibold text-slate-800">{t(PRESET_I18N[value].label)}</p>
-              <p className="text-xs text-slate-500">{t(PRESET_I18N[value].hint)}</p>
-            </button>
-          ))}
-        </div>
-      )}
-
-      {step === "locale" && (
-        <div className="space-y-4">
-          <AppSelect
-            label={t("onboarding.field.locale")}
-            value={locale}
-            onChange={(e) => setLocale(e.target.value)}
-          >
-            {LOCALE_VALUES.map((option) => (
-              <option key={option.value} value={option.value}>
-                {t(option.key)} ({option.value})
-              </option>
-            ))}
-          </AppSelect>
-          <AppSelect
-            label={t("onboarding.field.currency")}
-            value={currencyCode}
-            onChange={(e) => setCurrencyCode(e.target.value)}
-          >
-            {CURRENCY_SELECT_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </AppSelect>
-        </div>
-      )}
-
-      {step === "modules" && (
-        <div className="space-y-4">
-          <p className="text-xs text-slate-500">{t("orgModules.disableHint")}</p>
-          {ORG_MODULE_GROUPS.map((group) => (
-            <div key={group.id} className="space-y-2">
-              <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
-                {t(MODULE_GROUP_LABEL_KEYS[group.id])}
-              </p>
-              {group.keys.map((key) => (
-                <label
-                  key={key}
-                  className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
-                >
-                  <span className="text-sm text-slate-700">{t(MODULE_I18N[key])}</span>
-                  <input
-                    type="checkbox"
-                    checked={modules[key]}
-                    onChange={() => toggleModule(key)}
-                    className="w-4 h-4 accent-indigo-600"
-                  />
-                </label>
-              ))}
-            </div>
-          ))}
-        </div>
-      )}
-
-      <div className="flex gap-2">
-        {step !== "name" && (
-          <AuthButton type="button" variant="secondary" onClick={back}>
-            {t("common.back")}
-          </AuthButton>
+        {step === "name" && (
+          <>
+            <p className="text-xs text-slate-500">{t("onboarding.hint.nameStep")}</p>
+            <AuthField
+              label={t("onboarding.field.orgName")}
+              value={orgName}
+              onChange={setOrgName}
+              placeholder={t("onboarding.placeholder.orgName")}
+              required
+            />
+          </>
         )}
-        <AuthButton loading={loading} onClick={next}>
-          {step === "modules" ? t("onboarding.finish") : t("onboarding.next")}
-        </AuthButton>
-      </div>
+
+        {step === "preset" && (
+          <div className="space-y-2">
+            <p className="text-xs text-slate-500">{t("onboarding.hint.presetStep")}</p>
+            {PRESET_VALUES.map((value) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => applyPreset(value)}
+                className={`w-full rounded-lg border px-4 py-3 text-left transition-colors cursor-pointer ${
+                  preset === value
+                    ? "border-indigo-400 bg-indigo-50"
+                    : "border-slate-200 hover:border-indigo-200"
+                }`}
+              >
+                <p className="text-sm font-semibold text-slate-800">{t(PRESET_I18N[value].label)}</p>
+                <p className="text-xs text-slate-500">{t(PRESET_I18N[value].hint)}</p>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {step === "locale" && (
+          <div className="space-y-4">
+            <p className="text-xs text-slate-500">{t("onboarding.hint.localeStep")}</p>
+            <AppSelect
+              label={t("onboarding.field.locale")}
+              value={locale}
+              onChange={(e) => setLocale(e.target.value)}
+            >
+              {LOCALE_VALUES.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {t(option.key)} ({option.value})
+                </option>
+              ))}
+            </AppSelect>
+            <AppSelect
+              label={t("onboarding.field.currency")}
+              value={currencyCode}
+              onChange={(e) => setCurrencyCode(e.target.value)}
+            >
+              {CURRENCY_SELECT_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </AppSelect>
+            <AppSelect
+              label={t("onboarding.field.timezone")}
+              value={timezone}
+              onChange={(e) => setTimezone(e.target.value)}
+            >
+              {TIMEZONE_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </AppSelect>
+          </div>
+        )}
+
+        {step === "modules" && (
+          <div className="space-y-4">
+            <p className="text-xs text-slate-500">{t("onboarding.hint.modulesStep")}</p>
+            <p className="text-xs text-slate-500">{t("orgModules.disableHint")}</p>
+            {ORG_MODULE_GROUPS.map((group) => (
+              <div key={group.id} className="space-y-2">
+                <p className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
+                  {t(MODULE_GROUP_LABEL_KEYS[group.id])}
+                </p>
+                {group.keys.map((key) => (
+                  <label
+                    key={key}
+                    className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3 cursor-pointer hover:bg-slate-50"
+                  >
+                    <span className="text-sm text-slate-700">{t(MODULE_I18N[key])}</span>
+                    <input
+                      type="checkbox"
+                      checked={modules[key]}
+                      onChange={() => toggleModule(key)}
+                      className="w-4 h-4 accent-indigo-600"
+                    />
+                  </label>
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex gap-2">
+          {step !== "name" && (
+            <AuthButton type="button" variant="secondary" onClick={back}>
+              {t("common.back")}
+            </AuthButton>
+          )}
+          <AuthButton type="submit" loading={loading}>
+            {step === "modules" ? t("onboarding.finish") : t("onboarding.next")}
+          </AuthButton>
+        </div>
+      </form>
     </AuthLayout>
   );
 }

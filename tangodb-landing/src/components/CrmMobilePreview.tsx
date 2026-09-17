@@ -6,38 +6,19 @@ import { crmStrings } from "../crm/strings";
 type Props = {
   locale: Locale;
   alt: string;
+  caption?: string;
 };
 
 const PREVIEW_WIDTH = 390;
 
 /** Static mobile CRM frame for the platform section — uses the real dashboard panel. */
-export function CrmMobilePreview({ locale, alt }: Props) {
+export function CrmMobilePreview({ locale, alt, caption }: Props) {
   const s = crmStrings(locale);
   const mobileTabs = [
-    {
-      icon: LayoutDashboard,
-      line1: s.nav.mobileDashboardLine1,
-      line2: s.nav.mobileDashboardLine2,
-      active: true,
-    },
-    {
-      icon: Ticket,
-      line1: s.nav.mobileSubscriptionsLine1,
-      line2: s.nav.mobileSubscriptionsLine2,
-      active: false,
-    },
-    {
-      icon: CalendarCheck,
-      line1: s.nav.mobileAttendanceLine1,
-      line2: s.nav.mobileAttendanceLine2,
-      active: false,
-    },
-    {
-      icon: Calendar,
-      line1: s.nav.mobileScheduleLine1,
-      line2: s.nav.mobileScheduleLine2,
-      active: false,
-    },
+    { icon: LayoutDashboard, label: s.nav.mobileTabDashboard, active: true },
+    { icon: Ticket, label: s.nav.mobileTabSubscriptions, active: false },
+    { icon: CalendarCheck, label: s.nav.mobileTabAttendance, active: false },
+    { icon: Calendar, label: s.nav.mobileTabSchedule, active: false },
   ];
 
   return (
@@ -65,20 +46,15 @@ export function CrmMobilePreview({ locale, alt }: Props) {
                 </section>
 
                 <div className="flex h-14 shrink-0 items-center justify-around border-t border-slate-200 bg-white px-0.5 shadow-md">
-                  {mobileTabs.map(({ icon: Icon, line1, line2, active }) => (
+                  {mobileTabs.map(({ icon: Icon, label, active }) => (
                     <div
-                      key={`${line1}-${line2}`}
+                      key={label}
                       className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-0.5 py-0 ${
                         active ? "text-indigo-600" : "text-slate-400"
                       }`}
                     >
                       <Icon className="h-4 w-4 shrink-0" />
-                      <span className="text-center text-[8px] font-semibold uppercase leading-none tracking-wide">
-                        {line1}
-                      </span>
-                      <span className="text-center text-[8px] font-semibold uppercase leading-none tracking-wide">
-                        {line2}
-                      </span>
+                      <span className="text-center text-[9px] font-semibold leading-tight">{label}</span>
                     </div>
                   ))}
                 </div>
@@ -88,6 +64,9 @@ export function CrmMobilePreview({ locale, alt }: Props) {
         </div>
       </div>
       <figcaption className="sr-only">{alt}</figcaption>
+      {caption ? (
+        <p className="mt-2 text-center text-xs text-slate-500" aria-hidden="true">{caption}</p>
+      ) : null}
     </figure>
   );
 }

@@ -1,4 +1,5 @@
 import type { Locale } from "../i18n";
+import { getMondayOfWeek } from "./demoDates";
 
 export function formatMoney(n: number, locale: Locale = "ru") {
   return new Intl.NumberFormat(locale === "ru" ? "ru-RU" : "en-US", {
@@ -11,7 +12,7 @@ export function formatMoney(n: number, locale: Locale = "ru") {
 /** @deprecated use formatMoney */
 export const formatEuro = formatMoney;
 
-export const STUDIO_NAME = "Studio Ritmo";
+export const STUDIO_NAME = "Студия Ритм";
 export const STUDIO_LOCATION = "Зал A";
 
 export const financialStats = {
@@ -48,60 +49,71 @@ export const revenueSplit = [
 export const revenueTrend = [8200, 9100, 8800, 10200, 11100, 12480] as const;
 
 export const topTeachers = [
-  { name: "Maria López", amount: 4820 },
-  { name: "Carlos Ruiz", amount: 3910 },
-  { name: "Ana Petrova", amount: 2750 },
+  { name: "Мария Лопес", amount: 4820 },
+  { name: "Пётр Рузин", amount: 3910 },
+  { name: "Ана Петрова", amount: 2750 },
 ] as const;
 
 export const topClients = [
-  { name: "James & Sophie Chen", amount: 420 },
-  { name: "Isabella Morales", amount: 385 },
-  { name: "Elena Vasquez", amount: 290 },
+  { name: "Алексей и Мария Козловы", amount: 420 },
+  { name: "Анастасия Морозова", amount: 385 },
+  { name: "Елена Смирнова", amount: 290 },
 ] as const;
 
 export const activeSubsSummary = { total: 24, solos: 16, pairs: 8 };
 export const unpaidPersonal = { count: 2, amount: 115 };
 
 export const expiringSubs = [
-  { client: "Luca Romano", left: 1, total: 4, discipline: "Salsa" },
-  { client: "Marta Gómez", left: 2, total: 8, discipline: "Bachata" },
+  { client: "Лука Романов", left: 1, total: 4, discipline: "Сальса" },
+  { client: "Марта Сёмина", left: 2, total: 8, discipline: "Бачата" },
 ] as const;
 
 export const todayPayments = [
-  { client: "Elena Vasquez", source: "Subscription", method: "Card", amount: 120 },
-  { client: "Diego Fernández", source: "Drop-in", method: "Cash", amount: 15 },
+  { client: "Елена Смирнова", source: "Абонемент", method: "Карта", amount: 120 },
+  { client: "Дмитрий Фёдоров", source: "Разовое", method: "Наличные", amount: 15 },
 ] as const;
 
 export const attendanceMonthStats = { present: 142, absent: 28, freeze: 4 };
 
-export const scheduleLessons = [
-  { day: 1, dayNum: 23, title: "Salsa", subtitle: "Maria López", start: "18:00", end: "19:00", kind: "group" as const },
-  { day: 1, dayNum: 23, title: "Bachata", subtitle: "Carlos Ruiz", start: "19:30", end: "20:30", kind: "group" as const },
-  { day: 2, dayNum: 24, title: "Tango", subtitle: "Ana Petrova", start: "17:00", end: "18:00", kind: "group" as const },
-  { day: 3, dayNum: 25, title: "Salsa", subtitle: "Maria López", start: "18:30", end: "19:30", kind: "group" as const },
-  { day: 4, dayNum: 26, title: "Bachata", subtitle: "Carlos Ruiz", start: "19:00", end: "20:00", kind: "group" as const },
-  { day: 5, dayNum: 27, title: "Tango", subtitle: "Ana Petrova", start: "18:00", end: "19:00", kind: "group" as const },
-  { day: 6, dayNum: 28, title: "Salsa", subtitle: "Maria López", start: "11:00", end: "12:00", kind: "group" as const },
-  { day: 3, dayNum: 25, title: "Private", subtitle: "Elena Vasquez", start: "14:00", end: "15:00", kind: "personal" as const },
+const scheduleLessonTemplates = [
+  { day: 1, title: "Сальса", subtitle: "Мария Лопес", start: "18:00", end: "19:00", kind: "group" as const },
+  { day: 1, title: "Бачата", subtitle: "Пётр Рузин", start: "19:30", end: "20:30", kind: "group" as const },
+  { day: 2, title: "Танго", subtitle: "Ана Петрова", start: "17:00", end: "18:00", kind: "group" as const },
+  { day: 3, title: "Сальса", subtitle: "Мария Лопес", start: "18:30", end: "19:30", kind: "group" as const },
+  { day: 4, title: "Бачата", subtitle: "Пётр Рузин", start: "19:00", end: "20:00", kind: "group" as const },
+  { day: 5, title: "Танго", subtitle: "Ана Петрова", start: "18:00", end: "19:00", kind: "group" as const },
+  { day: 6, title: "Сальса", subtitle: "Мария Лопес", start: "11:00", end: "12:00", kind: "group" as const },
+  { day: 3, title: "Персональный", subtitle: "Елена Смирнова", start: "14:00", end: "15:00", kind: "personal" as const },
 ] as const;
 
+export type DemoScheduleLesson = (typeof scheduleLessonTemplates)[number] & { dayNum: number };
+
+export function getScheduleLessons(): DemoScheduleLesson[] {
+  const monday = getMondayOfWeek();
+  return scheduleLessonTemplates.map((lesson) => {
+    const date = new Date(monday);
+    date.setDate(monday.getDate() + (lesson.day - 1));
+    return { ...lesson, dayNum: date.getDate() };
+  });
+}
+
 export const attendanceStudents = [
-  { name: "Elena Vasquez", status: "present" as const, sub: "Solo · 3 left" },
-  { name: "Luca Romano", status: "present" as const, sub: "Solo · 1 left" },
-  { name: "Isabella Morales", status: "absent" as const, sub: "Solo · 8 left" },
-  { name: "James & Sophie Chen", status: "present" as const, sub: "Pair · 6 left" },
-  { name: "Tomás & Paula Ruiz", status: "freeze" as const, sub: "Pair · 4 left" },
-  { name: "Marta Gómez", status: "present" as const, sub: "Solo · 2 left" },
-  { name: "Diego Fernández", status: "absent" as const, sub: "Solo · 5 left" },
+  { name: "Елена Смирнова", status: "present" as const, sub: "Соло · осталось 3" },
+  { name: "Лука Романов", status: "present" as const, sub: "Соло · осталось 1" },
+  { name: "Анастасия Морозова", status: "absent" as const, sub: "Соло · осталось 8" },
+  { name: "Алексей и Мария Козловы", status: "present" as const, sub: "Пара · осталось 6" },
+  { name: "Павел и Полина Рудь", status: "freeze" as const, sub: "Пара · осталось 4" },
+  { name: "Марта Сёмина", status: "present" as const, sub: "Соло · осталось 2" },
+  { name: "Дмитрий Фёдоров", status: "absent" as const, sub: "Соло · осталось 5" },
 ] as const;
 
 export const subscriptionGroups = [
   {
-    discipline: "Salsa",
+    discipline: "Сальса",
     subs: [
       {
         id: "s1",
-        client: "Elena Vasquez",
+        client: "Елена Смирнова",
         tariff: "Solo · 8 classes",
         left: 3,
         total: 8,
@@ -113,7 +125,7 @@ export const subscriptionGroups = [
       },
       {
         id: "s2",
-        client: "Isabella Morales",
+        client: "Анастасия Морозова",
         tariff: "Solo · 8 classes",
         left: 8,
         total: 8,
@@ -126,11 +138,11 @@ export const subscriptionGroups = [
     ],
   },
   {
-    discipline: "Bachata",
+    discipline: "Бачата",
     subs: [
       {
         id: "s3",
-        client: "James & Sophie Chen",
+        client: "Алексей и Мария Козловы",
         tariff: "Pair · 12 classes",
         left: 6,
         total: 12,
@@ -143,11 +155,11 @@ export const subscriptionGroups = [
     ],
   },
   {
-    discipline: "Argentine Tango",
+    discipline: "Аргентинское танго",
     subs: [
       {
         id: "s4",
-        client: "Luca Romano",
+        client: "Лука Романов",
         tariff: "Solo · 4 classes",
         left: 1,
         total: 4,
@@ -164,18 +176,18 @@ export const subscriptionGroups = [
 
 export const subscriptionHistory = [
   {
-    client: "Pedro Alonso",
+    client: "Пётр Аносов",
     tariff: "Solo · 8 classes",
-    discipline: "Salsa",
+    discipline: "Сальса",
     activated: "2026-01-12",
     left: 0,
     total: 8,
     finished: true,
   },
   {
-    client: "Marta Gómez",
+    client: "Марта Сёмина",
     tariff: "Solo · 4 classes",
-    discipline: "Bachata",
+    discipline: "Бачата",
     activated: "2026-02-20",
     left: 2,
     total: 4,
@@ -184,10 +196,10 @@ export const subscriptionHistory = [
 ] as const;
 
 export const subscriptions = [
-  { client: "Elena Vasquez", type: "Solo · 8 classes", discipline: "Salsa", left: 3, total: 8, groups: "Mon 18:00" },
-  { client: "James & Sophie Chen", type: "Pair · 12 classes", discipline: "Bachata", left: 6, total: 12, groups: "Thu 19:00" },
-  { client: "Luca Romano", type: "Solo · 4 classes", discipline: "Tango", left: 1, total: 4, groups: "Tue 17:00" },
-  { client: "Isabella Morales", type: "Solo · 8 classes", discipline: "Salsa", left: 8, total: 8, groups: "Wed 18:30" },
+  { client: "Елена Смирнова", type: "Соло · 8 занятий", discipline: "Сальса", left: 3, total: 8, groups: "Пн 18:00" },
+  { client: "Алексей и Мария Козловы", type: "Пара · 12 занятий", discipline: "Бачата", left: 6, total: 12, groups: "Чт 19:00" },
+  { client: "Лука Романов", type: "Соло · 4 занятия", discipline: "Танго", left: 1, total: 4, groups: "Вт 17:00" },
+  { client: "Анастасия Морозова", type: "Соло · 8 занятий", discipline: "Сальса", left: 8, total: 8, groups: "Ср 18:30" },
 ] as const;
 
 export type DemoPersonalLesson = {
@@ -211,10 +223,10 @@ export const personalLessons: DemoPersonalLesson[] = [
     date: "2026-06-30",
     timeStart: "14:00",
     timeEnd: "15:00",
-    clientDisplay: "Elena Vasquez",
-    teacher: "Maria López",
-    discipline: "Salsa",
-    location: "Hall A",
+    clientDisplay: "Елена Смирнова",
+    teacher: "Мария Лопес",
+    discipline: "Сальса",
+    location: "Зал A",
     type: "solo",
     paid: "yes",
     attendance: "present",
@@ -225,10 +237,10 @@ export const personalLessons: DemoPersonalLesson[] = [
     date: "2026-07-01",
     timeStart: "16:30",
     timeEnd: "17:30",
-    clientDisplay: "James & Sophie Chen",
-    teacher: "Carlos Ruiz",
-    discipline: "Bachata",
-    location: "Hall A",
+    clientDisplay: "Алексей и Мария Козловы",
+    teacher: "Пётр Рузин",
+    discipline: "Бачата",
+    location: "Зал A",
     type: "pair",
     paid: "no",
     attendance: null,
@@ -239,10 +251,10 @@ export const personalLessons: DemoPersonalLesson[] = [
     date: "2026-06-28",
     timeStart: "11:00",
     timeEnd: "12:00",
-    clientDisplay: "Luca Romano",
-    teacher: "Ana Petrova",
-    discipline: "Argentine Tango",
-    location: "Hall B",
+    clientDisplay: "Лука Романов",
+    teacher: "Ана Петрова",
+    discipline: "Аргентинское танго",
+    location: "Зал B",
     type: "solo",
     paid: "yes",
     attendance: "present",
@@ -253,10 +265,10 @@ export const personalLessons: DemoPersonalLesson[] = [
     date: "2026-07-03",
     timeStart: "18:00",
     timeEnd: "19:00",
-    clientDisplay: "Isabella Morales",
-    teacher: "Maria López",
-    discipline: "Salsa",
-    location: "Hall A",
+    clientDisplay: "Анастасия Морозова",
+    teacher: "Мария Лопес",
+    discipline: "Сальса",
+    location: "Зал A",
     type: "solo",
     paid: "no",
     attendance: null,
@@ -265,16 +277,16 @@ export const personalLessons: DemoPersonalLesson[] = [
 ];
 
 export const sellForm = {
-  client: "Isabella Morales",
+  client: "Анастасия Морозова",
   client2: "",
-  discipline: "Salsa",
-  tariff: "Solo · 8 classes",
+  discipline: "Сальса",
+  tariff: "Соло · 8 занятий",
   price: 120,
   activation: "2026-07-01",
-  payment: "Card",
-  groups: "Mon 18:00, Wed 18:30",
+  payment: "Карта",
+  groups: "Пн 18:00, Ср 18:30",
   localPriceList: false,
-  location: "Hall A",
+  location: "Зал A",
 } as const;
 
 export const dowShort = { en: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"], ru: ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Вс"] } as const;
@@ -291,42 +303,42 @@ export type DemoClient = {
 };
 
 export const demoClients: DemoClient[] = [
-  { id: "1", firstName: "Elena", lastName: "Vasquez", phone: "+34 612 345 678", email: "elena@email.com", telegram: "https://t.me/elena_v", isMinor: false, note: "Prefers front row" },
-  { id: "2", firstName: "James", lastName: "Chen", phone: "+34 698 112 233", email: "james@email.com", telegram: "https://t.me/jchen", isMinor: false },
-  { id: "3", firstName: "Sophie", lastName: "Chen", phone: "+34 698 112 234", email: "sophie@email.com", telegram: "", isMinor: false },
-  { id: "4", firstName: "Luca", lastName: "Romano", phone: "+34 655 887 120", email: "", telegram: "https://t.me/lucar", isMinor: false },
-  { id: "5", firstName: "Isabella", lastName: "Morales", phone: "+34 611 440 992", email: "isa@email.com", telegram: "https://t.me/isa_m", isMinor: false },
-  { id: "6", firstName: "Marta", lastName: "Gómez", phone: "+34 600 221 889", email: "", telegram: "", isMinor: false },
+  { id: "1", firstName: "Елена", lastName: "Смирнова", phone: "+7 912 345 67 89", email: "elena@example.ru", telegram: "https://t.me/elena_demo", isMinor: false, note: "Любит первый ряд" },
+  { id: "2", firstName: "Алексей", lastName: "Козлов", phone: "+7 916 112 23 34", email: "alex@example.ru", telegram: "https://t.me/alex_demo", isMinor: false },
+  { id: "3", firstName: "Мария", lastName: "Козлова", phone: "+7 916 112 23 35", email: "maria@example.ru", telegram: "", isMinor: false },
+  { id: "4", firstName: "Лука", lastName: "Романов", phone: "+7 903 887 12 00", email: "", telegram: "https://t.me/luka_demo", isMinor: false },
+  { id: "5", firstName: "Анастасия", lastName: "Морозова", phone: "+7 911 440 99 22", email: "nastya@example.ru", telegram: "https://t.me/nastya_demo", isMinor: false },
+  { id: "6", firstName: "Марта", lastName: "Сёмина", phone: "+7 900 221 88 99", email: "", telegram: "", isMinor: false },
 ];
 
 export const archivedClients = [
-  { id: "a1", firstName: "Pedro", lastName: "Alonso", archivedAt: "2026-05-12" },
+  { id: "a1", firstName: "Пётр", lastName: "Аносов", archivedAt: "2026-05-12" },
 ] as const;
 
 export const paymentJournal = [
-  { client: "Elena Vasquez", date: "Jun 30, 14:22", source: "Subscription", method: "Card", amount: 120 },
-  { client: "James & Sophie Chen", date: "Jun 29, 11:05", source: "Private lesson", method: "Transfer", amount: 70 },
-  { client: "Diego Fernández", date: "Jun 30, 18:41", source: "Drop-in", method: "Cash", amount: 15 },
-  { client: "Isabella Morales", date: "Jun 28, 09:15", source: "Subscription", method: "Card", amount: 165 },
-  { client: "Luca Romano", date: "Jun 27, 16:50", source: "Private lesson", method: "Card", amount: 50 },
+  { client: "Елена Смирнова", date: "30 сен., 14:22", source: "Абонемент", method: "Карта", amount: 120 },
+  { client: "Алексей и Мария Козловы", date: "29 сен., 11:05", source: "Персональный", method: "Перевод", amount: 70 },
+  { client: "Дмитрий Фёдоров", date: "30 сен., 18:41", source: "Разовое", method: "Наличные", amount: 15 },
+  { client: "Анастасия Морозова", date: "28 сен., 09:15", source: "Абонемент", method: "Карта", amount: 165 },
+  { client: "Лука Романов", date: "27 сен., 16:50", source: "Персональный", method: "Карта", amount: 50 },
 ] as const;
 
 export const debtors = [
-  { client: "James & Sophie Chen", contact: "@jchen", detail: "Private · Jul 1 · 16:30", amount: 70 },
-  { client: "Isabella Morales", contact: "@isa_m", detail: "Private · Jul 3 · 18:00", amount: 45 },
-  { client: "Luca Romano", contact: "@lucar", detail: "Subscription · 1 lesson left", amount: 0 },
+  { client: "Алексей и Мария Козловы", contact: "@alex_demo", detail: "Персональный · 1 окт · 16:30", amount: 70 },
+  { client: "Анастасия Морозова", contact: "@nastya_demo", detail: "Персональный · 3 окт · 18:00", amount: 45 },
+  { client: "Лука Романов", contact: "@luka_demo", detail: "Абонемент · осталось 1 занятие", amount: 0 },
 ] as const;
 
 export const expenses = [
-  { description: "Studio rent — June", category: "Rent", date: "Jun 1", amount: 1800 },
-  { description: "Social media ads", category: "Marketing", date: "Jun 8", amount: 250 },
-  { description: "Cleaning supplies", category: "Supplies", date: "Jun 15", amount: 85 },
+  { description: "Аренда зала", category: "Аренда", date: "1 сен.", amount: 1800 },
+  { description: "Реклама в соцсетях", category: "Маркетинг", date: "8 сен.", amount: 250 },
+  { description: "Хозтовары", category: "Расходники", date: "15 сен.", amount: 85 },
 ] as const;
 
 export const payrollRows = [
-  { name: "Maria López", role: "Teacher", accrued: 1680, paid: 1200, balance: 480 },
-  { name: "Carlos Ruiz", role: "Teacher", accrued: 1420, paid: 1420, balance: 0 },
-  { name: "Ana Petrova", role: "Teacher", accrued: 1000, paid: 800, balance: 200 },
+  { name: "Мария Лопес", role: "Преподаватель", accrued: 1680, paid: 1200, balance: 480 },
+  { name: "Пётр Рузин", role: "Преподаватель", accrued: 1420, paid: 1420, balance: 0 },
+  { name: "Ана Петрова", role: "Преподаватель", accrued: 1000, paid: 800, balance: 200 },
 ] as const;
 
 export const priceTariffs = {
@@ -348,41 +360,41 @@ export const priceTariffs = {
   ],
 } as const;
 
-export const disciplines = ["Salsa", "Bachata", "Argentine Tango"] as const;
+export const disciplines = ["Сальса", "Бачата", "Аргентинское танго"] as const;
 export const locations = [
-  { name: "Hall A", address: "Calle Mayor 12, Madrid" },
-  { name: "Hall B", address: "Calle Mayor 12, Madrid" },
+  { name: "Зал A", address: "ул. Примерная, 12, Москва" },
+  { name: "Зал B", address: "ул. Примерная, 12, Москва" },
 ] as const;
 
 export const teamMembers = [
-  { name: "Ana Petrova", role: "Owner", since: "Jan 2024" },
-  { name: "Maria López", role: "Teacher", since: "Mar 2024" },
-  { name: "Carlos Ruiz", role: "Teacher", since: "Apr 2024" },
-  { name: "Laura Martín", role: "Administrator", since: "Jun 2024" },
+  { name: "Ана Петрова", role: "Владелец", since: "янв. 2024" },
+  { name: "Мария Лопес", role: "Преподаватель", since: "мар. 2024" },
+  { name: "Пётр Рузин", role: "Преподаватель", since: "апр. 2024" },
+  { name: "Лаура Мартынова", role: "Администратор", since: "июн. 2024" },
 ] as const;
 
 export const pendingInvites = [
-  { name: "Diego Fernández", email: "diego@email.com", role: "Teacher", expires: "Jul 7" },
+  { name: "Дмитрий Фёдоров", email: "dmitry@example.ru", role: "Преподаватель", expires: "7 окт." },
 ] as const;
 
 export const personalSellForm = {
-  client: "Elena Vasquez",
-  teacher: "Maria López",
-  location: "Hall A",
-  discipline: "Salsa",
+  client: "Елена Смирнова",
+  teacher: "Мария Лопес",
+  location: "Зал A",
+  discipline: "Сальса",
   date: "2026-07-05",
   timeStart: "14:00",
   timeEnd: "15:00",
-  tariff: "Private solo · 60 min",
+  tariff: "Персональное соло · 60 мин",
   price: 45,
-  payment: "Card",
+  payment: "Карта",
 } as const;
 
 export const settingsGeneral = {
-  locale: "English",
-  currency: "EUR",
-  currencyDisplay: "Symbol (€)",
-  timezone: "Europe/Madrid",
-  weekStart: "Monday",
-  branding: "Studio Ritmo",
+  locale: "Русский",
+  currency: "RUB",
+  currencyDisplay: "Символ (₽)",
+  timezone: "Europe/Moscow",
+  weekStart: "Понедельник",
+  branding: "Студия Ритм",
 } as const;

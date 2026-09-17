@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { motion } from "motion/react";
 import {
   Ticket,
@@ -8,6 +9,7 @@ import {
   ChevronRight,
   Send,
   ClipboardCheck,
+  Loader2,
 } from "lucide-react";
 import {
   formatClientName,
@@ -22,16 +24,18 @@ import { shiftMonth } from "../lib/financeReports";
 import { paymentEffectiveAmount } from "../lib/paymentCorrection";
 import type { PaymentWithCorrectionMeta } from "../lib/paymentCorrection";
 import { useI18n } from "../hooks/useI18n";
-import type { Client, PersonalLesson, Subscription } from "../types";
+import type { Client, Subscription } from "../types";
 import { PAYMENT_METHODS, getPaymentMethodLabel, paymentSourceLabel } from "../hooks/usePayments";
 import { useAttendanceRecords } from "../hooks/useAttendance";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { usePersonalLessonsModuleEnabled } from "../hooks/useOrgModules";
+import { useDashboardDebtorMetrics } from "../hooks/useDashboardDebtorMetrics";
+
+type KpiHintId = "activeSubs" | "debtors" | "expiringSubs";
 
 interface OperationalDashboardProps {
   clients: Client[];
   subscriptions: Subscription[];
-  personalLessons: PersonalLesson[];
   todayPayments?: PaymentWithCorrectionMeta[];
   showOperationalPayments?: boolean;
   onNavigate: (panel: string) => void;
@@ -40,16 +44,19 @@ interface OperationalDashboardProps {
 export default function OperationalDashboard({
   clients,
   subscriptions,
-  personalLessons,
   todayPayments = [],
   showOperationalPayments = false,
   onNavigate,
 }: OperationalDashboardProps) {
+  const navigate = useNavigate();
   const { t, locale, plural } = useI18n();
   const { settings } = useOrganization();
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
+  const debtorsQuery = useDashboardDebtorMetrics({ enabled: personalLessonsEnabled });
+  const debtorSummary = debtorsQuery.summary;
   const lowBalanceThreshold = settings?.low_balance_threshold ?? 2;
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
+  const [openKpiHint, setOpenKpiHint] = useState<KpiHintId | null>(null);
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
   const attendanceQuery = useAttendanceRecords(statsMonth);
 
@@ -68,11 +75,32 @@ export default function OperationalDashboard({
     [clients]
   );
 
-  const unpaidLessons = personalLessons.filter((l) => l.paid === "no");
-  const pendingUnpaidCount = unpaidLessons.length;
-  const pendingRevenue = unpaidLessons.reduce((sum, l) => sum + l.price, 0);
-  const hasPendingPayment = pendingUnpaidCount > 0;
-  const pendingPaymentColor = hasPendingPayment ? "text-rose-600" : "text-slate-400";
+  const debtorRecordCount = debtorSummary.recordCount;
+  const debtorTotalAmount = debtorSummary.totalAmount;
+  const hasReceivables = debtorRecordCount > 0;
+  const receivablesAccent = hasReceivables ? "text-rose-600" : "text-slate-600";
+  const receivablesMuted = hasReceivables ? "text-rose-600" : "text-slate-500";
+
+  const solosLabel = plural(solosCount, [
+    t("dashboard.subscriptionSolo.one"),
+    t("dashboard.subscriptionSolo.few"),
+    t("dashboard.subscriptionSolo.many"),
+  ]);
+  const pairsLabel = plural(pairsCount, [
+    t("dashboard.subscriptionPair.one"),
+    t("dashboard.subscriptionPair.few"),
+    t("dashboard.subscriptionPair.many"),
+  ]);
+  const solosPairsLine = t("dashboard.solosPairsLine", {
+    solos: solosCount,
+    solosLabel,
+    pairs: pairsCount,
+    pairsLabel,
+  });
+
+  const toggleKpiHint = (id: KpiHintId) => {
+    setOpenKpiHint((prev) => (prev === id ? null : id));
+  };
 
   const attendanceStats = useMemo(() => {
     const records = attendanceQuery.data ?? [];
@@ -96,10 +124,12 @@ export default function OperationalDashboard({
     <div id="panel-dashboard" className="panel-page-stack">
       <div className="space-y-3">
         <div className={`grid gap-3 ${personalLessonsEnabled ? "grid-cols-2" : "grid-cols-1"}`}>
-          <motion.div
+          <motion.button
+            type="button"
             whileHover={{ y: -2 }}
-            className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all min-w-0"
-            onClick={() => onNavigate("activeSubs")}
+            className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all min-w-0 text-left w-full"
+            onClick={() => toggleKpiHint("activeSubs")}
+            aria-expanded={openKpiHint === "activeSubs"}
           >
             <p className="text-[10px] text-slate-400 uppercase font-sans tracking-wider font-semibold leading-tight">
               {t("dashboard.activeSubs")}
@@ -108,30 +138,75 @@ export default function OperationalDashboard({
               <Ticket className="text-indigo-600 shrink-0 w-5 h-5" />
               <h3 className="font-semibold text-slate-800">{activeSubs.length}</h3>
             </div>
-            <p className="text-[10px] text-slate-500 font-sans mt-0.5 leading-tight">
-              {t("dashboard.solosPairs", { solos: solosCount, pairs: pairsCount })}
-            </p>
-          </motion.div>
+            <p className="text-[10px] text-slate-500 font-sans mt-0.5 leading-tight">{solosPairsLine}</p>
+            {openKpiHint === "activeSubs" ? (
+              <div className="mt-2 border-t border-slate-100 pt-2 space-y-2">
+                <p className="text-[10px] text-slate-500 leading-snug">{t("dashboard.kpiHint.activeSubs")}</p>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onNavigate("activeSubs");
+                  }}
+                  className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+                >
+                  {t("dashboard.openActiveSubs")}
+                </button>
+              </div>
+            ) : null}
+          </motion.button>
 
           {personalLessonsEnabled ? (
-            <motion.div
+            <motion.button
+              type="button"
               whileHover={{ y: -2 }}
-              className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all"
-              onClick={() => onNavigate("personalView")}
+              className="bg-white rounded-xl px-3 py-2.5 border border-slate-200/90 shadow-xs cursor-pointer hover:shadow-sm transition-all text-left w-full"
+              onClick={() => toggleKpiHint("debtors")}
+              aria-expanded={openKpiHint === "debtors"}
             >
-              <p className={`text-[10px] uppercase font-sans tracking-wider font-semibold leading-tight ${pendingPaymentColor}`}>
+              <p className={`text-[10px] uppercase font-sans tracking-wider font-semibold leading-tight ${receivablesMuted}`}>
                 {t("dashboard.debtorsPersonal")}
               </p>
-              <div className={`flex items-center gap-1.5 mt-0.5 text-xl leading-none ${pendingPaymentColor}`}>
+              <div className={`flex items-center gap-1.5 mt-0.5 text-xl leading-none ${receivablesAccent}`}>
                 <AlertCircle className="shrink-0 w-5 h-5" />
-                <h3 className="font-sans font-semibold">
-                  {pendingUnpaidCount} / {formatCurrency(pendingRevenue)}
-                </h3>
+                {debtorsQuery.isLoading ? (
+                  <span className="inline-flex items-center gap-1.5 text-sm text-slate-400">
+                    <Loader2 className="w-4 h-4 animate-spin" aria-hidden />
+                    {t("common.loading.default")}
+                  </span>
+                ) : (
+                  <h3 className="font-sans font-semibold tabular-nums">
+                    {t("dashboard.receivablesCountAmount", {
+                      count: debtorRecordCount,
+                      amount: formatCurrency(debtorTotalAmount),
+                    })}
+                  </h3>
+                )}
               </div>
-              <p className={`text-[10px] font-sans mt-0.5 leading-tight ${pendingPaymentColor}`}>
-                {t("dashboard.unpaidLessons")}
-              </p>
-            </motion.div>
+              {!debtorsQuery.isLoading ? (
+                <p className={`text-[10px] font-sans mt-0.5 leading-tight ${receivablesMuted}`}>
+                  {t("dashboard.receivablesBreakdown", {
+                    subs: debtorSummary.subscriptionCount,
+                    personal: debtorSummary.personalCount,
+                  })}
+                </p>
+              ) : null}
+              {openKpiHint === "debtors" ? (
+                <div className="mt-2 border-t border-slate-100 pt-2 space-y-2">
+                  <p className="text-[10px] text-slate-500 leading-snug">{t("dashboard.kpiHint.debtors")}</p>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      navigate("/finance/debtors");
+                    }}
+                    className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800"
+                  >
+                    {t("dashboard.openDebtorsList")}
+                  </button>
+                </div>
+              ) : null}
+            </motion.button>
           ) : null}
         </div>
       </div>
@@ -192,12 +267,17 @@ export default function OperationalDashboard({
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <div className="bg-white rounded-xl p-3.5 border border-slate-200/90 shadow-xs space-y-2">
           <div className="flex items-center justify-between border-b border-slate-100 pb-2">
-            <h2 className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => toggleKpiHint("expiringSubs")}
+              aria-expanded={openKpiHint === "expiringSubs"}
+              className="font-sans text-sm font-semibold text-slate-800 flex items-center gap-2 text-left cursor-pointer hover:text-slate-900"
+            >
               <span
                 className={`w-2 h-2 rounded-full ${warningSubs.length === 0 ? "bg-slate-400" : "bg-rose-600"}`}
               />
               {t("dashboard.expiringSubs", { threshold: lowBalanceThreshold })}
-            </h2>
+            </button>
             <span
               className={`text-[10px] font-sans px-2 py-0.5 rounded font-semibold tabular-nums ${
                 warningSubs.length === 0 ? "bg-slate-100 text-slate-400" : "bg-rose-50 text-rose-700"
@@ -206,6 +286,11 @@ export default function OperationalDashboard({
               {warningSubs.length}
             </span>
           </div>
+          {openKpiHint === "expiringSubs" ? (
+            <p className="text-[10px] text-slate-500 leading-snug -mt-1">
+              {t("dashboard.kpiHint.expiringSubs", { threshold: lowBalanceThreshold })}
+            </p>
+          ) : null}
 
           {warningSubs.length === 0 ? (
             <div className="text-center py-5 text-slate-400">

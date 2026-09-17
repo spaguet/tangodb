@@ -14,6 +14,7 @@ interface LocationScheduleSectionProps {
   onLessonClick?: (lesson: DisplayLesson) => void;
   onEmptyCellClick?: (dateISO: string, dayOfWeek: number, timeStart: string) => void;
   canClickEmpty?: boolean;
+  defaultExpanded?: boolean;
   forceExpanded?: boolean;
   highlightedLesson?: DisplayLesson | null;
 }
@@ -28,12 +29,13 @@ export default function LocationScheduleSection({
   onLessonClick,
   onEmptyCellClick,
   canClickEmpty = false,
+  defaultExpanded = false,
   forceExpanded = false,
   highlightedLesson = null,
 }: LocationScheduleSectionProps) {
   const { t } = useI18n();
   const sectionRef = useRef<HTMLElement>(null);
-  const [isExpanded, setIsExpanded] = useState(forceExpanded);
+  const [isExpanded, setIsExpanded] = useState(() => forceExpanded || defaultExpanded);
 
   useEffect(() => {
     if (!forceExpanded) return;

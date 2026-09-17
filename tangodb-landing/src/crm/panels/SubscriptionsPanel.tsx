@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import type { Locale } from "../../i18n";
+import { demoToday, formatDemoMonthHeader, startOfMonth } from "../demoDates";
 import { formatMoney, sellForm, subscriptionGroups, subscriptionHistory } from "../data";
 import PageTabs, { pageTabPanelCls } from "../PageTabs";
 import { crmStrings } from "../strings";
@@ -24,6 +25,7 @@ type Props = { locale: Locale; initialTab?: "active" | "sell" | "history" };
 export function SubscriptionsPanel({ locale, initialTab = "active" }: Props) {
   const s = crmStrings(locale);
   const money = (n: number) => formatMoney(n, locale);
+  const monthLabel = formatDemoMonthHeader(startOfMonth(demoToday()), locale);
   const [tab, setTab] = useState(initialTab);
   const [expandedDisciplines, setExpandedDisciplines] = useState<Set<string>>(
     () => new Set(subscriptionGroups.map((g) => g.discipline))
@@ -300,7 +302,7 @@ export function SubscriptionsPanel({ locale, initialTab = "active" }: Props) {
             </label>
             <label className="block space-y-1">
               <span className={labelCls}>{s.subs.client}</span>
-              <div className={fieldCls + " bg-slate-50 text-slate-600"}>Marta Gómez</div>
+              <div className={fieldCls + " bg-slate-50 text-slate-600"}>Марта Сёмина</div>
             </label>
           </div>
 
@@ -308,7 +310,7 @@ export function SubscriptionsPanel({ locale, initialTab = "active" }: Props) {
             <button type="button" disabled className="p-1.5 rounded-lg text-slate-400">
               <ChevronLeft className="w-4 h-4" />
             </button>
-            <span className="text-sm font-semibold text-slate-800">June 2026</span>
+            <span className="text-sm font-semibold text-slate-800">{monthLabel}</span>
             <button type="button" disabled className="p-1.5 rounded-lg text-slate-400">
               <ChevronRight className="w-4 h-4" />
             </button>

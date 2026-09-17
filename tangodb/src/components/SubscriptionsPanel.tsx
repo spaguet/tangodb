@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History, RefreshCw, Banknote, Coins } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
@@ -34,7 +34,25 @@ import {
 import { useSaveOfflinePaymentDraft } from "../hooks/useOfflineShift";
 import { usePermissions, useCan } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
-import { formatClientName, formatCurrency, deriveSubscriptionTypeFromTariff, filterGroupTariffsForSale, getPriceLabel, getSubscriptionDaysLeft, getSubscriptionTariffLabel, isMonthlyUnlimitedSubscription, isMonthlyUnlimitedTariff, tariffNeedsSecondClient, currentYearMonth, currentYear, shiftMonth, formatMonthTitle } from "../lib/utils";
+import {
+  formatClientName,
+  formatCurrency,
+  deriveSubscriptionTypeFromTariff,
+  filterGroupTariffsForSale,
+  getPriceLabel,
+  getSubscriptionDaysLeft,
+  getSubscriptionTariffLabel,
+  isMonthlyUnlimitedSubscription,
+  isMonthlyUnlimitedTariff,
+  listDisciplinesWithGroupTariffs,
+  pickDisciplineWithGroupTariffs,
+  shouldEnableLocalPriceListForSale,
+  tariffNeedsSecondClient,
+  currentYearMonth,
+  currentYear,
+  shiftMonth,
+  formatMonthTitle,
+} from "../lib/utils";
 import { filterActiveSubscriptions, filterHistorySubscriptions, ALL_LOCATIONS_KEY } from "../lib/subscriptionFilters";
 import {
   SUBSCRIPTION_SALE_GROUP_SCHEDULE_DAYS,
@@ -106,6 +124,7 @@ export default function SubscriptionsPanel({
 }: SubscriptionsPanelProps) {
   const { t, plural, locale } = useI18n();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { connectionState } = useOnlineStatus();
   const saveOfflinePaymentDraft = useSaveOfflinePaymentDraft();
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
@@ -237,31 +256,81 @@ export default function SubscriptionsPanel({
 
   // Sale form states
   const [localPriceList, setLocalPriceList] = useState(false);
+  const [localPriceListUserToggled, setLocalPriceListUserToggled] = useState(false);
+  const [disciplinePickedByUser, setDisciplinePickedByUser] = useState(false);
   const [saleLocationId, setSaleLocationId] = useState<string | "">("");
   const [selectedTariffId, setSelectedTariffId] = useState<string | "">("");
 
   const [client1Query, setClient1Query] = useState("");
   const [client1Id, setClient1Id] = useState("");
+
+  useEffect(() => {
+    const prefillClientId = searchParams.get("client");
+    if (!prefillClientId || initialTab !== "sell") return;
+    const match = activeClients.find((row) => row.id === prefillClientId);
+    if (!match) return;
+    setClient1Id(match.id);
+    setClient1Query(formatClientName(match.lastName, match.firstName));
+  }, [searchParams, initialTab, activeClients]);
   const [client2Query, setClient2Query] = useState("");
   const [client2Id, setClient2Id] = useState("");
   const [disciplineId, setDisciplineId] = useState<string | "">("");
   const [selectedGroupIds, setSelectedGroupIds] = useState<string[]>([]);
 
-  const groupTariffs = filterGroupTariffsByModules(
-    filterGroupTariffsForSale(prices, {
-      localPriceList,
-      locationId: localPriceList ? saleLocationId || null : null,
-      disciplineId: disciplineId || null,
-      teacherMemberId: role === "teacher" ? memberId : null,
-    }),
-    settings?.modules ?? DEFAULT_ORG_MODULES
+  const salePrices = useMemo(
+    () => filterGroupTariffsByModules(prices, settings?.modules ?? DEFAULT_ORG_MODULES),
+    [prices, settings?.modules]
   );
 
+  const saleTeacherMemberId = role === "teacher" ? memberId : null;
+
+  const groupTariffs = filterGroupTariffsForSale(salePrices, {
+    localPriceList,
+    locationId: localPriceList ? saleLocationId || null : null,
+    disciplineId: disciplineId || null,
+    teacherMemberId: saleTeacherMemberId,
+  });
+
   useEffect(() => {
-    if (disciplines.length > 0 && disciplineId === "") {
-      setDisciplineId(disciplines[0].id);
+    if (localPriceListUserToggled || activeTab !== "sell") return;
+    const locId = saleLocationId || locations[0]?.id;
+    if (!locId) return;
+    if (shouldEnableLocalPriceListForSale(salePrices, { locationId: locId, teacherMemberId: saleTeacherMemberId })) {
+      setLocalPriceList(true);
     }
-  }, [disciplines, disciplineId]);
+  }, [
+    activeTab,
+    localPriceListUserToggled,
+    salePrices,
+    saleLocationId,
+    locations,
+    saleTeacherMemberId,
+  ]);
+
+  useEffect(() => {
+    setDisciplinePickedByUser(false);
+  }, [localPriceList, saleLocationId]);
+
+  useEffect(() => {
+    if (disciplines.length === 0) return;
+    const saleFilter = {
+      localPriceList,
+      locationId: localPriceList ? saleLocationId || null : null,
+      disciplineId: null as string | null,
+      teacherMemberId: saleTeacherMemberId,
+    };
+    if (!disciplinePickedByUser) {
+      const next = pickDisciplineWithGroupTariffs(disciplines, salePrices, saleFilter);
+      if (next) setDisciplineId(next);
+    }
+  }, [
+    disciplines,
+    localPriceList,
+    saleLocationId,
+    salePrices,
+    saleTeacherMemberId,
+    disciplinePickedByUser,
+  ]);
 
   useEffect(() => {
     if (locations.length > 0 && saleLocationId === "") {
@@ -780,6 +849,32 @@ export default function SubscriptionsPanel({
     });
   }, [filteredActiveRecords, disciplineMap, t]);
 
+  useEffect(() => {
+    if (disciplineGroups.length === 0) return;
+    setExpandedDisciplines(new Set(disciplineGroups.map(([key]) => key)));
+  }, [disciplineGroups]);
+
+  const sellTariffAlternatives = useMemo(() => {
+    if (groupTariffs.length > 0) return [];
+    const saleFilter = {
+      localPriceList,
+      locationId: localPriceList ? saleLocationId || null : null,
+      disciplineId: null as string | null,
+      teacherMemberId: saleTeacherMemberId,
+    };
+    return listDisciplinesWithGroupTariffs(disciplines, salePrices, saleFilter).filter(
+      (d) => d.id !== disciplineId
+    );
+  }, [
+    groupTariffs.length,
+    localPriceList,
+    saleLocationId,
+    salePrices,
+    saleTeacherMemberId,
+    disciplines,
+    disciplineId,
+  ]);
+
   const toggleDiscipline = (key: string) => {
     setExpandedDisciplines((prev) => {
       const next = new Set(prev);
@@ -812,83 +907,11 @@ export default function SubscriptionsPanel({
         <div
           className={`bg-white p-4 border border-slate-200 shadow-xs panel-card-stack ${pageTabPanelCls(activeTab, "active")}`}
         >
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div>
-              <h2 className="text-lg font-semibold tracking-tight text-slate-800">{t("subscriptions.activeTitle")}</h2>
-              <p className="text-xs text-slate-400 mt-1">
-                {t("subscriptions.activeHint")}
-              </p>
-            </div>
-
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full sm:w-auto">
-              <div className="relative w-full sm:w-72">
-                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                <input
-                  type="text"
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder={t("subscriptions.search.placeholder")}
-                  className={searchFieldCls}
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {showLocationFilter && (
-            <AppSelect
-              label={t("subscriptions.filter.location")}
-              value={activeLocationFilter}
-              onChange={(e) => setActiveLocationFilter(e.target.value)}
-            >
-              <option value="">{t("subscriptions.filter.all")}</option>
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                </option>
-              ))}
-            </AppSelect>
-            )}
-
-            {showDisciplineFilter && (
-            <AppSelect
-              label={t("subscriptions.filter.discipline")}
-              value={activeDisciplineFilter}
-              onChange={(e) => setActiveDisciplineFilter(e.target.value)}
-            >
-              <option value="">{t("subscriptions.filter.allDisciplines")}</option>
-              {disciplines.map((d) => (
-                <option key={d.id} value={d.id}>
-                  {d.name}
-                </option>
-              ))}
-            </AppSelect>
-            )}
-
-            {activeLocationFilter ? (
-              <AppSelect
-                label={t("subscriptions.filter.groups")}
-                value={activeGroupFilter}
-                onChange={(e) => setActiveGroupFilter(e.target.value)}
-              >
-                <option value="">{t("subscriptions.filter.allGroups")}</option>
-                {activeLocationGroupOptions.map((group) => (
-                  <option key={group.key} value={group.key}>
-                    {group.label}
-                  </option>
-                ))}
-              </AppSelect>
-            ) : null}
-
-            <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer sm:col-span-2 lg:col-span-1 lg:self-end lg:pb-2">
-              <input
-                type="checkbox"
-                checked={endingOnlyFilter}
-                onChange={(e) => setEndingOnlyFilter(e.target.checked)}
-                className={checkboxCls}
-              />
-              <span className="font-semibold">{t("subscriptions.filter.expiring")}</span>
-            </label>
+          <div>
+            <h2 className="text-lg font-semibold tracking-tight text-slate-800">{t("subscriptions.activeTitle")}</h2>
+            <p className="text-xs text-slate-400 mt-1 hidden sm:block">
+              {t("subscriptions.activeHint")}
+            </p>
           </div>
 
           <div className="space-y-3">
@@ -1291,6 +1314,81 @@ export default function SubscriptionsPanel({
               })
             )}
           </div>
+
+          <details className="group border-t border-slate-100 pt-3 mt-1">
+            <summary className="text-xs font-semibold text-slate-500 cursor-pointer list-none flex items-center justify-between gap-2">
+              {t("subscriptions.filter.toggle")}
+              <ChevronDown className="w-4 h-4 text-slate-400 transition-transform group-open:rotate-180" />
+            </summary>
+            <div className="mt-3 space-y-3">
+              <div className="relative w-full">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder={t("subscriptions.search.placeholder")}
+                  className={searchFieldCls}
+                />
+              </div>
+              <div className="bg-slate-50 rounded-xl border border-slate-200 p-3 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                {showLocationFilter && (
+                  <AppSelect
+                    label={t("subscriptions.filter.location")}
+                    value={activeLocationFilter}
+                    onChange={(e) => setActiveLocationFilter(e.target.value)}
+                  >
+                    <option value="">{t("subscriptions.filter.all")}</option>
+                    {locations.map((loc) => (
+                      <option key={loc.id} value={loc.id}>
+                        {loc.name}
+                      </option>
+                    ))}
+                  </AppSelect>
+                )}
+
+                {showDisciplineFilter && (
+                  <AppSelect
+                    label={t("subscriptions.filter.discipline")}
+                    value={activeDisciplineFilter}
+                    onChange={(e) => setActiveDisciplineFilter(e.target.value)}
+                  >
+                    <option value="">{t("subscriptions.filter.allDisciplines")}</option>
+                    {disciplines.map((d) => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </AppSelect>
+                )}
+
+                {activeLocationFilter ? (
+                  <AppSelect
+                    label={t("subscriptions.filter.groups")}
+                    value={activeGroupFilter}
+                    onChange={(e) => setActiveGroupFilter(e.target.value)}
+                  >
+                    <option value="">{t("subscriptions.filter.allGroups")}</option>
+                    {activeLocationGroupOptions.map((group) => (
+                      <option key={group.key} value={group.key}>
+                        {group.label}
+                      </option>
+                    ))}
+                  </AppSelect>
+                ) : null}
+
+                <label className="flex items-center gap-2 text-xs text-slate-700 cursor-pointer sm:col-span-2 lg:col-span-1 lg:self-end lg:pb-2">
+                  <input
+                    type="checkbox"
+                    checked={endingOnlyFilter}
+                    onChange={(e) => setEndingOnlyFilter(e.target.checked)}
+                    className={checkboxCls}
+                  />
+                  <span className="font-semibold">{t("subscriptions.filter.expiring")}</span>
+                </label>
+              </div>
+            </div>
+          </details>
         </div>
       ) : activeTab === "history" ? (
         <div
@@ -1492,7 +1590,7 @@ export default function SubscriptionsPanel({
         </div>
       ) : (
         /* PANEL 2: SELL NEW SUBSCRIPTION */
-        <div className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack panel-sell-under-tabs">
+        <div className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack panel-sell-under-tabs pb-6">
           <div className="panel-form-header panel-form-header-wide-md">
             <div className="panel-form-header-icon">
               <Ticket className="w-5 h-5 text-indigo-600" />
@@ -1519,10 +1617,11 @@ export default function SubscriptionsPanel({
                 type="checkbox"
                 checked={localPriceList}
                 onChange={(e) => {
+                  setLocalPriceListUserToggled(true);
                   setLocalPriceList(e.target.checked);
                   setSelectedTariffId("");
                 }}
-                className={`${checkboxCls} mt-0.5`}
+                className={`${checkboxCls} mt-0.5 shrink-0`}
               />
               <span className="text-xs leading-snug">{t("subscriptions.sell.localPriceList")}</span>
             </label>
@@ -1545,15 +1644,48 @@ export default function SubscriptionsPanel({
               </div>
             )}
 
+            {disciplines.length === 0 ? (
+              <AddDisciplinesInSettingsHint className="text-xs text-slate-400 font-sans leading-relaxed" />
+            ) : (
+              <DisciplineSelect
+                disciplines={disciplines}
+                value={disciplineId}
+                onChange={(value) => {
+                  setDisciplinePickedByUser(true);
+                  setDisciplineId(value);
+                  setSelectedGroupIds([]);
+                  setSelectedTariffId("");
+                }}
+                toast={toast}
+              />
+            )}
+
             {(!localPriceList || (localPriceList && saleLocationId && locations.length > 0)) && (
-            <div className="field-stack">
+            <div className="field-stack panel-form-full-row-md">
               <label className={labelCls}>{t("subscriptions.sell.tariffLabel")}</label>
               {groupTariffs.length === 0 ? (
-                <p className="text-xs text-slate-400 font-sans leading-relaxed">
-                  {localPriceList
-                    ? t("subscriptions.sell.noTariffs")
-                    : t("subscriptions.sell.noGlobalTariffs")}
-                </p>
+                <div className="rounded-lg border border-amber-100 bg-amber-50/80 px-3 py-2.5 space-y-1.5">
+                  {disciplineId && disciplineMap[disciplineId]?.name ? (
+                    <p className="text-xs text-slate-800 font-medium leading-relaxed">
+                      {t("subscriptions.sell.noTariffsForDiscipline", {
+                        discipline: disciplineMap[disciplineId].name,
+                      })}
+                    </p>
+                  ) : null}
+                  <p className="text-xs text-slate-600 leading-relaxed">
+                    {sellTariffAlternatives.length > 0
+                      ? t("subscriptions.sell.pickDisciplineOrAddPrice", {
+                          disciplines: sellTariffAlternatives.map((d) => d.name).join(", "),
+                        })
+                      : localPriceList
+                        ? t("subscriptions.sell.noTariffsAtLocation")
+                        : t("subscriptions.sell.noGlobalTariffsHint")}
+                    {" "}
+                    <Link to="/prices" className="text-indigo-600 font-semibold hover:underline">
+                      {t("subscriptions.sell.priceListLink")}
+                    </Link>
+                  </p>
+                </div>
               ) : (
                 <AppSelect
                   value={selectedTariffId}
@@ -1582,20 +1714,6 @@ export default function SubscriptionsPanel({
                 </AppSelect>
               )}
             </div>
-            )}
-
-            {disciplines.length === 0 ? (
-              <AddDisciplinesInSettingsHint className="text-xs text-slate-400 font-sans leading-relaxed" />
-            ) : (
-              <DisciplineSelect
-                disciplines={disciplines}
-                value={disciplineId}
-                onChange={(value) => {
-                  setDisciplineId(value);
-                  setSelectedGroupIds([]);
-                }}
-                toast={toast}
-              />
             )}
 
             <GroupCheckboxDropdown
@@ -1755,6 +1873,7 @@ export default function SubscriptionsPanel({
 
             <div className="panel-form-divider panel-form-full-row-md" />
 
+            <div className="panel-form-full-row-md sticky bottom-[calc(3.5rem+env(safe-area-inset-bottom,0px))] z-30 -mx-4 px-4 py-2 bg-white/95 backdrop-blur-sm border-t border-slate-100 md:static md:mx-0 md:px-0 md:py-0 md:bg-transparent md:backdrop-blur-none md:border-t-0">
             <button
               onClick={handleCheckout}
               disabled={
@@ -1767,7 +1886,7 @@ export default function SubscriptionsPanel({
                   ? translateConnectionBlockReason(connectionState, t)
                   : t("offline.draft.saveReminder")
               }
-              className={`w-full ${btnAddCls} panel-form-full-row-md`}
+              className={`w-full ${btnAddCls}`}
             >
               {addSubscription.isPending || recordSubscriptionPayment.isPending
                 ? t("subscriptions.sell.submitPending")
@@ -1775,6 +1894,7 @@ export default function SubscriptionsPanel({
                   ? t("offline.draft.saveReminder")
                   : t("subscriptions.sell.submit")}
             </button>
+            </div>
           </div>
           )}
         </div>

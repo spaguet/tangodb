@@ -200,7 +200,11 @@ export default function PersonalLessonRow({
       </td>
       <td className="py-3 px-3 text-xs text-slate-600">{locationName ?? "—"}</td>
       <td className="py-3 px-3 text-xs text-slate-600">{disciplineName ?? "—"}</td>
-      <td className="py-3 px-3 text-xs text-slate-600">{teacherName ?? "—"}</td>
+      <td className="py-3 px-3 text-xs text-slate-600">
+        {lesson.teacherMemberId
+          ? (teacherName ?? t("personal.row.teacherUnassigned"))
+          : t("personal.row.teacherUnassigned")}
+      </td>
       <td className="py-3 px-3 text-xs text-slate-800 font-medium">{clientLabel}</td>
       <td className="py-3 px-3 text-xs text-slate-500">{personalLessonTypeLabel(lesson.type, t)}</td>
       <td className="py-3 px-3">

@@ -15,7 +15,8 @@ export const ru: Record<keyof typeof en, string> = {
   "hero.subtitle":
     "Расписание, абонементы, посещаемость, финансы и команда — в одной CRM. Начните бесплатно.",
   "hero.demoHint": "Сначала посмотреть демо",
-  "hero.imageAlt": "Десктопный интерфейс TangoDB: боковое меню и панель обзора Studio Ritmo",
+  "hero.imageAlt": "Десктопный интерфейс TangoDB: боковое меню и панель обзора Студия Ритм",
+  "hero.previewNote": "Пример интерфейса, не кликается",
   "trust.trial.title": "30 дней бесплатно",
   "trust.trial.text":
     "Регистрация без менеджера: подтвердите email, карта не нужна. Полная CRM на 30 дней.",

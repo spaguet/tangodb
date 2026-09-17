@@ -27,7 +27,11 @@ export function PlatformSection({ locale, t }: Props) {
           </div>
 
           <div className="space-y-3">
-            <CrmMobilePreview locale={locale} alt={t("platform.mobilePreviewAlt")} />
+            <CrmMobilePreview
+              locale={locale}
+              alt={t("platform.mobilePreviewAlt")}
+              caption={t("hero.previewNote")}
+            />
             <div>
               <p className="text-sm font-semibold text-slate-800">{t("platform.mobile")}</p>
               <p className="mt-1.5 text-sm leading-relaxed text-slate-500">{t("platform.mobileDesc")}</p>

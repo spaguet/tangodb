@@ -8,12 +8,13 @@ import { TdbLogo } from "./TdbLogo";
 type Props = {
   locale: Locale;
   alt: string;
+  caption?: string;
 };
 
 const PREVIEW_WIDTH = 960;
 
 /** Static desktop CRM frame for the platform section — uses the real dashboard panel. */
-export function CrmDesktopPreview({ locale, alt }: Props) {
+export function CrmDesktopPreview({ locale, alt, caption }: Props) {
   const s = crmStrings(locale);
   const navItems = [
     { icon: LayoutDashboard, label: s.nav.dashboard, active: true },
@@ -78,6 +79,9 @@ export function CrmDesktopPreview({ locale, alt }: Props) {
       </div>
 
       <figcaption className="sr-only">{alt}</figcaption>
+      {caption ? (
+        <p className="mt-2 text-center text-xs text-slate-500" aria-hidden="true">{caption}</p>
+      ) : null}
     </figure>
   );
 }

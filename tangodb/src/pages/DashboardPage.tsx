@@ -20,8 +20,9 @@ import { useUIStore } from "../store/ui";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { getDashboardTabs } from "../lib/i18n";
 import { normalizeOrgModules } from "../lib/orgModules";
-import type { Client, PersonalLesson, Subscription } from "../types";
+import type { Client, Subscription } from "../types";
 import DemoDashboardBanner from "../components/demo/DemoDashboardBanner";
+import FirstDayChecklist from "../components/onboarding/FirstDayChecklist";
 import VenueRuleExpiryNotice from "../components/venue-costs/VenueRuleExpiryNotice";
 import HallRentalDashboardBlock from "../components/dashboard/HallRentalDashboardBlock";
 import { useVenueCostRuleStatus } from "../hooks/useVenueCosts";
@@ -62,13 +63,11 @@ export default function DashboardPage() {
   const scopedOnly = showScopedSummary && !showOperational && !showFinancial;
 
   const operationalEnabled = showOperational && (!showBoth || activeTab === "operational");
+  const financialTabActive = showBoth && activeTab === "financial";
+  const showHallRentalOnDashboard = !financialTabActive;
 
   const clientsQuery = useClientDirectory({ enabled: operationalEnabled });
   const subscriptionsQuery = useSubscriptions({ enabled: operationalEnabled });
-  const personalLessonsQuery = usePersonalLessons({
-    enabled: operationalEnabled && personalLessonsEnabled,
-    paidFilter: "no",
-  });
   const showOperationalPayments = operationalEnabled && can("payments.read.operational");
   const todayPaymentsQuery = usePayments(
     showOperationalPayments ? { todayOnly: true } : { enabled: false }
@@ -105,7 +104,7 @@ export default function DashboardPage() {
 
   if (scopedOnly) {
     return (
-      <DashboardShell>
+      <DashboardShell showHallRentalOnDashboard={false}>
         <ScopedDashboardView
           lessonsQuery={scopedLessonsQuery}
           scheduleQuery={scopedScheduleQuery}
@@ -119,7 +118,7 @@ export default function DashboardPage() {
 
   if (showFinancial && !showOperational) {
     return (
-      <DashboardShell>
+      <DashboardShell showHallRentalOnDashboard={false}>
         <FinancialDashboard />
       </DashboardShell>
     );
@@ -127,7 +126,7 @@ export default function DashboardPage() {
 
   if (showBoth && activeTab === "financial") {
     return (
-      <DashboardShell>
+      <DashboardShell showHallRentalOnDashboard={false}>
         <DashboardWithTabs activeTab={activeTab} onTabChange={setActiveTab} dashboardTabs={dashboardTabs}>
           <FinancialDashboard />
         </DashboardWithTabs>
@@ -136,7 +135,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <DashboardShell>
+    <DashboardShell showHallRentalOnDashboard={showHallRentalOnDashboard}>
     <OperationalDashboardView
       showBoth={showBoth}
       activeTab={activeTab}
@@ -144,7 +143,6 @@ export default function DashboardPage() {
       dashboardTabs={dashboardTabs}
       clientsQuery={clientsQuery}
       subscriptionsQuery={subscriptionsQuery}
-      personalLessonsQuery={personalLessonsQuery}
       todayPaymentsQuery={todayPaymentsQuery}
       showOperationalPayments={showOperationalPayments}
       personalLessonsEnabled={personalLessonsEnabled}
@@ -154,13 +152,21 @@ export default function DashboardPage() {
   );
 }
 
-function DashboardShell({ children }: { children: React.ReactNode }) {
+function DashboardShell({
+  children,
+  showHallRentalOnDashboard,
+}: {
+  children: React.ReactNode;
+  showHallRentalOnDashboard: boolean;
+}) {
   const { role } = usePermissions();
   const venueStatusQuery = useVenueCostRuleStatus({ enabled: role !== "teacher" });
-  const showHallRentalBlock = isTopupSlaEscalationRole(role);
+  const showHallRentalBlock = showHallRentalOnDashboard && isTopupSlaEscalationRole(role);
+  const showFirstDayChecklist = role === "owner" || role === "director";
   return (
     <div className="panel-page-stack">
       <DemoDashboardBanner />
+      {showFirstDayChecklist ? <FirstDayChecklist /> : null}
       {role !== "teacher" && venueStatusQuery.data?.acknowledgementRequired && (
         <VenueRuleExpiryNotice status={venueStatusQuery.data} />
       )}
@@ -256,10 +262,8 @@ function OperationalDashboardView({
   dashboardTabs,
   clientsQuery,
   subscriptionsQuery,
-  personalLessonsQuery,
   todayPaymentsQuery,
   showOperationalPayments,
-  personalLessonsEnabled,
   onNavigate,
 }: {
   showBoth: boolean;
@@ -268,22 +272,18 @@ function OperationalDashboardView({
   dashboardTabs: DashboardTabItem[];
   clientsQuery: ReturnType<typeof useClientDirectory>;
   subscriptionsQuery: ReturnType<typeof useSubscriptions>;
-  personalLessonsQuery: ReturnType<typeof usePersonalLessons>;
   todayPaymentsQuery: ReturnType<typeof usePayments>;
   showOperationalPayments: boolean;
-  personalLessonsEnabled: boolean;
   onNavigate: (panel: string) => void;
 }) {
   const { t } = useI18n();
   const isLoading =
     clientsQuery.isLoading ||
     subscriptionsQuery.isLoading ||
-    (personalLessonsEnabled && personalLessonsQuery.isLoading) ||
     (showOperationalPayments && todayPaymentsQuery.isLoading);
   const error =
     queryError(clientsQuery) ??
     queryError(subscriptionsQuery) ??
-    (personalLessonsEnabled ? queryError(personalLessonsQuery) : null) ??
     (showOperationalPayments ? queryError(todayPaymentsQuery) : null);
 
   if (isLoading) return <LoadingState label={t("dashboard.loading")} />;
@@ -293,7 +293,6 @@ function OperationalDashboardView({
     <OperationalDashboard
       clients={(clientsQuery.data ?? []) as Client[]}
       subscriptions={(subscriptionsQuery.data ?? []) as Subscription[]}
-      personalLessons={(personalLessonsQuery.data ?? []) as PersonalLesson[]}
       todayPayments={todayPaymentsQuery.data ?? []}
       showOperationalPayments={showOperationalPayments}
       onNavigate={onNavigate}

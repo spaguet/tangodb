@@ -53,8 +53,7 @@ type NavSection = { label: string; items: NavItem[] };
 type MobileTab = {
   id: DemoPanel;
   icon: typeof LayoutDashboard;
-  line1: string;
-  line2: string;
+  label: string;
 };
 
 type Props = { locale: Locale };
@@ -100,30 +99,10 @@ function buildNav(locale: Locale): NavSection[] {
 function buildMobileTabs(locale: Locale): MobileTab[] {
   const s = crmStrings(locale);
   return [
-    {
-      id: "dashboard",
-      icon: LayoutDashboard,
-      line1: s.nav.mobileDashboardLine1,
-      line2: s.nav.mobileDashboardLine2,
-    },
-    {
-      id: "subscriptions",
-      icon: Ticket,
-      line1: s.nav.mobileSubscriptionsLine1,
-      line2: s.nav.mobileSubscriptionsLine2,
-    },
-    {
-      id: "attendance",
-      icon: CalendarCheck,
-      line1: s.nav.mobileAttendanceLine1,
-      line2: s.nav.mobileAttendanceLine2,
-    },
-    {
-      id: "schedule",
-      icon: Calendar,
-      line1: s.nav.mobileScheduleLine1,
-      line2: s.nav.mobileScheduleLine2,
-    },
+    { id: "dashboard", icon: LayoutDashboard, label: s.nav.mobileTabDashboard },
+    { id: "subscriptions", icon: Ticket, label: s.nav.mobileTabSubscriptions },
+    { id: "attendance", icon: CalendarCheck, label: s.nav.mobileTabAttendance },
+    { id: "schedule", icon: Calendar, label: s.nav.mobileTabSchedule },
   ];
 }
 
@@ -336,12 +315,7 @@ export function CrmDemoApp({ locale }: Props) {
                 }`}
               >
                 <Icon className="w-4 h-4 shrink-0" />
-                <span className="text-[10px] font-semibold uppercase tracking-wide leading-none text-center">
-                  {item.line1}
-                </span>
-                <span className="text-[10px] font-semibold uppercase tracking-wide leading-none text-center">
-                  {item.line2}
-                </span>
+                <span className="text-[11px] font-semibold leading-tight text-center px-0.5">{item.label}</span>
               </button>
             );
           })}

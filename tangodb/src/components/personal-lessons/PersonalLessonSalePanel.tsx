@@ -55,7 +55,7 @@ export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePan
 
   return (
     <div
-      className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack panel-sell-under-tabs"
+      className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack panel-sell-under-tabs pb-6"
     >
       <div className="panel-form-header panel-form-header-wide-md mb-4">
         <div className="panel-form-header-icon">

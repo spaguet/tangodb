@@ -70,6 +70,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
   const [taxId, setTaxId] = useState("");
   const [telegramId, setTelegramId] = useState("");
 
+  const [addFormOpen, setAddFormOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
   const [duplicates, setDuplicates] = useState<RenterDuplicateMatch[]>([]);
   const [pendingPayload, setPendingPayload] = useState<Record<string, string> | null>(null);
@@ -135,6 +136,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
     setTelegramId("");
     setPendingPayload(null);
     setDuplicateOpen(false);
+    setAddFormOpen(false);
     return true;
   };
 
@@ -180,82 +182,93 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
     );
   }
 
-  return (
-    <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-start">
-      <RequirePermission
-        action="renters.write"
-        fallback={
-          <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs text-xs text-slate-500">
-            {t("renters.readOnlyHint")}
-          </div>
-        }
+  const addForm = (
+    <form
+      id="renter-add-form"
+      onSubmit={(e) => void handleSubmitAdd(e)}
+      noValidate
+      className="panel-form-stack font-sans"
+    >
+      <div className="field-stack">
+        <label className={labelCls} htmlFor="renter-display-name">{t("renters.form.displayName")}</label>
+        <input
+          id="renter-display-name"
+          required
+          className={inputCls}
+          value={displayName}
+          onChange={(e) => setDisplayName(e.target.value)}
+        />
+      </div>
+      <AppSelect
+        label={t("renters.form.counterpartyType")}
+        value={counterpartyType}
+        onChange={(e) => setCounterpartyType(e.target.value as RenterCounterpartyType)}
       >
-        <div className="lg:col-span-4 bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
-          <div className="flex items-center gap-2.5 text-slate-800 border-b border-slate-100 pb-3">
-            <UserPlus className="w-4.5 h-4.5 text-indigo-500" />
-            <h2 className="text-base font-semibold tracking-tight">{t("renters.form.addTitle")}</h2>
-          </div>
-
-          <form onSubmit={(e) => void handleSubmitAdd(e)} noValidate className="panel-form-stack font-sans">
-            <div className="field-stack">
-              <label className={labelCls}>{t("renters.form.displayName")}</label>
-              <input required className={inputCls} value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
-            </div>
-            <AppSelect
-              label={t("renters.form.counterpartyType")}
-              value={counterpartyType}
-              onChange={(e) => setCounterpartyType(e.target.value as RenterCounterpartyType)}
-            >
-              <option value="individual">{t("renters.type.individual")}</option>
-              <option value="sole_proprietor">{t("renters.type.soleProprietor")}</option>
-              <option value="company">{t("renters.type.company")}</option>
-            </AppSelect>
-            <div className="field-stack">
-              <label className={labelCls}>{t("renters.form.phone")}</label>
-              <input type="tel" className={inputCls} value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} />
-            </div>
-            <div className="field-stack">
-              <label className={labelCls}>{t("renters.form.email")}</label>
-              <input type="email" className={inputCls} value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} />
-            </div>
-            <div className="field-stack">
-              <label className={labelCls}>{t("renters.form.telegramId")}</label>
-              <input
-                className={inputCls}
-                inputMode="numeric"
-                value={telegramId}
-                onChange={(e) => setTelegramId(e.target.value)}
-                placeholder={t("renters.form.telegramIdPlaceholder")}
-              />
-            </div>
-            {(counterpartyType === "sole_proprietor" || counterpartyType === "company") && (
-              <div className="field-stack">
-                <label className={labelCls}>{t("renters.form.taxId")}</label>
-                <input className={inputCls} value={taxId} onChange={(e) => setTaxId(e.target.value)} />
-              </div>
-            )}
-            <button
-              type="submit"
-              disabled={connectionState !== "online" || upsertRenter.isPending}
-              title={translateConnectionBlockReason(connectionState, t)}
-              className={`w-full ${btnAddCls}`}
-            >
-              {upsertRenter.isPending ? t("common.saving") : t("common.save")}
-            </button>
-          </form>
+        <option value="individual">{t("renters.type.individual")}</option>
+        <option value="sole_proprietor">{t("renters.type.soleProprietor")}</option>
+        <option value="company">{t("renters.type.company")}</option>
+      </AppSelect>
+      <div className="field-stack">
+        <label className={labelCls} htmlFor="renter-contact-phone">{t("renters.form.phone")}</label>
+        <input
+          id="renter-contact-phone"
+          type="tel"
+          className={inputCls}
+          value={contactPhone}
+          onChange={(e) => setContactPhone(e.target.value)}
+        />
+      </div>
+      <div className="field-stack">
+        <label className={labelCls} htmlFor="renter-contact-email">{t("renters.form.email")}</label>
+        <input
+          id="renter-contact-email"
+          type="email"
+          className={inputCls}
+          value={contactEmail}
+          onChange={(e) => setContactEmail(e.target.value)}
+        />
+      </div>
+      <div className="field-stack">
+        <label className={labelCls} htmlFor="renter-telegram-id">{t("renters.form.telegramId")}</label>
+        <input
+          id="renter-telegram-id"
+          className={inputCls}
+          inputMode="numeric"
+          value={telegramId}
+          onChange={(e) => setTelegramId(e.target.value)}
+          placeholder={t("renters.form.telegramIdPlaceholder")}
+        />
+      </div>
+      {(counterpartyType === "sole_proprietor" || counterpartyType === "company") && (
+        <div className="field-stack">
+          <label className={labelCls} htmlFor="renter-tax-id">{t("renters.form.taxId")}</label>
+          <input id="renter-tax-id" className={inputCls} value={taxId} onChange={(e) => setTaxId(e.target.value)} />
         </div>
-      </RequirePermission>
+      )}
+      <button
+        type="submit"
+        disabled={connectionState !== "online" || upsertRenter.isPending}
+        title={translateConnectionBlockReason(connectionState, t)}
+        className={`w-full ${btnAddCls}`}
+      >
+        {upsertRenter.isPending ? t("common.saving") : t("common.save")}
+      </button>
+    </form>
+  );
 
-      <div className="lg:col-span-8 flex flex-col gap-3">
+  return (
+    <div className="flex flex-col gap-4 items-stretch">
+      <div className="flex flex-col gap-3">
         <SectionPillNav items={tabs} activeId={activeTab} onChange={(tab) => setActiveTab(tab)} />
 
         <div className="bg-white p-4 border border-slate-200 shadow-xs panel-card-stack space-y-3 rounded-xl">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2">
             <div className="relative flex-1">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" aria-hidden />
               <input
                 className={searchFieldCls}
                 placeholder={t("renters.searchPlaceholder")}
+                aria-label={t("renters.searchPlaceholder")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -267,16 +280,19 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
               <option value="company">{t("renters.type.company")}</option>
             </AppSelect>
             {canSeeFinance ? (
-              <AppSelect
-                label={t("renters.filter.debt")}
-                value={debtFilter}
-                onChange={(e) => setDebtFilter(e.target.value as "" | RenterDebtFilter)}
-              >
-                <option value="">{t("renters.filter.all")}</option>
-                <option value="cashier">{t("renters.filter.debtCashier")}</option>
-                <option value="miniapp">{t("renters.filter.debtMiniapp")}</option>
-                <option value="any">{t("renters.filter.debtAny")}</option>
-              </AppSelect>
+              <div className="space-y-1">
+                <AppSelect
+                  label={t("renters.filter.debt")}
+                  value={debtFilter}
+                  onChange={(e) => setDebtFilter(e.target.value as "" | RenterDebtFilter)}
+                >
+                  <option value="">{t("renters.filter.all")}</option>
+                  <option value="cashier">{t("renters.filter.debtCashier")}</option>
+                  <option value="miniapp">{t("renters.filter.debtMiniapp")}</option>
+                  <option value="any">{t("renters.filter.debtAny")}</option>
+                </AppSelect>
+                <p className="text-[10px] text-slate-400 leading-snug px-0.5">{t("renters.filter.debtHint")}</p>
+              </div>
             ) : null}
             <AppSelect label={t("renters.filter.upcoming")} value={upcomingFilter} onChange={(e) => setUpcomingFilter(e.target.value as "" | "yes" | "no")}>
               <option value="">{t("renters.filter.all")}</option>
@@ -366,6 +382,36 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
           )}
         </div>
       </div>
+
+      <RequirePermission action="renters.write" mode="hide">
+        {addFormOpen ? (
+          <div className="bg-white rounded-xl p-4 border border-slate-200 shadow-xs panel-card-stack">
+            <div className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 mb-3">
+              <div className="flex items-center gap-2.5 text-slate-800">
+                <UserPlus className="w-4.5 h-4.5 text-indigo-500" />
+                <h2 className="text-base font-semibold tracking-tight">{t("renters.form.addTitle")}</h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddFormOpen(false)}
+                className="text-[10px] font-semibold uppercase text-slate-500 hover:text-slate-700 cursor-pointer"
+              >
+                {t("common.close")}
+              </button>
+            </div>
+            {addForm}
+          </div>
+        ) : (
+          <button
+            type="button"
+            onClick={() => setAddFormOpen(true)}
+            className={`inline-flex items-center justify-center gap-2 w-full sm:w-auto ${btnAddCls}`}
+          >
+            <UserPlus className="w-4 h-4" />
+            {t("renters.form.addTitle")}
+          </button>
+        )}
+      </RequirePermission>
 
       <RenterDuplicateDialog
         open={duplicateOpen}

@@ -51,17 +51,15 @@ export function getNavSections(t: TranslateFn): NavSection[] {
       items: [{ icon: LayoutDashboard, label: t("nav.item.dashboard"), path: "/" }],
     },
     {
-      label: t("nav.section.finance"),
-      moduleKey: "finance_basic",
-      items: [{ icon: Landmark, label: t("nav.item.finance"), path: "/finance" }],
+      label: t("nav.section.scheduleJournal"),
+      items: [
+        { icon: CalendarCheck, label: t("nav.item.attendance"), path: "/attendance" },
+        { icon: Calendar, label: t("nav.item.schedule"), path: "/schedule" },
+      ],
     },
     {
       label: t("nav.section.clients"),
       items: [{ icon: Users, label: t("nav.item.clients"), path: "/clients" }],
-    },
-    {
-      label: t("nav.section.renters"),
-      items: [{ icon: Building2, label: t("nav.item.renters"), path: "/renters" }],
     },
     {
       label: t("nav.section.groupSubscriptions"),
@@ -69,13 +67,6 @@ export function getNavSections(t: TranslateFn): NavSection[] {
       items: [
         { icon: Ticket, label: t("nav.item.subscriptions"), path: "/subscriptions", subTab: "active" },
         { icon: TicketPlus, label: t("nav.item.subscriptionsSell"), path: "/subscriptions/sell", subTab: "sell" },
-      ],
-    },
-    {
-      label: t("nav.section.scheduleJournal"),
-      items: [
-        { icon: Calendar, label: t("nav.item.schedule"), path: "/schedule" },
-        { icon: CalendarCheck, label: t("nav.item.attendance"), path: "/attendance" },
       ],
     },
     {
@@ -91,11 +82,21 @@ export function getNavSections(t: TranslateFn): NavSection[] {
       items: [{ icon: Coins, label: t("nav.item.prices"), path: "/prices" }],
     },
     {
+      label: t("nav.section.finance"),
+      moduleKey: "finance_basic",
+      items: [{ icon: Landmark, label: t("nav.item.finance"), path: "/finance" }],
+    },
+    {
       label: t("nav.section.settings"),
       items: [
         { icon: UserCog, label: t("nav.item.team"), path: "/settings/team", settingsSection: "team" },
         { icon: Settings, label: t("nav.item.settings"), path: "/settings" },
       ],
+    },
+    {
+      label: t("nav.section.renters"),
+      moduleKey: "locations",
+      items: [{ icon: Building2, label: t("nav.item.renters"), path: "/renters" }],
     },
   ];
 }
