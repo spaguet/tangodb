@@ -49,11 +49,16 @@ export default function FinanceLayout() {
   const { t } = useI18n();
   const location = useLocation();
   const { can, role, options } = usePermissions();
-  const rentalScreensEnabled = useFinanceRentalScreensEnabled();
-  const teacherPayrollOnly = can("payroll.read.own") && !can("finance.read");
+  const { enabled: rentalScreensEnabled } = useFinanceRentalScreensEnabled();
+  const canFinanceRead = can("finance.read");
+  const canExpensesRead = can("expenses.read");
+  const canPayrollRead = can("payroll.read");
+  const canPayrollReadOwn = can("payroll.read.own");
+  const canRentalsPaymentsWrite = can("rentals.payments.write");
+  const teacherPayrollOnly = canPayrollReadOwn && !canFinanceRead;
   const rentalInboxOnly = isRentalInboxOnly(role, options);
   const showTopupNav =
-    rentalScreensEnabled && !teacherPayrollOnly && (rentalInboxOnly || can("rentals.payments.write"));
+    rentalScreensEnabled && !teacherPayrollOnly && (rentalInboxOnly || canRentalsPaymentsWrite);
   const pendingTopupQuery = useRenterTopupInbox({
     status: "pending",
     limit: 1,
@@ -73,6 +78,7 @@ export default function FinanceLayout() {
     }
 
     if (rentalInboxOnly) {
+      if (!rentalScreensEnabled) return [];
       return items.filter(
         (item) => item.path === "/finance/rental-inbox" || item.path === "/finance/renter-topup"
       );
@@ -82,16 +88,25 @@ export default function FinanceLayout() {
       if (isFinanceRentalPath(item.path)) {
         return rentalScreensEnabled;
       }
-      if (item.path === "/finance/corrections") return can("finance.read");
-      if (item.path === "/finance/expenses") return can("expenses.read");
+      if (item.path === "/finance/corrections") return canFinanceRead;
+      if (item.path === "/finance/expenses") return canExpensesRead;
       if (item.path === "/finance/payroll") {
-        return can("payroll.read") || can("payroll.read.own");
+        return canPayrollRead || canPayrollReadOwn;
       }
-      return can("finance.read");
+      return canFinanceRead;
     });
-  }, [t, teacherPayrollOnly, rentalInboxOnly, rentalScreensEnabled, can]);
+  }, [
+    t,
+    teacherPayrollOnly,
+    rentalInboxOnly,
+    rentalScreensEnabled,
+    canFinanceRead,
+    canExpensesRead,
+    canPayrollRead,
+    canPayrollReadOwn,
+  ]);
 
-  const useSimpleNav = !teacherPayrollOnly && !rentalInboxOnly && can("finance.read");
+  const useSimpleNav = !teacherPayrollOnly && !rentalInboxOnly && canFinanceRead;
 
   const primaryNav = useMemo(() => {
     if (!useSimpleNav) return financeNav;
@@ -117,7 +132,7 @@ export default function FinanceLayout() {
   }, [moreRouteActive]);
 
   const renderNavItem = (item: (typeof financeNav)[number]) => {
-    const Icon = item.icon;
+    const Icon = item.icon ?? Landmark;
     return (
       <NavLink key={item.path} to={item.path} className={({ isActive }) => navLinkCls(isActive)}>
         <Icon className="w-3.5 h-3.5 shrink-0" />

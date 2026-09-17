@@ -1,4 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { asJson } from "../lib/json";
+import { supabase } from "../lib/supabase";
+import { renterDetailQueryKey } from "./useRenterCrm";
+import { rentersQueryKey } from "./useRenters";
+import { useOrgQueryScope } from "./useOrgQueryScope";
+
+export type RenterTopupStatus = "pending" | "confirmed" | "rejected";
+export type RenterTopupMethod = "qr" | "cash";
+export type RenterTopupInboxFilterStatus = RenterTopupStatus | "all";
 
 export interface StaffTopupPreviewEffect {
   walletBalanceBefore: number;
@@ -21,17 +30,8 @@ export interface StaffTopupPreview {
   externalReference: string | null;
   effect: StaffTopupPreviewEffect;
 }
-import { asJson } from "../lib/json";
-import { supabase } from "../lib/supabase";
-import { renterDetailQueryKey } from "./useRenterCrm";
-import { rentersQueryKey } from "./useRenters";
-import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const renterTopupInboxQueryKey = ["renterTopupInbox"] as const;
-
-export type RenterTopupStatus = "pending" | "confirmed" | "rejected";
-export type RenterTopupMethod = "qr" | "cash";
-export type RenterTopupInboxFilterStatus = RenterTopupStatus | "all";
 
 export interface RenterTopupInboxItem {
   id: string;

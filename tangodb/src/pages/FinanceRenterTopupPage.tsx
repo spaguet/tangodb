@@ -1,4 +1,5 @@
 import { useMemo, useState } from "react";
+import { Navigate } from "react-router-dom";
 
 import { Wallet, AlertTriangle } from "lucide-react";
 
@@ -34,6 +35,16 @@ import { useI18n } from "../hooks/useI18n";
 
 import { usePermissions } from "../hooks/usePermissions";
 
+import { useOrgQueryScope } from "../hooks/useOrgQueryScope";
+
+import { useFinanceRentalScreensEnabled } from "../hooks/useFinanceRentalScreensEnabled";
+
+import { useOrganization } from "../organization/OrganizationProvider";
+
+import { normalizeOrgModules } from "../lib/orgModules";
+
+import { canAccessRentalInboxRoute } from "../lib/permissions";
+
 import { useToast } from "../App";
 
 import { resolveMutationError } from "../lib/resolveMutationError";
@@ -48,13 +59,26 @@ import { isTopupSlaEscalationRole } from "../lib/showRenterTopupNav";
 
 const PAGE_SIZE = 50;
 
+export function FinanceRenterTopupRoute() {
+  const { t } = useI18n();
+  const { role, options } = usePermissions();
+  const { settings } = useOrganization();
+  const modules = normalizeOrgModules(settings?.modules);
+  const { enabled: rentalScreensEnabled, resolving } = useFinanceRentalScreensEnabled();
 
+  if (resolving) return <LoadingState label={t("renterTopup.loading")} />;
+
+  if (!rentalScreensEnabled || !canAccessRentalInboxRoute(role, modules, options)) {
+    return <Navigate to="/finance/payments" replace />;
+  }
+
+  return <FinanceRenterTopupPage />;
+}
 
 export default function FinanceRenterTopupPage() {
-
   const { t, formatDateTime } = useI18n();
-
   const toast = useToast();
+  const { enabled: orgQueryEnabled } = useOrgQueryScope();
 
   const { can, isReadOnly, role } = usePermissions();
 
@@ -277,6 +301,8 @@ export default function FinanceRenterTopupPage() {
   };
 
 
+
+  if (!orgQueryEnabled) return <LoadingState label={t("renterTopup.loading")} />;
 
   if (inboxQuery.isLoading) return <LoadingState label={t("renterTopup.loading")} />;
 

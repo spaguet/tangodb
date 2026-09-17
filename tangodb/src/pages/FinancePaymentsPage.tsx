@@ -657,7 +657,7 @@ function matchesSourceFilter(payment: PaymentWithCorrectionMeta, source: Payment
 export default function FinancePaymentsPage() {
   const { t, locale, formatDateTime, formatDate, plural } = useI18n();
   const { can } = usePermissions();
-  const rentalFinanceEnabled = useFinanceRentalScreensEnabled();
+  const rentalFinanceEnabled = useFinanceRentalScreensEnabled().enabled;
   const canCorrectPayments = can("finance.read");
   const [searchParams] = useSearchParams();
   const initialMonth = readFinanceMonthFromSearch(searchParams) ?? currentYearMonth();

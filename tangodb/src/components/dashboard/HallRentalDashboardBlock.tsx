@@ -3,7 +3,12 @@ import { useNavigate } from "react-router-dom";
 import { Building2, ChevronDown, ChevronLeft, ChevronRight, AlertTriangle, Loader2 } from "lucide-react";
 import QueryErrorState from "../ui/QueryErrorState";
 import { useRenterMiniappDashboardStats } from "../../hooks/useRenterMiniappDashboardStats";
+import { useFinanceRentalScreensEnabled } from "../../hooks/useFinanceRentalScreensEnabled";
+import { usePermissions } from "../../hooks/usePermissions";
+import { useOrganization } from "../../organization/OrganizationProvider";
 import { useI18n } from "../../hooks/useI18n";
+import { canAccessRentalInboxRoute } from "../../lib/permissions";
+import { normalizeOrgModules } from "../../lib/orgModules";
 import {
   currentYearMonth,
   formatCurrency,
@@ -15,6 +20,12 @@ import { isFutureYearMonth } from "../../lib/financeMonthUrl";
 export default function HallRentalDashboardBlock() {
   const navigate = useNavigate();
   const { t, locale } = useI18n();
+  const { role, options } = usePermissions();
+  const { settings } = useOrganization();
+  const modules = normalizeOrgModules(settings?.modules);
+  const { enabled: rentalScreensEnabled } = useFinanceRentalScreensEnabled();
+  const canOpenTopupInbox =
+    rentalScreensEnabled && canAccessRentalInboxRoute(role, modules, options);
   const [statsMonth, setStatsMonth] = useState(currentYearMonth());
   const [expanded, setExpanded] = useState(false);
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
@@ -75,8 +86,11 @@ export default function HallRentalDashboardBlock() {
         <div className="flex items-center gap-2 shrink-0">
           <button
             type="button"
-            onClick={() => navigate("/finance/renter-topup")}
-            className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer whitespace-nowrap"
+            disabled={!canOpenTopupInbox}
+            onClick={() => {
+              if (canOpenTopupInbox) navigate("/finance/renter-topup");
+            }}
+            className="text-[10px] font-semibold text-indigo-600 hover:text-indigo-800 cursor-pointer whitespace-nowrap disabled:opacity-40 disabled:cursor-not-allowed"
           >
             {t("dashboard.hallRental.openInbox")}
           </button>
