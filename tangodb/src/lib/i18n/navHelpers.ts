@@ -27,6 +27,7 @@ export interface NavItem {
   personalSubTab?: "view" | "sell";
   /** When set, nav visibility uses settings-section RBAC instead of panel RBAC. */
   settingsSection?: SettingsSectionId;
+  moduleKey?: keyof OrgModules;
 }
 
 export interface NavSection {
@@ -59,7 +60,15 @@ export function getNavSections(t: TranslateFn): NavSection[] {
     },
     {
       label: t("nav.section.clients"),
-      items: [{ icon: Users, label: t("nav.item.clients"), path: "/clients" }],
+      items: [
+        { icon: Users, label: t("nav.item.clients"), path: "/clients" },
+        {
+          icon: Building2,
+          label: t("nav.item.renters"),
+          path: "/renters",
+          moduleKey: "locations",
+        },
+      ],
     },
     {
       label: t("nav.section.groupSubscriptions"),
@@ -92,11 +101,6 @@ export function getNavSections(t: TranslateFn): NavSection[] {
         { icon: UserCog, label: t("nav.item.team"), path: "/settings/team", settingsSection: "team" },
         { icon: Settings, label: t("nav.item.settings"), path: "/settings" },
       ],
-    },
-    {
-      label: t("nav.section.renters"),
-      moduleKey: "locations",
-      items: [{ icon: Building2, label: t("nav.item.renters"), path: "/renters" }],
     },
   ];
 }

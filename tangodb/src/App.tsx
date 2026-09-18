@@ -321,6 +321,7 @@ function AppLayout() {
       {navSections.map((section) => {
         if (section.moduleKey && !orgModules[section.moduleKey]) return null;
         const visibleItems = section.items.filter((item) => {
+          if (item.moduleKey && !orgModules[item.moduleKey]) return false;
           if (claimsMismatch) {
             if (item.path === "/finance" || item.settingsSection) return false;
           }
