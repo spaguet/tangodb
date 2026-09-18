@@ -4,6 +4,7 @@ import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { jsDayToIsoDow } from "../../lib/utils";
 import { toISODateLocal } from "../../lib/scheduleWeek";
 import { useI18n } from "../../hooks/useI18n";
+import { useDismissOnRouteChange } from "../../hooks/useDismissOnRouteChange";
 import { fieldCls } from "./AppSelect";
 
 interface DatePickerFieldProps {
@@ -82,6 +83,8 @@ export default function DatePickerField({
 
   const cells = useMemo(() => buildMonthGrid(viewMonth), [viewMonth]);
   const monthLabel = viewMonth.toLocaleDateString(locale, { month: "long", year: "numeric" });
+  useDismissOnRouteChange(() => setOpen(false));
+
   const weekdayHeaders = [
     t("utils.dow.short.mon"),
     t("utils.dow.short.tue"),

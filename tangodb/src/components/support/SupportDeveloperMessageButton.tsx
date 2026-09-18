@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { MessageSquare } from "lucide-react";
+import { useDismissOnRouteChange } from "../../hooks/useDismissOnRouteChange";
 import { useI18n } from "../../hooks/useI18n";
 import { useOrganization } from "../../organization/OrganizationProvider";
 import type { SupportTicketKind } from "../../hooks/useSubmitSupportTicket";
@@ -18,6 +19,7 @@ export default function SupportDeveloperMessageButton({
   const { t } = useI18n();
   const { organization } = useOrganization();
   const [open, setOpen] = useState(false);
+  useDismissOnRouteChange(() => setOpen(false));
 
   return (
     <>

@@ -3,6 +3,7 @@ import { Check, UserPlus } from "lucide-react";
 import type { ToastType } from "../../App";
 import type { Client } from "../../types";
 import { useI18n } from "../../hooks/useI18n";
+import { useDismissOnRouteChange } from "../../hooks/useDismissOnRouteChange";
 import AddClientModal from "./AddClientModal";
 import { fieldCls } from "./AppSelect";
 
@@ -40,6 +41,11 @@ export default function ClientAutocomplete({
   const [open, setOpen] = useState(false);
   const [highlight, setHighlight] = useState(0);
   const [addModalOpen, setAddModalOpen] = useState(false);
+
+  useDismissOnRouteChange(() => {
+    setOpen(false);
+    setAddModalOpen(false);
+  });
 
   const suggestions = useMemo(() => {
     if (!query.trim() || selectedId) return [];

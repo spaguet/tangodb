@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
+import { useDismissOnRouteChange } from "../../hooks/useDismissOnRouteChange";
 import { selectFieldCls, selectLabelCls } from "./AppSelect";
 
 export interface GroupCheckboxOption {
@@ -34,6 +35,8 @@ export default function GroupCheckboxDropdown({
   const rootRef = useRef<HTMLDivElement>(null);
   const resolvedPlaceholder = placeholder ?? t("ui.groupSelect.placeholder");
   const resolvedEmptyMessage = emptyMessage ?? t("ui.groupSelect.empty");
+
+  useDismissOnRouteChange(() => setOpen(false));
 
   useEffect(() => {
     if (!open) return;

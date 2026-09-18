@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
+import { useDismissOnRouteChange } from "../../hooks/useDismissOnRouteChange";
 import { UserPlus, X } from "lucide-react";
 import { useAddClient } from "../../hooks/useClients";
 import { useI18n } from "../../hooks/useI18n";
@@ -37,6 +39,8 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
   const [guardian2Telegram, setGuardian2Telegram] = useState("");
   const [guardian2Address, setGuardian2Address] = useState("");
   const resolvedSubmitLabel = submitLabel || t("clients.form.addSubmit");
+
+  useDismissOnRouteChange(onClose);
 
   useEffect(() => {
     if (!open) return;
@@ -115,7 +119,7 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
     onClose();
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -329,6 +333,7 @@ export default function AddClientModal({ open, onClose, toast, submitLabel, onSu
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

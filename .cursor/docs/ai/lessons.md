@@ -11,7 +11,7 @@
 
 - **Ошибка:** переход на `/prices` с `/subscriptions/sell` оставлял невидимый `fixed inset-0` backdrop от открытого OrgSwitcher / меню подсказок — UI «замерзал».
 - **Причина:** backdrop закрывается только по клику на себя; клиентская навигация не сбрасывала `open` в шапке.
-- **Как избежать:** при `location.pathname` сбрасывать все header/drawer overlay-состояния; для внутренних переходов из форм предпочитать `navigate()` вместо `<Link>` в плотных UI-контекстах.
+- **Как избежать:** при `location.pathname` сбрасывать все header/drawer overlay-состояния; закрывать sell-модалки перед `navigate`; модалки с `fixed inset-0` — через `createPortal(document.body)` + `useDismissOnRouteChange`; после смены маршрута убирать зависшие `body > [role=dialog]`.
 
 ### 2026-09-16 — Оплата счёта: «Could not choose the best candidate function»
 

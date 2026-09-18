@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Plus } from "lucide-react";
 import type { ToastType } from "../../App";
 import type { Discipline } from "../../types";
+import { useDismissOnRouteChange } from "../../hooks/useDismissOnRouteChange";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -41,6 +42,7 @@ export default function DisciplineSelect({
     ? disciplines.length > 0
     : shouldShowDisciplinePicker(modules, disciplines.length);
   const [addModalOpen, setAddModalOpen] = useState(false);
+  useDismissOnRouteChange(() => setAddModalOpen(false));
   const { can } = usePermissions();
   const canAddDiscipline = can("disciplines.write");
   const resolvedLabel = label ?? t("common.discipline");

@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -241,8 +241,17 @@ function AppLayout() {
     document.title = `${panelTitle} · TangoDB`;
   }, [panelTitle]);
 
+  const setReconciliationOpen = useOfflineStore((s) => s.setReconciliationOpen);
+
   useEffect(() => {
     setMobileDrawerOpen(false);
+    setReconciliationOpen(false);
+  }, [location.pathname, setReconciliationOpen]);
+
+  useLayoutEffect(() => {
+    document.body.querySelectorAll(':scope > [role="dialog"][aria-modal="true"]').forEach((el) => {
+      el.remove();
+    });
   }, [location.pathname]);
 
   const connectionRestoredHandledRef = useRef(false);

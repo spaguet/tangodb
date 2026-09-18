@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "motion/react";
 import { BookOpen, X } from "lucide-react";
+import { useDismissOnRouteChange } from "../../hooks/useDismissOnRouteChange";
 import { useAddDiscipline } from "../../hooks/useDisciplines";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
@@ -24,6 +25,8 @@ export default function AddDisciplineModal({ open, onClose, toast, onSuccess }: 
   const { t } = useI18n();
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+
+  useDismissOnRouteChange(onClose);
 
   useEffect(() => {
     if (!open) return;

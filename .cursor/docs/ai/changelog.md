@@ -1,3 +1,5 @@
+2026-09-18 — fix(subscriptions): микропатч **2.11.44** — касса «Прайс-лист»: закрытие sell-модалок перед переходом; `useDismissOnRouteChange` для попапов/модалок; `AddClientModal` в portal; сброс зависших `body > dialog` при смене маршрута.
+
 2026-09-18 — fix(subscriptions): микропатч **2.11.43** — касса: ссылка «Прайс-лист» через `navigate` (как нижняя подсказка); при смене маршрута сбрасываются backdrop переключателя org, меню подсказок и мобильный drawer (не блокировали клики после перехода).
 
 2026-09-17 — fix(finance): микропатч **2.11.42** — UX14: падение «Входящие» (Mini App top-up) — `useFinanceRentalScreensEnabled` передавал объект вместо boolean в `useLocationRentalHourRates`; стабильные deps в FinanceLayout; guard `FinanceRenterTopupRoute`; кнопка на дашборде только при доступе.

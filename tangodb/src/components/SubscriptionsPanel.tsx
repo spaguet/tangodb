@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History, RefreshCw, Banknote, Coins } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
@@ -241,11 +241,6 @@ export default function SubscriptionsPanel({
     navigate(path);
   };
 
-  const goToPrices = () => {
-    if (!canAccessPanel("prices")) return;
-    navigate("/prices");
-  };
-
   const [search, setSearch] = useState("");
   const [activeLocationFilter, setActiveLocationFilter] = useState("");
   const [activeDisciplineFilter, setActiveDisciplineFilter] = useState("");
@@ -371,6 +366,24 @@ export default function SubscriptionsPanel({
     clientLastName: string;
     amount: number;
   } | null>(null);
+
+  const closeSellFlowOverlays = useCallback(() => {
+    setOverrideDialogOpen(false);
+    setFinishTarget(null);
+    setFreezeTarget(null);
+    setPartnerReplaceTarget(null);
+    setRefundTarget(null);
+    setPartialRefundTarget(null);
+    setVenueConfirmStatus(null);
+    setPendingVenuePayment(null);
+    setPendingCheckout(false);
+  }, []);
+
+  const goToPrices = useCallback(() => {
+    if (!canAccessPanel("prices")) return;
+    closeSellFlowOverlays();
+    navigate("/prices");
+  }, [canAccessPanel, closeSellFlowOverlays, navigate]);
 
   const addWaitlistEntry = useAddGroupWaitlistEntry();
   const canOverrideCapacity = role === "owner" || role === "director";
@@ -1685,19 +1698,16 @@ export default function SubscriptionsPanel({
                       : localPriceList
                         ? t("subscriptions.sell.noTariffsAtLocation")
                         : t("subscriptions.sell.noGlobalTariffsHint")}
-                    {canAccessPanel("prices") ? (
-                      <>
-                        {" "}
-                        <button
-                          type="button"
-                          onClick={goToPrices}
-                          className="text-indigo-600 font-semibold hover:underline cursor-pointer"
-                        >
-                          {t("subscriptions.sell.priceListLink")}
-                        </button>
-                      </>
-                    ) : null}
                   </p>
+                  {canAccessPanel("prices") ? (
+                    <button
+                      type="button"
+                      onClick={goToPrices}
+                      className="text-xs text-indigo-600 font-semibold hover:underline cursor-pointer text-left"
+                    >
+                      {t("subscriptions.sell.priceListLink")}
+                    </button>
+                  ) : null}
                 </div>
               ) : (
                 <AppSelect
