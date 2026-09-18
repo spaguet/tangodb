@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 import { ChevronDown, CircleHelp, LogOut } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { useToast } from "../../App";
@@ -19,7 +20,12 @@ export default function AccountBeginnerHintsMenu({ fullWidth = false }: AccountB
   const { restoreAllHints, showBeginnerHints } = useBeginnerHints();
   const { updateSettings, isUpdating } = useSettings();
   const { can } = usePermissions();
+  const location = useLocation();
   const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
   const handleShowHints = async () => {
     restoreAllHints();

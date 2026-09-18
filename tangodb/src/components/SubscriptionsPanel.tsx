@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useMemo } from "react";
-import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History, RefreshCw, Banknote, Coins } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
@@ -239,6 +239,11 @@ export default function SubscriptionsPanel({
     const path =
       tab === "sell" ? "/subscriptions/sell" : tab === "history" ? "/subscriptions/history" : "/subscriptions";
     navigate(path);
+  };
+
+  const goToPrices = () => {
+    if (!canAccessPanel("prices")) return;
+    navigate("/prices");
   };
 
   const [search, setSearch] = useState("");
@@ -1680,10 +1685,18 @@ export default function SubscriptionsPanel({
                       : localPriceList
                         ? t("subscriptions.sell.noTariffsAtLocation")
                         : t("subscriptions.sell.noGlobalTariffsHint")}
-                    {" "}
-                    <Link to="/prices" className="text-indigo-600 font-semibold hover:underline">
-                      {t("subscriptions.sell.priceListLink")}
-                    </Link>
+                    {canAccessPanel("prices") ? (
+                      <>
+                        {" "}
+                        <button
+                          type="button"
+                          onClick={goToPrices}
+                          className="text-indigo-600 font-semibold hover:underline cursor-pointer"
+                        >
+                          {t("subscriptions.sell.priceListLink")}
+                        </button>
+                      </>
+                    ) : null}
                   </p>
                 </div>
               ) : (
@@ -1863,7 +1876,7 @@ export default function SubscriptionsPanel({
               {t("subscriptions.sell.priceHint")}{" "}
               <button
                 type="button"
-                onClick={() => navigate("/prices")}
+                onClick={goToPrices}
                 className="text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer font-semibold"
               >
                 {t("subscriptions.sell.priceListLink")}

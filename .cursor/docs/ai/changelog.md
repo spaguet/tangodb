@@ -1,3 +1,5 @@
+2026-09-18 — fix(subscriptions): микропатч **2.11.43** — касса: ссылка «Прайс-лист» через `navigate` (как нижняя подсказка); при смене маршрута сбрасываются backdrop переключателя org, меню подсказок и мобильный drawer (не блокировали клики после перехода).
+
 2026-09-17 — fix(finance): микропатч **2.11.42** — UX14: падение «Входящие» (Mini App top-up) — `useFinanceRentalScreensEnabled` передавал объект вместо boolean в `useLocationRentalHourRates`; стабильные deps в FinanceLayout; guard `FinanceRenterTopupRoute`; кнопка на дашборде только при доступе.
 
 2026-09-17 — fix(auth): микропатч **2.11.41** — UX04: название студии владельца на `/select-organization` — RLS `organization_settings_select_active_membership` (branding_name для всех членств); `organizationMembershipLabel` с fallback; placeholder-имена org не маскируют slug/branding.

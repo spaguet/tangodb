@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Building2, ChevronDown } from "lucide-react";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -14,6 +14,10 @@ export default function OrgSwitcher() {
   const [open, setOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const activeMembership = memberships.find((m) => m.organization_id === organization?.id) ?? null;
+
+  useEffect(() => {
+    setOpen(false);
+  }, [location.pathname]);
 
   if (memberships.length <= 1) return null;
 

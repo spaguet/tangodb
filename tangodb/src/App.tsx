@@ -241,6 +241,10 @@ function AppLayout() {
     document.title = `${panelTitle} · TangoDB`;
   }, [panelTitle]);
 
+  useEffect(() => {
+    setMobileDrawerOpen(false);
+  }, [location.pathname]);
+
   const connectionRestoredHandledRef = useRef(false);
   const prevJustConnectionRestoredRef = useRef(false);
 
