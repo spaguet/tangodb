@@ -3,8 +3,9 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect, useMemo, useCallback } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useState, useEffect, useMemo, useCallback, type MouseEvent } from "react";
+import { flushSync } from "react-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History, RefreshCw, Banknote, Coins } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
@@ -34,6 +35,7 @@ import {
 import { useSaveOfflinePaymentDraft } from "../hooks/useOfflineShift";
 import { usePermissions, useCan } from "../hooks/usePermissions";
 import { useI18n } from "../hooks/useI18n";
+import { dismissAppOverlays, useDismissOnRouteChange } from "../hooks/useDismissOnRouteChange";
 import {
   formatClientName,
   formatCurrency,
@@ -379,11 +381,21 @@ export default function SubscriptionsPanel({
     setPendingCheckout(false);
   }, []);
 
-  const goToPrices = useCallback(() => {
-    if (!canAccessPanel("prices")) return;
-    closeSellFlowOverlays();
-    navigate("/prices");
-  }, [canAccessPanel, closeSellFlowOverlays, navigate]);
+  useDismissOnRouteChange(closeSellFlowOverlays);
+
+  const goToPrices = useCallback(
+    (event: MouseEvent<HTMLAnchorElement>) => {
+      if (!canAccessPanel("prices")) {
+        event.preventDefault();
+        return;
+      }
+      dismissAppOverlays();
+      flushSync(() => {
+        closeSellFlowOverlays();
+      });
+    },
+    [canAccessPanel, closeSellFlowOverlays]
+  );
 
   const addWaitlistEntry = useAddGroupWaitlistEntry();
   const canOverrideCapacity = role === "owner" || role === "director";
@@ -1700,13 +1712,13 @@ export default function SubscriptionsPanel({
                         : t("subscriptions.sell.noGlobalTariffsHint")}
                   </p>
                   {canAccessPanel("prices") ? (
-                    <button
-                      type="button"
+                    <Link
+                      to="/prices"
                       onClick={goToPrices}
-                      className="text-xs text-indigo-600 font-semibold hover:underline cursor-pointer text-left"
+                      className="relative z-10 text-xs text-indigo-600 font-semibold hover:underline cursor-pointer text-left"
                     >
                       {t("subscriptions.sell.priceListLink")}
-                    </button>
+                    </Link>
                   ) : null}
                 </div>
               ) : (
@@ -1884,13 +1896,13 @@ export default function SubscriptionsPanel({
             {role !== "teacher" && (
             <p className="text-slate-400 text-xs font-sans text-center -mt-1 panel-form-full-row-md">
               {t("subscriptions.sell.priceHint")}{" "}
-              <button
-                type="button"
+              <Link
+                to="/prices"
                 onClick={goToPrices}
-                className="text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer font-semibold"
+                className="relative z-10 text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer font-semibold"
               >
                 {t("subscriptions.sell.priceListLink")}
-              </button>
+              </Link>
             </p>
             )}
 

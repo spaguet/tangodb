@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Building2, ChevronDown } from "lucide-react";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { useDismissOnRouteChange } from "../hooks/useDismissOnRouteChange";
 import { useI18n } from "../hooks/useI18n";
 import { memberRoleLabel } from "../hooks/useTeamMembers";
 import { organizationMembershipLabel, organizationPublicName } from "../lib/organizationDisplayName";
@@ -13,11 +14,21 @@ export default function OrgSwitcher() {
   const { memberships, organization, settings, setActiveOrganization } = useOrganization();
   const [open, setOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const rootRef = useRef<HTMLDivElement>(null);
   const activeMembership = memberships.find((m) => m.organization_id === organization?.id) ?? null;
 
+  useDismissOnRouteChange(() => setOpen(false));
+
   useEffect(() => {
-    setOpen(false);
-  }, [location.pathname]);
+    if (!open) return;
+    const onDocClick = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [open]);
 
   if (memberships.length <= 1) return null;
 
@@ -42,7 +53,7 @@ export default function OrgSwitcher() {
   const showAllOrganizationsEntry = memberships.length > 2;
 
   return (
-    <div className="relative block">
+    <div className="relative block" ref={rootRef}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -61,13 +72,6 @@ export default function OrgSwitcher() {
       </button>
 
       {open && (
-        <>
-          <button
-            type="button"
-            aria-label={t("orgSwitcher.closeMenu")}
-            className="fixed inset-0 z-40 cursor-default"
-            onClick={() => setOpen(false)}
-          />
           <div className="absolute right-0 top-full mt-1 z-50 w-64 rounded-lg border border-slate-200 bg-white shadow-lg py-1">
             {memberships.map((membership) => {
               const label = organizationMembershipLabel(membership);
@@ -102,7 +106,6 @@ export default function OrgSwitcher() {
               </button>
             )}
           </div>
-        </>
       )}
     </div>
   );

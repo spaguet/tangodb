@@ -130,12 +130,12 @@ export default function DatePickerField({
       }
     };
 
-    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("click", onPointerDown);
     window.addEventListener("scroll", updatePanelPosition, true);
     window.addEventListener("resize", updatePanelPosition);
 
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("click", onPointerDown);
       window.removeEventListener("scroll", updatePanelPosition, true);
       window.removeEventListener("resize", updatePanelPosition);
     };

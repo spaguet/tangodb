@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -78,6 +78,7 @@ import { useOfflineStore } from "./store/offline";
 import { reportOfflineEvent } from "./lib/offline/monitoring";
 import { usePermissions } from "./hooks/usePermissions";
 import { useI18n } from "./hooks/useI18n";
+import { useDismissOnRouteChange } from "./hooks/useDismissOnRouteChange";
 import {
   getNavSections,
   getMobileTabs,
@@ -243,16 +244,10 @@ function AppLayout() {
 
   const setReconciliationOpen = useOfflineStore((s) => s.setReconciliationOpen);
 
-  useEffect(() => {
+  useDismissOnRouteChange(() => {
     setMobileDrawerOpen(false);
     setReconciliationOpen(false);
-  }, [location.pathname, setReconciliationOpen]);
-
-  useLayoutEffect(() => {
-    document.body.querySelectorAll(':scope > [role="dialog"][aria-modal="true"]').forEach((el) => {
-      el.remove();
-    });
-  }, [location.pathname]);
+  });
 
   const connectionRestoredHandledRef = useRef(false);
   const prevJustConnectionRestoredRef = useRef(false);

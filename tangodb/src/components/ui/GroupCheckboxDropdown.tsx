@@ -45,8 +45,8 @@ export default function GroupCheckboxDropdown({
         setOpen(false);
       }
     };
-    document.addEventListener("mousedown", onDocClick);
-    return () => document.removeEventListener("mousedown", onDocClick);
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
   }, [open]);
 
   const selectedLabels = options

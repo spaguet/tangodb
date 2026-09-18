@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
-import { useLocation } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { ChevronDown, CircleHelp, LogOut } from "lucide-react";
 import { useAuth } from "../../auth/AuthProvider";
 import { useToast } from "../../App";
 import { useI18n } from "../../hooks/useI18n";
+import { useDismissOnRouteChange } from "../../hooks/useDismissOnRouteChange";
 import { useBeginnerHints } from "../../hooks/useBeginnerHints";
 import { useSettings } from "../../settings/SettingsProvider";
 import { usePermissions } from "../../hooks/usePermissions";
@@ -20,12 +20,21 @@ export default function AccountBeginnerHintsMenu({ fullWidth = false }: AccountB
   const { restoreAllHints, showBeginnerHints } = useBeginnerHints();
   const { updateSettings, isUpdating } = useSettings();
   const { can } = usePermissions();
-  const location = useLocation();
   const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useDismissOnRouteChange(() => setOpen(false));
 
   useEffect(() => {
-    setOpen(false);
-  }, [location.pathname]);
+    if (!open) return;
+    const onDocClick = (event: MouseEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("click", onDocClick);
+    return () => document.removeEventListener("click", onDocClick);
+  }, [open]);
 
   const handleShowHints = async () => {
     restoreAllHints();
@@ -42,7 +51,7 @@ export default function AccountBeginnerHintsMenu({ fullWidth = false }: AccountB
   };
 
   return (
-    <div className={`relative ${fullWidth ? "w-full" : ""}`}>
+    <div ref={rootRef} className={`relative ${fullWidth ? "w-full" : ""}`}>
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -57,13 +66,6 @@ export default function AccountBeginnerHintsMenu({ fullWidth = false }: AccountB
       </button>
 
       {open && (
-        <>
-          <button
-            type="button"
-            aria-label={t("common.close")}
-            className="fixed inset-0 z-40 cursor-default"
-            onClick={() => setOpen(false)}
-          />
           <div
             role="menu"
             className="absolute right-0 top-full mt-1 z-50 w-56 rounded-lg border border-slate-200 bg-white shadow-lg py-1"
@@ -91,7 +93,6 @@ export default function AccountBeginnerHintsMenu({ fullWidth = false }: AccountB
               {t("nav.signOut")}
             </button>
           </div>
-        </>
       )}
     </div>
   );

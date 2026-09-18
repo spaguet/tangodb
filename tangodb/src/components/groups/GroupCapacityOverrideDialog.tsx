@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { AnimatePresence, motion } from "motion/react";
 import { AlertTriangle, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
@@ -35,7 +36,7 @@ export default function GroupCapacityOverrideDialog({
     return () => window.removeEventListener("keydown", onKey);
   }, [open, pending, onCancel]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4" role="dialog" aria-modal="true">
@@ -112,6 +113,7 @@ export default function GroupCapacityOverrideDialog({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

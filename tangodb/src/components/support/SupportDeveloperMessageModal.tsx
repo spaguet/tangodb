@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import TurnstileWidget, { isTurnstileConfigured } from "../auth/TurnstileWidget";
 import { btnAddCls, btnCancelCls } from "../ui/buttonStyles";
@@ -84,7 +85,7 @@ export default function SupportDeveloperMessageModal({
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40">
       <div
         role="dialog"
@@ -182,6 +183,7 @@ export default function SupportDeveloperMessageModal({
           </form>
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

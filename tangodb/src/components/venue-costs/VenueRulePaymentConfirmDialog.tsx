@@ -1,4 +1,5 @@
 import { AnimatePresence, motion } from "motion/react";
+import { createPortal } from "react-dom";
 import { AlertTriangle } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import type { VenueCostRuleStatus } from "../../hooks/useVenueCosts";
@@ -34,7 +35,7 @@ export default function VenueRulePaymentConfirmDialog({
       status.latestValidTo,
       serviceDate
     );
-  return (
+  return createPortal(
     <AnimatePresence>
       {visible && (
         <div className={`fixed inset-0 ${zClass} flex items-center justify-center p-4`} role="dialog" aria-modal="true">
@@ -78,6 +79,7 @@ export default function VenueRulePaymentConfirmDialog({
           </motion.div>
         </div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

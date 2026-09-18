@@ -1,3 +1,5 @@
+2026-09-18 — fix(subscriptions): микропатч **2.11.45** — касса «Прайс-лист»: обычный `Link` на `/prices`; перед переходом синхронно закрываются попапы (`dismissAppOverlays` + `flushSync`); убраны невидимые `fixed inset-0` backdrop у OrgSwitcher/меню аккаунта (они перехватывали клики); удалён опасный `body.querySelectorAll(dialog).remove()`; модалки ёмкости/venue/поддержки в `document.body`.
+
 2026-09-18 — fix(subscriptions): микропатч **2.11.44** — касса «Прайс-лист»: закрытие sell-модалок перед переходом; `useDismissOnRouteChange` для попапов/модалок; `AddClientModal` в portal; сброс зависших `body > dialog` при смене маршрута.
 
 2026-09-18 — fix(subscriptions): микропатч **2.11.43** — касса: ссылка «Прайс-лист» через `navigate` (как нижняя подсказка); при смене маршрута сбрасываются backdrop переключателя org, меню подсказок и мобильный drawer (не блокировали клики после перехода).
