@@ -4,8 +4,7 @@
  */
 
 import { useState, useEffect, useMemo, useCallback, type MouseEvent } from "react";
-import { flushSync } from "react-dom";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { Ticket, FileCheck, Search, Send, Snowflake, ChevronDown, ChevronLeft, ChevronRight, History, RefreshCw, Banknote, Coins } from "lucide-react";
 import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
@@ -384,16 +383,13 @@ export default function SubscriptionsPanel({
   useDismissOnRouteChange(closeSellFlowOverlays);
 
   const goToPrices = useCallback(
-    (event: MouseEvent<HTMLButtonElement>) => {
-      event.preventDefault();
+    (event: MouseEvent<HTMLAnchorElement>) => {
       if (!canAccessPanel("prices")) {
+        event.preventDefault();
         return;
       }
       dismissAppOverlays();
-      flushSync(() => {
-        closeSellFlowOverlays();
-      });
-      window.location.assign("/prices");
+      closeSellFlowOverlays();
     },
     [canAccessPanel, closeSellFlowOverlays]
   );
@@ -1713,13 +1709,13 @@ export default function SubscriptionsPanel({
                         : t("subscriptions.sell.noGlobalTariffsHint")}
                   </p>
                   {canAccessPanel("prices") ? (
-                    <button
-                      type="button"
+                    <Link
+                      to="/prices"
                       onClick={goToPrices}
                       className="relative z-10 text-xs text-indigo-600 font-semibold hover:underline cursor-pointer text-left"
                     >
                       {t("subscriptions.sell.priceListLink")}
-                    </button>
+                    </Link>
                   ) : null}
                 </div>
               ) : (
@@ -1897,13 +1893,13 @@ export default function SubscriptionsPanel({
             {role !== "teacher" && (
             <p className="text-slate-400 text-xs font-sans text-center -mt-1 panel-form-full-row-md">
               {t("subscriptions.sell.priceHint")}{" "}
-              <button
-                type="button"
+              <Link
+                to="/prices"
                 onClick={goToPrices}
                 className="relative z-10 text-indigo-600 hover:text-indigo-700 hover:underline cursor-pointer font-semibold"
               >
                 {t("subscriptions.sell.priceListLink")}
-              </button>
+              </Link>
             </p>
             )}
 

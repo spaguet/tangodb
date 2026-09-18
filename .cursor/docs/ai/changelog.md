@@ -1,3 +1,5 @@
+2026-09-18 — fix(nav): микропатч **2.11.47** — левое меню и внутренние CTA снова меняют экран, а не только URL. У `BrowserRouter` выключен `useTransitions`: React Router 7 откладывал смену `Outlet` через `startTransition`, а Query-обновления кассы/дашборда не давали переходу закоммититься. «Прайс-лист» снова обычный `Link` на `/prices` (без `window.location.assign`).
+
 2026-09-18 — fix(subscriptions): микропатч **2.11.46** — касса «Прайс-лист»: CTA в empty-state и нижней подсказке больше не `Link` с side effects; это `button`, который закрывает слои и делает жёсткий переход `window.location.assign('/prices')`. Устраняет состояние, где URL становился `/prices`, а React-экран оставался на продаже абонемента и создавал ощущение «замороженных» кнопок.
 
 2026-09-18 — fix(subscriptions): микропатч **2.11.45** — касса «Прайс-лист»: обычный `Link` на `/prices`; перед переходом синхронно закрываются попапы (`dismissAppOverlays` + `flushSync`); убраны невидимые `fixed inset-0` backdrop у OrgSwitcher/меню аккаунта (они перехватывали клики); удалён опасный `body.querySelectorAll(dialog).remove()`; модалки ёмкости/venue/поддержки в `document.body`.

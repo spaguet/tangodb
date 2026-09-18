@@ -590,7 +590,8 @@ export default function App() {
       <AuthProvider>
         <OrganizationProvider>
           <SettingsProvider>
-          <BrowserRouter>
+          {/* Query updates starved RR7 startTransition: URL changed, Outlet stayed. */}
+          <BrowserRouter useTransitions={false}>
             <RecoveryGate>
             <Routes>
               <Route
