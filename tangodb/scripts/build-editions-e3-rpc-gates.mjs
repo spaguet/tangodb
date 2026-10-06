@@ -55,8 +55,18 @@ function gateJsonb(cap) {
 `;
 }
 
+function gateVoid(block, cap) {
+  const declareSection = block.split(/\r?\nBEGIN\r?\n/)[0] ?? "";
+  const orgId = /\bp_org_id uuid\b/.test(declareSection) ? "p_org_id" : "v_org_id";
+  return `  IF editions_lifecycle_enabled() AND NOT edition_allows(${orgId}, '${cap}') THEN
+    PERFORM _edition_raise('edition_forbidden');
+  END IF;
+
+`;
+}
+
 function injectGateAfterBegin(block, cap) {
-  const injection = gateJsonb(cap);
+  const injection = /\nRETURNS void\s*\n/.test(block) ? gateVoid(block, cap) : gateJsonb(cap);
   const m = block.match(/\r?\nBEGIN\r?\n/);
   if (!m) throw new Error("no BEGIN");
   const idx = m.index + m[0].length;
@@ -230,7 +240,11 @@ for (const [funcName, cap] of Object.entries(JSONB_GATE_RPCS)) {
 `;
     let patched = block;
     if (!/v_org_id uuid/.test(patched)) {
-      patched = patched.replace(/(DECLARE\s*\r?\n)/, `$1  v_org_id uuid;\r\n`);
+      if (/(DECLARE\s*\r?\n)/.test(patched)) {
+        patched = patched.replace(/(DECLARE\s*\r?\n)/, `$1  v_org_id uuid;\r\n`);
+      } else {
+        patched = patched.replace(/AS \$\$\r?\nBEGIN\r?\n/, `AS $$\nDECLARE\n  v_org_id uuid;\nBEGIN\n`);
+      }
     }
     patched = patched.replace(/\r?\nBEGIN\r?\n/, (m) => `${m}${injection}`);
     parts.push(`-- restate_personal_lesson_amount from ${file}\n${patched}\n\n`);

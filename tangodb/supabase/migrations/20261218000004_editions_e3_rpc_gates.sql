@@ -3220,8 +3220,8 @@ DECLARE
   v_settlement_id uuid;
   v_computed_at timestamptz := now();
 BEGIN
-  IF editions_lifecycle_enabled() AND NOT edition_allows(v_org_id, 'payroll') THEN
-    RETURN jsonb_build_object('success', false, 'error', 'edition_forbidden', 'error_code', 'edition_forbidden');
+  IF editions_lifecycle_enabled() AND NOT edition_allows(p_org_id, 'payroll') THEN
+    PERFORM _edition_raise('edition_forbidden');
   END IF;
 
   IF p_org_id IS NULL
@@ -6800,6 +6800,8 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public, auth
 AS $$
+DECLARE
+  v_org_id uuid;
 BEGIN
   SELECT organization_id INTO v_org_id FROM personal_lessons WHERE id = p_lesson_id;
   IF editions_lifecycle_enabled() AND NOT edition_allows(v_org_id, 'personal_lessons') THEN
