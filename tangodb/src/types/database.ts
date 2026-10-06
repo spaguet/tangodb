@@ -2138,6 +2138,142 @@ export type Database = {
           },
         ]
       }
+      organization_edition_events: {
+        Row: {
+          actor_user_id: string | null
+          created_at: string
+          from_ceiling: string | null
+          from_edition: string | null
+          id: string
+          metadata: Json
+          organization_id: string
+          reason: string
+          to_ceiling: string | null
+          to_edition: string | null
+        }
+        Insert: {
+          actor_user_id?: string | null
+          created_at?: string
+          from_ceiling?: string | null
+          from_edition?: string | null
+          id?: string
+          metadata?: Json
+          organization_id: string
+          reason: string
+          to_ceiling?: string | null
+          to_edition?: string | null
+        }
+        Update: {
+          actor_user_id?: string | null
+          created_at?: string
+          from_ceiling?: string | null
+          from_edition?: string | null
+          id?: string
+          metadata?: Json
+          organization_id?: string
+          reason?: string
+          to_ceiling?: string | null
+          to_edition?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_edition_events_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_edition_state: {
+        Row: {
+          active_edition: string
+          change_reason: string
+          changed_at: string
+          changed_by: string | null
+          organization_id: string
+        }
+        Insert: {
+          active_edition: string
+          change_reason: string
+          changed_at: string
+          changed_by?: string | null
+          organization_id: string
+        }
+        Update: {
+          active_edition?: string
+          change_reason?: string
+          changed_at?: string
+          changed_by?: string | null
+          organization_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_edition_state_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: true
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      organization_entitlements: {
+        Row: {
+          billing_anchor_day: number | null
+          created_at: string
+          edition: string
+          id: string
+          instrument: string
+          organization_id: string
+          period_end: string | null
+          period_start: string | null
+          source_request_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          billing_anchor_day?: number | null
+          created_at?: string
+          edition: string
+          id?: string
+          instrument: string
+          organization_id: string
+          period_end?: string | null
+          period_start?: string | null
+          source_request_id?: string | null
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          billing_anchor_day?: number | null
+          created_at?: string
+          edition?: string
+          id?: string
+          instrument?: string
+          organization_id?: string
+          period_end?: string | null
+          period_start?: string | null
+          source_request_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "organization_entitlements_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "organization_entitlements_source_request_id_fkey"
+            columns: ["source_request_id"]
+            isOneToOne: false
+            referencedRelation: "platform_purchase_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       organization_invites: {
         Row: {
           accepted_at: string | null
@@ -3696,6 +3832,104 @@ export type Database = {
             columns: ["quote_id"]
             isOneToOne: false
             referencedRelation: "platform_purchase_quotes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      platform_runtime_flags: {
+        Row: {
+          key: string
+          updated_at: string
+          updated_by: string | null
+          value: Json
+        }
+        Insert: {
+          key: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Update: {
+          key?: string
+          updated_at?: string
+          updated_by?: string | null
+          value?: Json
+        }
+        Relationships: []
+      }
+      platform_support_tickets: {
+        Row: {
+          client_request_id: string
+          close_note: string | null
+          close_reason: string | null
+          closed_at: string | null
+          closed_by_user_id: string | null
+          contact_telegram: string | null
+          created_at: string
+          email: string | null
+          id: string
+          locale: string | null
+          message: string
+          opened_at: string | null
+          opened_by_user_id: string | null
+          organization_id: string | null
+          organization_name: string | null
+          page_path: string
+          status: string
+          ticket_kind: string
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          client_request_id: string
+          close_note?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          closed_by_user_id?: string | null
+          contact_telegram?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          locale?: string | null
+          message: string
+          opened_at?: string | null
+          opened_by_user_id?: string | null
+          organization_id?: string | null
+          organization_name?: string | null
+          page_path: string
+          status?: string
+          ticket_kind: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          client_request_id?: string
+          close_note?: string | null
+          close_reason?: string | null
+          closed_at?: string | null
+          closed_by_user_id?: string | null
+          contact_telegram?: string | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          locale?: string | null
+          message?: string
+          opened_at?: string | null
+          opened_by_user_id?: string | null
+          organization_id?: string | null
+          organization_name?: string | null
+          page_path?: string
+          status?: string
+          ticket_kind?: string
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_support_tickets_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
             referencedColumns: ["id"]
           },
         ]
@@ -6325,6 +6559,110 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      roster_attendance: {
+        Row: {
+          attendance_status: string
+          client_id: string
+          created_at: string
+          created_by_member_id: string | null
+          date: string
+          id: string
+          organization_id: string
+          schedule_group_id: string
+        }
+        Insert: {
+          attendance_status: string
+          client_id: string
+          created_at?: string
+          created_by_member_id?: string | null
+          date: string
+          id?: string
+          organization_id: string
+          schedule_group_id: string
+        }
+        Update: {
+          attendance_status?: string
+          client_id?: string
+          created_at?: string
+          created_by_member_id?: string | null
+          date?: string
+          id?: string
+          organization_id?: string
+          schedule_group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "roster_attendance_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "roster_attendance_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "roster_attendance_organization_id_schedule_group_id_fkey"
+            columns: ["organization_id", "schedule_group_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["organization_id", "id"]
+          },
+        ]
+      }
+      schedule_group_roster: {
+        Row: {
+          client_id: string
+          created_at: string
+          created_by_member_id: string | null
+          id: string
+          organization_id: string
+          schedule_group_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          created_by_member_id?: string | null
+          id?: string
+          organization_id: string
+          schedule_group_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          created_by_member_id?: string | null
+          id?: string
+          organization_id?: string
+          schedule_group_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "schedule_group_roster_organization_id_client_id_fkey"
+            columns: ["organization_id", "client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["organization_id", "id"]
+          },
+          {
+            foreignKeyName: "schedule_group_roster_organization_id_fkey"
+            columns: ["organization_id"]
+            isOneToOne: false
+            referencedRelation: "organizations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "schedule_group_roster_organization_id_schedule_group_id_fkey"
+            columns: ["organization_id", "schedule_group_id"]
+            isOneToOne: false
+            referencedRelation: "classes"
+            referencedColumns: ["organization_id", "id"]
           },
         ]
       }
@@ -9099,6 +9437,10 @@ export type Database = {
         Args: { p_id: string }
         Returns: string
       }
+      _platform_support_ticket_kind_page_ok: {
+        Args: { p_authenticated: boolean; p_kind: string; p_page_path: string }
+        Returns: boolean
+      }
       _preview_crm_month_activation_period: {
         Args: {
           p_organization_id: string
@@ -9218,6 +9560,10 @@ export type Database = {
         Args: { p_org_id: string }
         Returns: string
       }
+      _rental_occupies_hall: {
+        Args: { p_booking_status: string; p_lifecycle: string }
+        Returns: boolean
+      }
       _rental_paid_total: {
         Args: { p_org_id: string; p_rental_id: string }
         Returns: number
@@ -9229,6 +9575,10 @@ export type Database = {
       _rental_payment_status: {
         Args: { p_fixed_amount: number; p_paid_amount: number }
         Returns: string
+      }
+      _rental_reject_miniapp_money_write: {
+        Args: { p_org_id: string; p_rental_id: string }
+        Returns: Json
       }
       _rental_reject_miniapp_series_write: {
         Args: { p_org_id: string; p_series_id: string }
@@ -9300,6 +9650,18 @@ export type Database = {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: undefined
       }
+      _renter_assign_staff_unpaid_slot_debt: {
+        Args: { p_rental_id: string }
+        Returns: boolean
+      }
+      _renter_attach_wallet_to_staff_cashier_rental: {
+        Args: { p_rental_id: string }
+        Returns: undefined
+      }
+      _renter_attach_wallet_to_staff_cashier_rentals: {
+        Args: { p_rental_ids: string[] }
+        Returns: undefined
+      }
       _renter_audit_with_reason: {
         Args: {
           p_new_data: Json
@@ -9327,7 +9689,21 @@ export type Database = {
         }
         Returns: boolean
       }
+      _renter_can_cancel_pack_from_date_row: {
+        Args: {
+          p_is_renter: boolean
+          p_r: Database["public"]["Tables"]["rentals"]["Row"]
+        }
+        Returns: boolean
+      }
       _renter_can_cancel_pack_row: {
+        Args: {
+          p_is_renter: boolean
+          p_r: Database["public"]["Tables"]["rentals"]["Row"]
+        }
+        Returns: boolean
+      }
+      _renter_can_cancel_renter_from_date_row: {
         Args: {
           p_is_renter: boolean
           p_r: Database["public"]["Tables"]["rentals"]["Row"]
@@ -9353,6 +9729,10 @@ export type Database = {
           p_rental_id: string
         }
         Returns: string
+      }
+      _renter_cashier_rental_wallet_eligible: {
+        Args: { p_rental_id: string }
+        Returns: boolean
       }
       _renter_charge_prepay: { Args: { p_rental_id: string }; Returns: boolean }
       _renter_charge_remainder: {
@@ -9605,21 +9985,38 @@ export type Database = {
         }
         Returns: string
       }
-      _renter_insert_occurrence: {
-        Args: {
-          p_created_by: string
-          p_date: string
-          p_idempotency_key: string
-          p_kind: string
-          p_location_id: string
-          p_org_id: string
-          p_renter_id: string
-          p_series_id: string
-          p_time_end: string
-          p_time_start: string
-        }
-        Returns: string
-      }
+      _renter_insert_occurrence:
+        | {
+            Args: {
+              p_created_by: string
+              p_date: string
+              p_idempotency_key: string
+              p_kind: string
+              p_location_id: string
+              p_org_id: string
+              p_renter_id: string
+              p_series_id: string
+              p_time_end: string
+              p_time_start: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_created_by: string
+              p_date: string
+              p_idempotency_key: string
+              p_kind: string
+              p_location_id: string
+              p_org_id: string
+              p_purpose?: string
+              p_renter_id: string
+              p_series_id: string
+              p_time_end: string
+              p_time_start: string
+            }
+            Returns: string
+          }
       _renter_is_bookable: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: boolean
@@ -9717,6 +10114,18 @@ export type Database = {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: number
       }
+      _renter_pack_day_slots_canonical: {
+        Args: { p_payload: Json }
+        Returns: Json
+      }
+      _renter_pack_day_slots_from_weekdays: {
+        Args: { p_time_end: string; p_time_start: string; p_weekdays: number[] }
+        Returns: Json
+      }
+      _renter_pack_patterns_from_slots: {
+        Args: { p_day_slots: Json }
+        Returns: Json
+      }
       _renter_pack_payload_fingerprint: {
         Args: {
           p_location_id: string
@@ -9729,9 +10138,23 @@ export type Database = {
         }
         Returns: string
       }
+      _renter_pack_payload_fingerprint_slots: {
+        Args: {
+          p_day_slots: Json
+          p_location_id: string
+          p_renter_id: string
+          p_valid_from: string
+          p_valid_to: string
+        }
+        Returns: string
+      }
       _renter_pack_series_fingerprint: {
         Args: { p_series_id: string }
         Returns: string
+      }
+      _renter_pack_slots_from_series: {
+        Args: { p_series_id: string }
+        Returns: Json
       }
       _renter_pack_span_days_ok: {
         Args: { p_valid_from: string; p_valid_to: string }
@@ -9758,6 +10181,10 @@ export type Database = {
       _renter_preview_staff_topup_effect: {
         Args: { p_amount: number; p_org_id: string; p_renter_id: string }
         Returns: Json
+      }
+      _renter_promote_cashier_rental_to_miniapp: {
+        Args: { p_rental_id: string }
+        Returns: boolean
       }
       _renter_prune_init_data_hashes: { Args: never; Returns: undefined }
       _renter_public_rental_json: { Args: { p_id: string }; Returns: Json }
@@ -9868,6 +10295,13 @@ export type Database = {
         }
         Returns: string[]
       }
+      _renter_slot_is_staff_cancellable: {
+        Args: {
+          p_is_renter: boolean
+          p_r: Database["public"]["Tables"]["rentals"]["Row"]
+        }
+        Returns: boolean
+      }
       _renter_slot_ts: {
         Args: { p_date: string; p_org_id: string; p_time: string }
         Returns: string
@@ -9958,6 +10392,18 @@ export type Database = {
           p_valid_from: string
           p_valid_to: string
           p_weekdays: number[]
+        }
+        Returns: Json
+      }
+      _renter_validate_pack_booking_slots: {
+        Args: {
+          p_day_slots: Json
+          p_include_gates?: boolean
+          p_location_id: string
+          p_org_id: string
+          p_renter_id: string
+          p_valid_from: string
+          p_valid_to: string
         }
         Returns: Json
       }
@@ -10054,6 +10500,10 @@ export type Database = {
       _renter_wallet_spendable: {
         Args: { p_org_id: string; p_renter_id: string }
         Returns: number
+      }
+      _renter_wallet_sync_advance_to_wallet: {
+        Args: { p_advance_id: string }
+        Returns: boolean
       }
       _restate_personal_lesson_charge_billed: {
         Args: {
@@ -10169,6 +10619,10 @@ export type Database = {
       add_calendar_month: {
         Args: { p_anchor_day: number; p_start: string }
         Returns: string
+      }
+      add_group_roster_client: {
+        Args: { p_client_id: string; p_schedule_group_id: string }
+        Returns: Json
       }
       add_group_waitlist_entry: {
         Args: { p_class_id: string; p_client_id: string; p_comment?: string }
@@ -10730,6 +11184,16 @@ export type Database = {
         Args: { p_limit?: number; p_query?: string }
         Returns: Json
       }
+      dev_console_update_support_ticket: {
+        Args: {
+          p_actor_user_id: string
+          p_close_note: string
+          p_close_reason: string
+          p_status: string
+          p_ticket_id: string
+        }
+        Returns: Json
+      }
       dev_console_user_id_by_email_exact: {
         Args: { p_email: string }
         Returns: string
@@ -10809,6 +11273,10 @@ export type Database = {
         Args: { p_request_id: string }
         Returns: Json
       }
+      enqueue_platform_support_ticket_notifications: {
+        Args: { p_ticket_id: string }
+        Returns: Json
+      }
       ensure_own_member_profile: { Args: never; Returns: boolean }
       ensure_schedule_group: {
         Args: {
@@ -10853,6 +11321,12 @@ export type Database = {
         }
         Returns: Json
       }
+      editions_lifecycle_enabled: { Args: never; Returns: boolean }
+      edition_allows: {
+        Args: { p_capability: string; p_org_id: string }
+        Returns: boolean
+      }
+      cancel_organization_monthly_entitlement: { Args: never; Returns: Json }
       expire_crm_organization_subscriptions: {
         Args: { p_as_of?: string; p_batch_size?: number }
         Returns: Json
@@ -10953,6 +11427,10 @@ export type Database = {
       }
       get_groups_capacity_snapshot: {
         Args: { p_class_ids: string[] }
+        Returns: Json
+      }
+      get_organization_edition: {
+        Args: { p_org_id?: string }
         Returns: Json
       }
       get_organization_calendar_sync_metrics: {
@@ -11199,6 +11677,15 @@ export type Database = {
         }
         Returns: Json
       }
+      mark_roster_attendance: {
+        Args: {
+          p_client_id: string
+          p_date: string
+          p_new_status: string
+          p_schedule_group_id: string
+        }
+        Returns: Json
+      }
       mark_personal_lesson_attendance: {
         Args: { p_lesson_id: string; p_new_status: string }
         Returns: Json
@@ -11353,6 +11840,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      organization_active_edition: {
+        Args: { p_org_id: string }
+        Returns: string
+      }
       organization_allows_reads: {
         Args: { p_org_id: string }
         Returns: boolean
@@ -11369,12 +11860,20 @@ export type Database = {
         }
         Returns: boolean
       }
+      organization_effective_ceiling: {
+        Args: { p_org_id: string }
+        Returns: string
+      }
       organization_has_active_subscription: {
         Args: { p_org_id: string }
         Returns: boolean
       }
       organization_has_lifetime_license: {
         Args: { p_org_id: string }
+        Returns: boolean
+      }
+      organization_within_edition_cap: {
+        Args: { p_org_id: string; p_resource: string }
         Returns: boolean
       }
       orphan_personal_lesson_payments: {
@@ -11657,41 +12156,21 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: Json
       }
-      record_rental_invoice_payment:
-        | {
-            Args: {
-              p_amount: number
-              p_idempotency_key?: string
-              p_invoice_id: string
-              p_method?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_idempotency_key?: string
-              p_invoice_id: string
-              p_method?: string
-              p_operation_date?: string
-            }
-            Returns: Json
-          }
-        | {
-            Args: {
-              p_amount: number
-              p_fiscal_acquiring_id?: string
-              p_fiscal_cash_register_id?: string
-              p_fiscal_receipt_number?: string
-              p_fiscal_status?: string
-              p_fiscal_terminal_id?: string
-              p_idempotency_key?: string
-              p_invoice_id: string
-              p_method?: string
-              p_operation_date?: string
-            }
-            Returns: Json
-          }
+      record_rental_invoice_payment: {
+        Args: {
+          p_amount: number
+          p_fiscal_acquiring_id?: string
+          p_fiscal_cash_register_id?: string
+          p_fiscal_receipt_number?: string
+          p_fiscal_status?: string
+          p_fiscal_terminal_id?: string
+          p_idempotency_key?: string
+          p_invoice_id: string
+          p_method?: string
+          p_operation_date?: string
+        }
+        Returns: Json
+      }
       record_rental_payment: {
         Args: {
           p_amount: number
@@ -11743,6 +12222,10 @@ export type Database = {
         Returns: string
       }
       reject_organization_renter_receipt_chat: { Args: never; Returns: Json }
+      remove_group_roster_client: {
+        Args: { p_client_id: string; p_schedule_group_id: string }
+        Returns: Json
+      }
       remove_orphan_payment_storno: {
         Args: {
           p_idempotency_key?: string
@@ -11765,6 +12248,10 @@ export type Database = {
       }
       renter_ack_outbox_skipped: { Args: never; Returns: Json }
       renter_bootstrap: { Args: never; Returns: Json }
+      renter_cancel_bookings_from_date: {
+        Args: { p_from_date: string; p_renter_id: string }
+        Returns: Json
+      }
       renter_cancel_occurrence: { Args: { p_rental_id: string }; Returns: Json }
       renter_cancel_pack: { Args: { p_series_id: string }; Returns: Json }
       renter_cancel_pack_from_date: {
@@ -12047,6 +12534,10 @@ export type Database = {
         }
         Returns: Json
       }
+      set_organization_active_edition: {
+        Args: { p_edition: string }
+        Returns: Json
+      }
       submit_platform_purchase_request: {
         Args: {
           p_client_request_id: string
@@ -12058,6 +12549,21 @@ export type Database = {
           p_quote_id: string
           p_requester_email: string
           p_requester_user_id: string
+        }
+        Returns: Json
+      }
+      submit_platform_support_ticket: {
+        Args: {
+          p_client_request_id: string
+          p_contact_telegram: string
+          p_email: string
+          p_locale: string
+          p_message: string
+          p_organization_id: string
+          p_organization_name: string
+          p_page_path: string
+          p_ticket_kind: string
+          p_user_id: string
         }
         Returns: Json
       }

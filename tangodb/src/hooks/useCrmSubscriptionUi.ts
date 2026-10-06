@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useOrganization } from "../organization/OrganizationProvider";
-import { MONTHLY_PURCHASE_PATH } from "../lib/crmLicensePurchase";
+import { useOrgEdition } from "./useOrgEdition";
+import { renewalPurchasePath } from "../lib/orgEdition";
 import {
   getCrmSubscriptionGraceDaysLeft,
   isCrmSubscriptionTMinus7,
@@ -11,6 +12,7 @@ const PURCHASE_ROLES = new Set(["owner", "director"]);
 
 export function useCrmSubscriptionUi() {
   const { organization, role, license, subscription } = useOrganization();
+  const { edition } = useOrgEdition();
 
   return useMemo(() => {
     const canPurchase = !!role && PURCHASE_ROLES.has(role);
@@ -25,6 +27,17 @@ export function useCrmSubscriptionUi() {
       subscriptionStatus: subscription?.status,
       currentPeriodEnd: periodEnd,
     });
+    const monthPastDue =
+      subscription?.status === "past_due" ||
+      edition?.liveMonthPhase === "past_due" ||
+      edition?.liveMonthPhase === "canceled";
+    const graceDaysLeft =
+      writeClosed || monthPastDue ? getCrmSubscriptionGraceDaysLeft(periodEnd) : null;
+    const showGraceBanner =
+      canPurchase &&
+      organization?.status === "licensed" &&
+      monthPastDue &&
+      (graceDaysLeft === null || graceDaysLeft >= 0);
 
     return {
       canPurchase,
@@ -32,8 +45,9 @@ export function useCrmSubscriptionUi() {
       writeClosed,
       tMinus7,
       showTMinus7Banner: canPurchase && tMinus7 && organization?.status === "licensed",
-      graceDaysLeft: writeClosed ? getCrmSubscriptionGraceDaysLeft(periodEnd) : null,
-      purchasePath: MONTHLY_PURCHASE_PATH,
+      showGraceBanner,
+      graceDaysLeft,
+      purchasePath: renewalPurchasePath(edition),
     };
-  }, [organization, role, license, subscription]);
+  }, [organization, role, license, subscription, edition]);
 }

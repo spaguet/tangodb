@@ -129,6 +129,8 @@ export interface GroupDisplayLesson {
   movedFromDate?: string | null;
   movedFromTime?: string | null;
   scheduleRestricted?: boolean;
+  editionOccupancy?: boolean;
+  editionOccupancyUpsell?: "pro" | "studio";
 }
 
 export interface PersonalDisplayLesson {
@@ -153,6 +155,8 @@ export interface PersonalDisplayLesson {
   price?: number;
   paidAmount?: number;
   scheduleRestricted?: boolean;
+  editionOccupancy?: boolean;
+  editionOccupancyUpsell?: "pro" | "studio";
 }
 
 export type CalendarEventType = "master_class" | "open_lesson";
@@ -179,6 +183,8 @@ export interface EventDisplayLesson {
   plannedGuestCount?: number | null;
   actualGuestCount?: number | null;
   scheduleRestricted?: boolean;
+  editionOccupancy?: boolean;
+  editionOccupancyUpsell?: "pro" | "studio";
 }
 
 export type RentalPaymentStatus = "unpaid" | "partial" | "paid" | "overpaid";
@@ -207,6 +213,8 @@ export interface RentalDisplayLesson {
   canCancelPackFromDate?: boolean;
   canCancelRenterFromDate?: boolean;
   scheduleRestricted?: boolean;
+  editionOccupancy?: boolean;
+  editionOccupancyUpsell?: "pro" | "studio";
 }
 
 export type RentalTariffType = "hourly" | "fixed";
@@ -365,9 +373,11 @@ export interface RenterRentalFinanceExtended {
   overdueAmount: number;
 }
 
-/** Masked busy slot in schedule — no client/group details, not clickable. */
+/** Teacher-scope mask or edition leftover occupancy on the grid. */
 export interface ScheduleRestrictedLessonFields {
   scheduleRestricted?: boolean;
+  editionOccupancy?: boolean;
+  editionOccupancyUpsell?: "pro" | "studio";
 }
 
 export type DisplayLesson =
@@ -375,11 +385,6 @@ export type DisplayLesson =
   | PersonalDisplayLesson
   | EventDisplayLesson
   | RentalDisplayLesson;
-
-/** Masked busy slot in schedule — no client/group details, not clickable. */
-export interface ScheduleRestrictedLessonFields {
-  scheduleRestricted?: boolean;
-}
 
 export type PriceCategory = "group" | "private" | "single_visit";
 

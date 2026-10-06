@@ -4,7 +4,13 @@ import { CalendarPlus, Coins, Edit, X } from "lucide-react";
 import { useI18n } from "../../hooks/useI18n";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useOrganization } from "../../organization/OrganizationProvider";
-import { useCalendarEventSessions } from "../../hooks/useCalendarEvents";
+import {
+  useCalendarEventSessions,
+  useUpdateCalendarEventWithCancellations,
+} from "../../hooks/useCalendarEvents";
+import { canOccupancyReleaseLesson } from "../../lib/scheduleEditionOccupancy";
+import { resolveMutationError } from "../../lib/resolveMutationError";
+import ConfirmDialog from "../ui/ConfirmDialog";
 import { formatCurrency } from "../../lib/utils";
 import type { EventDisplayLesson } from "../../types";
 import EditCalendarEventDialog from "./EditCalendarEventDialog";
@@ -13,6 +19,7 @@ import type { LocationOption } from "./CreateCalendarEventDialog";
 
 interface EventInfoPopupProps {
   lesson: EventDisplayLesson | null;
+  occupancyEditionRelease?: boolean;
   locations: LocationOption[];
   disciplineMap: Map<string, string>;
   teamMap: Map<string, string>;
@@ -25,6 +32,7 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 
 export default function EventInfoPopup({
   lesson,
+  occupancyEditionRelease = false,
   locations,
   disciplineMap,
   teamMap,
@@ -37,14 +45,20 @@ export default function EventInfoPopup({
   const { isReadOnly } = useOrganization();
   const canSeeFinance = can("finance.read");
   const canManage =
+    !occupancyEditionRelease &&
     !isReadOnly &&
     can("schedule.write") &&
     (role === "owner" || role === "director" || role === "admin");
 
+  const canReleaseOccupancy =
+    occupancyEditionRelease && lesson != null && canOccupancyReleaseLesson(lesson);
+
   const sessionsQuery = useCalendarEventSessions(lesson?.eventId ?? null, !!lesson);
+  const updateEvent = useUpdateCalendarEventWithCancellations();
 
   const [editOpen, setEditOpen] = useState(false);
   const [paymentOpen, setPaymentOpen] = useState(false);
+  const [cancelSessionOpen, setCancelSessionOpen] = useState(false);
 
   if (!lesson) return null;
 
@@ -63,10 +77,38 @@ export default function EventInfoPopup({
         : t("schedule.event.paymentUnpaid");
 
   const canRecordPayment =
+    !occupancyEditionRelease &&
     canSeeFinance &&
     !isReadOnly &&
     lesson.paymentStatus !== "paid" &&
     ((lesson.incomeAmount ?? 0) <= 0 || (lesson.paidAmount ?? 0) < (lesson.incomeAmount ?? 0));
+
+  const handleCancelFutureSession = async () => {
+    const sessions = sessionsQuery.data ?? [];
+    const nextSessions = sessions.filter((session) => session.sessionId !== lesson.sessionId);
+    const res = await updateEvent.mutateAsync({
+      eventId: lesson.eventId,
+      title: lesson.title,
+      eventType: lesson.eventType,
+      comment: lesson.comment ?? undefined,
+      guestTeacher: lesson.guestTeacher ?? undefined,
+      organizer: lesson.organizer ?? undefined,
+      plannedGuestCount: lesson.plannedGuestCount,
+      actualGuestCount: lesson.actualGuestCount,
+      incomeAmount: lesson.incomeAmount ?? 0,
+      paymentComment: undefined,
+      sessions: nextSessions,
+      groupCancellations: [],
+      personalCancellations: [],
+    });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "schedule.event.updateFailed", t), "error");
+      return;
+    }
+    toast(t("schedule.editionOccupancy.eventSessionCancelled"), "success");
+    setCancelSessionOpen(false);
+    handleSuccess();
+  };
 
   const handleSuccess = () => {
     onSuccess();
@@ -188,8 +230,17 @@ export default function EventInfoPopup({
               ) : null}
             </div>
 
-            {(canManage || canRecordPayment) && (
+            {(canManage || canRecordPayment || canReleaseOccupancy) && (
               <div className="flex flex-wrap gap-2 px-4 py-3 border-t border-slate-100 bg-slate-50/60">
+                {canReleaseOccupancy ? (
+                  <button
+                    type="button"
+                    onClick={() => setCancelSessionOpen(true)}
+                    className="px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg cursor-pointer"
+                  >
+                    {t("schedule.editionOccupancy.cancelFutureSession")}
+                  </button>
+                ) : null}
                 {canManage ? (
                   <button
                     type="button"
@@ -233,6 +284,17 @@ export default function EventInfoPopup({
         toast={toast}
         onClose={() => setPaymentOpen(false)}
         onSuccess={handleSuccess}
+      />
+
+      <ConfirmDialog
+        open={cancelSessionOpen}
+        title={t("schedule.editionOccupancy.cancelFutureSession")}
+        description={t("schedule.editionOccupancy.cancelFutureSessionConfirm", {
+          date: formatDate(lesson.date),
+        })}
+        pending={updateEvent.isPending}
+        onConfirm={() => void handleCancelFutureSession()}
+        onCancel={() => setCancelSessionOpen(false)}
       />
     </>
   );

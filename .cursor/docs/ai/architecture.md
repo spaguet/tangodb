@@ -12,7 +12,7 @@
 
 ## Platform payment config
 
-- `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM (и, когда вернут, модуля Mini App). **schemaVersion 2:** канон цен `crmLifetime` / `crmMonthly`, per-method override по stable `methodCode`, `pricingRevision` для compare-and-swap в Dev Console. Резолв суммы — `resolvePaymentQuote` (CRM `tangodb/src/lib/paymentQuote.ts`, Edge `_shared/paymentQuote.ts`).
+- `platform_payment_methods.config` — единый публично читаемый JSON-конфиг ручных способов оплаты для страницы лицензии CRM (и, когда вернут, модуля Mini App). **schemaVersion 2:** канон цен `crmLifetime` / `crmMonthly`, per-method override по stable `methodCode`, `pricingRevision` для compare-and-swap в Dev Console. Резолв суммы — канон `platformPaymentContract.ts` (CRM `tangodb/src/lib/platformPaymentContract.ts` ↔ Edge `_shared/platformPaymentContract.ts`); Edge quote — `_shared/paymentQuote.ts`. Файла `tangodb/src/lib/paymentQuote.ts` **нет**.
 - `config.renterMiniappAddon` — `{ amount, currency }` ежемесячная цена add-on; **временно не используется** (HALL-RENT-SELF-2): Mini App входит в купленный CRM.
 - Dev Console (`/payment-methods`) обновляет конфиг через Edge Function `dev-console-payment-methods` с developer-доступом.
 - Загруженные QR оплаты хранятся в конфиге как небольшие `data:image/...` строки; CRM только отображает загруженные изображения и не генерирует QR на клиенте.
@@ -74,6 +74,19 @@
 - **История закрытого personal lesson:** closure хранит стабильный `source_personal_lesson_id` и полный `source_snapshot`; nullable FK `personal_lesson_id` использует `ON DELETE SET NULL`. Поэтому канонические delete RPC не падают на FK, но финансовая/audit-история и защита от повторного active closure сохраняются.
 - **Expiry acknowledgement:** если на дату нет покрывающей accepted-версии, учитывается последняя non-disabled версия с `valid_from <= date`; будущая accepted-версия не скрывает gap. Канонические payment RPC требуют `p_venue_rule_acknowledged=true`, подтверждение хранится только для каждого действительно нового payment. Legacy idempotency fingerprint без нового boolean принимается при `acknowledged=false`; ответ с уже существующим payment не создаёт задним числом acknowledgement.
 
+## Product editions (узел 2.12, CRM **2.12.12**, `editions_lifecycle` prod **off**)
+
+- Канон: `.cursor/docs/ai/crm_product_editions.md` (r14). Витрина: **Lite / Studio / Pro** (латиница). Полный продукт = **Pro**; **Lite** — бесплатно после trial (roster-журнал, капы); **Studio** — операционная касса (абонементы, персоналки, прайс), без финансового контура Pro.
+- **Слой edition (клиент):** `tangodb/src/lib/orgEdition.ts` — каталог capabilities по редакции; `useOrgEdition` → RPC `get_organization_edition`; nav/route/settings ∩ `edition_allows`; `EditionUpsellScreen`; grace в `CrmSubscriptionRenewalBanner` (не в `ReadOnlyBanner`). `isReadOnly` — только dead org (F108), не month-lock.
+- **Два факта в БД:** `effective_ceiling` (entitlements, time-aware phase) ≠ `active_edition` для UI/writes (`organization_active_edition()` — функция, не сырая колонка). Режим (`set_organization_active_edition`) ≠ отмена месяца (`cancel_organization_monthly_entitlement`).
+- **Expire → Lite:** при `editions_lifecycle=on` cron `expire-crm-subscriptions` и time-aware хелперы clamp к Lite после grace, не `suspended`; dual-write зеркал `organization_licenses` / `organization_subscriptions` в той же TX; DELETE licenses — после grace/cancel без lifetime, **не** во время grace.
+- **Демо → Lite (E9):** `convert_expired_demo_to_lite` — после trial `licensed` + `free_lifetime`, `data_purge_at` NULL; при флаге off — purge 2.11.
+- **Гейт Mini App:** `renter_miniapp_addon_is_active` — licensed **и** (Pro lifetime **или** active Pro month); при флаге off = тело 2.11 (fail-closed на демо).
+- **Capabilities vs modules:** write-path и меню — SQL `edition_allows()` + каталог edition; `organization_settings.modules` = `effectiveModules = catalog(active_edition) ∩ normalizeOrgModules(settings)` — скрывает UI, не заменяет редакцию.
+- **Оплата:** schemaVersion 3, SKU `crm_studio_subscription` / `crm_subscription` / `crm_license`; Dev Console Inbox/Billing/Tenants с edition badge.
+- **Лендинг:** `tangodb-landing` — три карточки §3.2 (`EditionsSection`), CTA trial → register, Studio/Pro → `#pricing`.
+- Не путать edition с `crm_product_versions` (major `v2`) и с абонементами ученика (i18n: `license.edition.*` vs операционные «планы» оплаты CRM в `license.plan.*`).
+
 ## Org modules (module gate, Этап 1)
 
 - **Хранение:** `organization_settings.modules` (JSONB), тип `OrgModules` в `types/organization.ts`.
@@ -104,14 +117,16 @@
 - **Outbox:** `calendar_sync_outbox` + `enqueue_calendar_sync` (триггеры на `personal_lessons`, `schedule_slots`, `schedule_occurrence_cancellations`, `calendar_event_sessions`, `rentals`); worker — Edge Function `calendar-sync-worker`.
 - **Hall rental calendar (GCAL-5):** подтверждённые `rentals` (`booking_status = confirmed`) идут только в org-binding `purpose = rentals` — отдельный Google-аккаунт или отдельный календарь на том же аккаунте, не преподавательский и не `purpose = events`. Payload без сумм, телефона и внутренней заметки. Reconcile: `execute_organization_rentals_reconcile` / `request_organization_rentals_calendar_reconcile`. UI: Настройки → Интеграции, блок «Календарь аренды зала».
 
-- **Drain / kick:** cron-тик `calendar-sync-worker` обрабатывает несколько batch (до ~110 с) и при остатке очереди вызывает себя снова; UI после CRUD расписания и кнопки «Синхронизировать» зовёт `calendar-sync-kick` (org-scoped claim). Default batch 40.
+- **Drain / kick:** cron-тик `calendar-sync-worker` не вызывает сам себя. За тик не больше 2 batch и 30 секунд; необработанный хвост возвращается в очередь через минуту. Ошибка задачи идёт в обычный retry с потолком попыток, после него задача `dead`. Новый тик выходит, если жив lease `processing` или проверка lease не удалась. `calendar-sync-kick` тоже выходит, пока lease занят, свою организацию не растягивает на общий воркер и укладывается в 20 секунд. Повторный kick с клиента не чаще раза в минуту на организацию. Default batch 40.
+- **Аренда в календаре:** триггер `rentals` ставит outbox только при INSERT/DELETE и при изменении полей события (`rental_date`, время, `booking_status`, `purpose`, `location_id`, `renter_id`). `updated_at` и кошелёк очередь не трогают.
 - **Access token cache:** `user_google_accounts.encrypted_access_token` + `access_token_expires_at`; refresh только когда токен истекает; новый `refresh_token` от Google сохраняется. In-memory cache внутри одного вызова worker.
 - **Group occurrence enqueue (Prompt 9):** горизонт 7 дней назад / 90 вперёд через `gcal_group_occurrence_horizon_bounds` + `_group_slot_occurrences_in_range`; триггеры на `schedule_slots` (union OLD/NEW при UPDATE), отмена → delete по `schedule_occurrence_cancellations`; `move_group_lesson_occurrence` — явный delete/upsert; ежедневное продление — RPC `run_group_occurrence_horizon_extension` + cron `calendar-extend-group-horizon`.
 - **Group occurrence worker (Prompt 10):** `calendar-sync-worker` обрабатывает `source_type = group_occurrence` (upsert/delete); payload из `group_name`/дисциплины, `occurrenceKey` в extendedProperties; смена преподавателя через `removeStaleLinks`; reconcile — `execute_member_group_occurrences_reconcile` (вместе с personal в `reconcile_member`).
 - **Claim:** RPC `claim_calendar_sync_jobs` — атомарный lease, `FOR UPDATE SKIP LOCKED`, дедуп по `(organization_id, dedupe_key)`; опциональный `p_organization_id` для kick; если у просроченного `processing` lease уже есть более новая `pending/retry` строка, stale lease удаляется до возврата остальных задач в `retry`.
 - **Strict-scope recovery:** при Google 404 на первичном insert worker сначала проверяет, что календарь действительно отсутствует (`calendars.get`); иначе не создаёт новый. Ищет существующий `TangoDB / <организация>` (и любой `TangoDB / …`) и только потом создаёт. Primary не выбирается в UI при scope `calendar.app.created`.
 - **Расписание (cron):** внешний scheduler или **Supabase Dashboard → Cron Jobs** с заголовком `x-cron-secret: <CRON_SECRET>` (как `purge-expired-demo-orgs`):
-  - `calendar-sync-worker` — каждые **2 мин** (`POST`, body `{}`, опционально `batch_size`); один тик дренирует очередь до лимита времени и при необходимости самоперезапускается;
+  - `calendar-sync-worker` — каждые **2 мин** (`POST`, body `{}`, опционально `batch_size` до 40); не больше 2 batch и 30 с, без самовызова; тик пропускается, пока жив чужой lease;
+  - `renter-booking-worker` — каждые **2 мин**; maintenance не больше 4 батчей и 30 с, Telegram-drain не больше 4 батчей, весь вызов короче интервала крона. Слоты сотрудника в `active` до начала не считаются due.
   - `calendar-reconcile-personal` — **каждый час** (`POST`, body `{}`) → RPC `run_personal_lessons_calendar_reconciliation` → enqueue `reconcile_member` на каждый активный binding с `sync_personal`.
   - `calendar-extend-group-horizon` — **ежедневно** (`POST`, body `{}`) → RPC `run_group_occurrence_horizon_extension` → upsert на день `CURRENT_DATE + 90` для активных `schedule_slots`.
   - `google-calendar-renew-watches` — **ежедневно** (`POST`, body `{}`) → продление `events.watch` (<24h до expiration) и backfill watch для bindings без канала.
@@ -122,4 +137,4 @@
 - **UI статуса (Prompt 8):** `get_personal_lesson_google_sync_status` (урок), `useGoogleCalendarSyncStatus`, `TeamGoogleSyncSection`, `google-calendar-remind-connect`.
 - **Free/busy (Prompt 13):** `member_google_calendar_bindings.freebusy_calendar_ids`; incremental OAuth scopes (`calendar.freebusy` / `calendar.events.freebusy`); Edge Functions `google-calendar-freebusy` (только busy-интервалы, calendar IDs server-side), `google-calendar-set-freebusy-config`; UI `GoogleCalendarFreebusySection` + неблокирующее предупреждение в формах записи урока.
 - **Timezone resync (Prompt 14):** триггер на `organization_settings.timezone` → `enqueue_calendar_timezone_resync` (upsert всех будущих links org без удаления link-строк).
-- **Regression (Prompt 14):** `npm run lint` + `npm run build`; `test:db:google-calendar` — RLS/credential isolation; worker drain до ~110 с, default batch 40 (≤ 100), exponential backoff + jitter на 429/5xx; логи через `logEvent` без token/payload клиентов.
+- **Regression (Prompt 14):** `npm run lint` + `npm run build`; `test:db:google-calendar` — RLS/credential isolation; cron-тик календаря до 30 с и 2 batch, default batch 40, без самовызова; exponential backoff + jitter на 429/5xx и потолок попыток; логи через `logEvent` без token/payload клиентов.

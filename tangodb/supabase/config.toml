@@ -476,7 +476,8 @@ verify_jwt = false
 
 [functions.renter-booking-worker]
 verify_jwt = false
-# Cron every 2 min (ops/Dashboard, not pg_cron in repo). CRON_SECRET. Calls SQL helpers R1c.
+# Cron every 2 min (ops/Dashboard, not pg_cron in repo). CRON_SECRET.
+# Maintenance: at most 4 batches and 30s per invocation (workerLoopPolicy).
 
 [functions.renter-telegram-auth]
 verify_jwt = false

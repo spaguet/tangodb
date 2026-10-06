@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import AppSelect, { fieldCls as inputCls } from "../../components/ui/AppSelect";
 import { btnAddCls } from "../../components/ui/buttonStyles";
 import LoadingState from "../../components/ui/LoadingState";
@@ -10,6 +11,7 @@ import { resolveMutationError } from "../../lib/resolveMutationError";
 import { useI18n } from "../../hooks/useI18n";
 import { useSettings } from "../SettingsProvider";
 import { TIMEZONE_OPTIONS } from "../../lib/timezoneOptions";
+import { isOrgTimezoneMiniAppBlockError } from "../../lib/scheduleEditionOccupancy";
 
 export default function GeneralSettingsPage() {
   const { t } = useI18n();
@@ -27,6 +29,7 @@ export default function GeneralSettingsPage() {
   const [brandingName, setBrandingName] = useState("");
   const [showBeginnerHints, setShowBeginnerHints] = useState(true);
   const [dirty, setDirty] = useState(false);
+  const [timezoneMiniAppBlocked, setTimezoneMiniAppBlocked] = useState(false);
 
   useEffect(() => {
     if (!settings) return;
@@ -38,6 +41,7 @@ export default function GeneralSettingsPage() {
     setBrandingName(settings.branding_name ?? "");
     setShowBeginnerHints(settings.show_beginner_hints !== false);
     setDirty(false);
+    setTimezoneMiniAppBlocked(false);
   }, [settings]);
 
   if (isLoading || !settings) return <LoadingState label={t("settings.general.loading")} />;
@@ -57,8 +61,14 @@ export default function GeneralSettingsPage() {
       show_beginner_hints: showBeginnerHints,
     });
     if (!res.success) {
-      toast(resolveMutationError(res.error, "settings.saveError", t), "error");
+      if (isOrgTimezoneMiniAppBlockError(res.error)) {
+        setTimezoneMiniAppBlocked(true);
+        toast(t("settings.general.timezoneMiniAppBlocked"), "error");
+      } else {
+        toast(resolveMutationError(res.error, "settings.saveError", t), "error");
+      }
     } else {
+      setTimezoneMiniAppBlocked(false);
       setGuestLocale(locale);
       toast(t("settings.saveSuccess"), "success");
       setDirty(false);
@@ -109,12 +119,25 @@ export default function GeneralSettingsPage() {
         <AppSelect
           label={t("settings.general.field.timezone")}
           value={timezone}
-          onChange={(e) => { setTimezone(e.target.value); markDirty(); }}
+          onChange={(e) => {
+            setTimezone(e.target.value);
+            setTimezoneMiniAppBlocked(false);
+            markDirty();
+          }}
         >
           {TIMEZONE_OPTIONS.map((o) => (
             <option key={o.value} value={o.value}>{o.label}</option>
           ))}
         </AppSelect>
+
+        {timezoneMiniAppBlocked ? (
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900 space-y-2">
+            <p>{t("settings.general.timezoneMiniAppBlocked")}</p>
+            <Link to="/schedule" className="inline-flex font-semibold text-amber-800 underline">
+              {t("settings.general.timezoneMiniAppBlockedCta")}
+            </Link>
+          </div>
+        ) : null}
 
         <AppSelect
           label={t("settings.general.field.weekStart")}

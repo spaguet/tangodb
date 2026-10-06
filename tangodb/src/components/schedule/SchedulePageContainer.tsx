@@ -8,6 +8,7 @@ import { usePrices } from "../../hooks/usePrices";
 import { useAccessibleLocations } from "../../hooks/useLocations";
 import { useTeamMembers, memberDisplayName, memberListLabel } from "../../hooks/useTeamMembers";
 import { usePermissions } from "../../hooks/usePermissions";
+import { useOrgEdition } from "../../hooks/useOrgEdition";
 import { isModuleEnabled, normalizeOrgModules } from "../../lib/orgModules";
 import {
   scheduleLocationDisplayName,
@@ -22,6 +23,7 @@ import { canAddPersonalFromGrid, canClickEmptyCell, canOfferGroupLessonAdd, isLe
 import { hasLocationAccess } from "../../lib/teacherScope";
 import { isActiveLessonConductingMember } from "../../lib/lessonTeacherRoles";
 import { isMiniAppRentalChannel } from "../../lib/rentalMiniAppDisplay";
+import { withEditionOccupancyFields } from "../../lib/scheduleEditionOccupancy";
 import {
   buildSchedulePngFilename,
   exportSchedulePng,
@@ -103,21 +105,24 @@ export default function SchedulePageContainer() {
   const teamQuery = useTeamMembers();
   const { data: activeClients = [] } = useClients();
   const { data: prices = [] } = usePrices();
+  const { editionAllows } = useOrgEdition();
 
   const scheduleGridAddOptions = useMemo(
     () => ({
       isReadOnly,
       modules: normalizeOrgModules(settings?.modules),
       teachersCanAddGroupLessons: settings?.teachers_can_add_group_lessons ?? false,
+      editionAllows,
     }),
-    [isReadOnly, settings?.modules, settings?.teachers_can_add_group_lessons]
+    [isReadOnly, settings?.modules, settings?.teachers_can_add_group_lessons, editionAllows]
   );
 
   const canManageTeacherVacation = can("schedule.write");
-  const locationsModuleEnabled = isModuleEnabled(scheduleGridAddOptions.modules, "locations");
-  const canManageRentals = can("rentals.write") && locationsModuleEnabled;
+  const canManageRentals = can("rentals.write") && editionAllows("hall_rent");
   const canManageCalendarEvents =
-    can("schedule.write") && (role === "owner" || role === "director" || role === "admin");
+    can("schedule.write") &&
+    editionAllows("calendar_events") &&
+    (role === "owner" || role === "director" || role === "admin");
   const canAddGroup = canOfferGroupLessonAdd(role, can, scheduleGridAddOptions);
   const canAddPersonal = canAddPersonalFromGrid(role, can, scheduleGridAddOptions);
   const canAddRental = canManageRentals;
@@ -295,7 +300,9 @@ export default function SchedulePageContainer() {
   }, [scheduleQuery.data?.lessons, teacherFilter]);
 
   const displayLessons = useMemo(() => {
-    if (role !== "teacher") return filteredLessons;
+    if (role !== "teacher") {
+      return filteredLessons.map((lesson) => withEditionOccupancyFields(lesson, editionAllows));
+    }
     const visible: DisplayLesson[] = [];
     for (const lesson of filteredLessons) {
       if (isLessonInTeacherScope(role, memberId, lesson, scope)) {
@@ -308,8 +315,8 @@ export default function SchedulePageContainer() {
         visible.push({ ...lesson, scheduleRestricted: true });
       }
     }
-    return visible;
-  }, [filteredLessons, role, memberId, scope]);
+    return visible.map((lesson) => withEditionOccupancyFields(lesson, editionAllows));
+  }, [filteredLessons, role, memberId, scope, editionAllows]);
 
   const highlightedLesson = useMemo(() => {
     if (focusLessonId) {
@@ -396,6 +403,16 @@ export default function SchedulePageContainer() {
     []
   );
 
+  const editionOccupancyHint = useCallback(
+    (lesson: DisplayLesson): string | undefined => {
+      if (!lesson.editionOccupancy) return undefined;
+      return lesson.editionOccupancyUpsell === "studio"
+        ? t("schedule.editionOccupancy.availableStudio")
+        : t("schedule.editionOccupancy.availablePro");
+    },
+    [t]
+  );
+
   const getLessonTitle = useCallback(
     (lesson: DisplayLesson): string => {
       if (lesson.scheduleRestricted) return t("schedule.occupied");
@@ -432,6 +449,12 @@ export default function SchedulePageContainer() {
       const parts: string[] = [lessonTimeRange(lesson)];
 
       if (lesson.scheduleRestricted) {
+        return parts.join(" · ");
+      }
+
+      const occupancyHint = editionOccupancyHint(lesson);
+      if (occupancyHint) {
+        parts.push(occupancyHint);
         return parts.join(" · ");
       }
 
@@ -483,7 +506,7 @@ export default function SchedulePageContainer() {
 
       return parts.join(" · ");
     },
-    [disciplineMap, teamMap, lessonTimeRange, t, can]
+    [disciplineMap, teamMap, lessonTimeRange, t, can, editionOccupancyHint]
   );
 
   const handleLessonClick = useCallback((lesson: DisplayLesson) => {
@@ -855,6 +878,7 @@ export default function SchedulePageContainer() {
 
       <EventInfoPopup
         lesson={selectedEvent}
+        occupancyEditionRelease={selectedEvent?.editionOccupancy === true}
         locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
         disciplineMap={disciplineMap}
         teamMap={teamMap}
@@ -865,6 +889,7 @@ export default function SchedulePageContainer() {
 
       <RentalInfoPopup
         lesson={selectedRental && !isMiniAppRentalChannel(selectedRental) ? selectedRental : null}
+        occupancyEditionRelease={selectedRental?.editionOccupancy === true}
         locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
         toast={toast}
         onClose={() => setSelectedRental(null)}
@@ -873,6 +898,7 @@ export default function SchedulePageContainer() {
 
       <MiniAppRentalInfoPopup
         lesson={selectedRental && isMiniAppRentalChannel(selectedRental) ? selectedRental : null}
+        occupancyEditionRelease={selectedRental?.editionOccupancy === true}
         locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
         toast={toast}
         onClose={() => setSelectedRental(null)}
@@ -934,6 +960,9 @@ export default function SchedulePageContainer() {
 
       <LessonInfoPopup
         lesson={selectedLesson}
+        occupancyEditionRelease={
+          selectedLesson?.kind === "personal" && selectedLesson.editionOccupancy === true
+        }
         locationName={selectedLessonMeta?.locationName}
         disciplineName={selectedLessonMeta?.disciplineName}
         teacherName={selectedLessonMeta?.teacherName}

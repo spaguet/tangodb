@@ -104,12 +104,10 @@ describe("crmLicensePurchase", () => {
         licenseType: "subscription",
         subscriptionStatus: "active",
       }),
-      "monthly"
+      "pro_month"
     );
-    assert.equal(
-      resolveSelectedSku("monthly", "lifetime", "crm_license"),
-      "crm_subscription"
-    );
+    assert.equal(resolveSelectedSku("pro_month", "lifetime", "crm_license"), "crm_license");
+    assert.equal(resolveSelectedSku("pro_month", "monthly", ""), "crm_subscription");
     assert.equal(
       purchaseSkuLock({
         orgStatus: "suspended",

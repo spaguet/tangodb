@@ -23,6 +23,7 @@ import EditRentalSlotModal from "./EditRentalSlotModal";
 
 interface MiniAppRentalInfoPopupProps {
   lesson: RentalDisplayLesson | null;
+  occupancyEditionRelease?: boolean;
   locations: LocationOption[];
   toast: (msg: string, type?: "success" | "error" | "info") => void;
   onClose: () => void;
@@ -33,6 +34,7 @@ const labelCls = "text-[10px] text-slate-400 font-sans uppercase tracking-wider 
 
 export default function MiniAppRentalInfoPopup({
   lesson,
+  occupancyEditionRelease = false,
   locations,
   toast,
   onClose,
@@ -66,7 +68,7 @@ export default function MiniAppRentalInfoPopup({
     canManage && lesson.canCancelRenterFromDate === true && renterId != null;
   const canCancelPackFromDate =
     canManage && lesson.canCancelPackFromDate === true && !canCancelRenterFromDate;
-  const canEditSlot = canManage && lesson.bookingStatus === "confirmed";
+  const canEditSlot = canManage && !occupancyEditionRelease && lesson.bookingStatus === "confirmed";
   const pending =
     deleteHold.isPending ||
     cancelOccurrence.isPending ||

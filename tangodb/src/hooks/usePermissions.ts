@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { useOrgEdition } from "./useOrgEdition";
 import { normalizeOrgModules } from "../lib/orgModules";
 import {
   can,
@@ -14,6 +15,7 @@ import {
 
 export function usePermissions() {
   const { role, settings, isReadOnly, memberships, organizationId } = useOrganization();
+  const { edition } = useOrgEdition();
 
   const membership = useMemo(
     () => memberships.find((m) => m.organization_id === organizationId) ?? null,
@@ -29,8 +31,9 @@ export function usePermissions() {
         isReadOnly,
       }),
       modules: normalizeOrgModules(settings?.modules),
+      edition,
     }),
-    [settings, scope, membership?.meta?.restricted_admin, isReadOnly]
+    [settings, scope, membership?.meta?.restricted_admin, isReadOnly, edition]
   );
 
   const canAction = (action: PermissionAction, context?: PermissionContext) =>

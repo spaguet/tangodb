@@ -19,6 +19,7 @@ import {
 } from "./telegramSend.ts";
 
 const DEFAULT_BATCH_SIZE = 10;
+const MAX_DRAIN_BATCHES = 4;
 const LEASE_SECONDS = 120;
 
 export type PlatformOutboxRow = {
@@ -125,7 +126,7 @@ export async function drainPlatformNotificationOutbox(
     batches: 0,
   };
 
-  while (Date.now() - started < options.timeBudgetMs) {
+  while (Date.now() - started < options.timeBudgetMs && result.batches < MAX_DRAIN_BATCHES) {
     const { data: rows, error: claimError } = await admin.rpc("claim_platform_notification_outbox", {
       p_batch_size: batchSize,
       p_worker_id: options.workerId,

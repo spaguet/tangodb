@@ -1,13 +1,14 @@
 {
   "name": "tangodb-dev-console",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "type": "module",
   "scripts": {
     "dev": "vite --port=3001 --host=0.0.0.0",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "test:purchase-inbox": "npx tsx --test src/lib/purchaseInboxKind.test.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",

@@ -37,6 +37,7 @@ Deno.serve(async (req) => {
     org_name_confirm?: string;
     reason?: string;
     force_licensed?: boolean;
+    force_anti_abuse?: boolean;
   };
   try {
     body = await req.json();
@@ -48,6 +49,7 @@ Deno.serve(async (req) => {
   const nameConfirm = (body.org_name_confirm ?? "").trim();
   const reason = (body.reason ?? "").trim().slice(0, 500);
   const forceLicensed = body.force_licensed === true;
+  const forceAntiAbuse = body.force_anti_abuse === true;
 
   if (!orgId) {
     return jsonResponse({ error: "organization_id required" }, 400, req);
@@ -73,11 +75,16 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "org_name_mismatch" }, 400, req);
   }
 
+  if (forceAntiAbuse && !reason) {
+    return jsonResponse({ error: "reason_required_for_anti_abuse" }, 400, req);
+  }
+
   const { data: result, error: purgeError } = await admin.rpc("purge_single_organization", {
     p_org_id: orgId,
     p_actor_user_id: userData.user.id,
     p_reason: reason || null,
     p_force_licensed: forceLicensed,
+    p_force_anti_abuse: forceAntiAbuse,
   });
 
   if (purgeError) {
@@ -88,11 +95,14 @@ Deno.serve(async (req) => {
     if (msg.includes("active_subscription_purge_forbidden")) {
       return jsonResponse({ error: "active_subscription_purge_forbidden" }, 403, req);
     }
+    if (msg.includes("anti_abuse_purge_required")) {
+      return jsonResponse({ error: "anti_abuse_purge_required" }, 403, req);
+    }
     logEvent("dev_console_purge_org_error", { message: msg });
     return jsonResponse({ error: "Purge failed" }, 500, req);
   }
 
-  logEvent("dev_console_purge_org", { org_id: orgId });
+  logEvent("dev_console_purge_org", { org_id: orgId, force_anti_abuse: forceAntiAbuse });
 
   return jsonResponse({ ok: true, ...(result as Record<string, unknown>) }, 200, req);
 });

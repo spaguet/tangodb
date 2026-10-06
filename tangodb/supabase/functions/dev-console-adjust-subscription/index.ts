@@ -11,7 +11,7 @@ const RATE_LIMIT = 10;
 const RATE_WINDOW_MS = 15 * 60_000;
 
 const VALID_STATUSES = new Set(["active", "past_due", "canceled"]);
-const VALID_PROVIDERS = new Set(["manual", "stripe"]);
+const VALID_PROVIDERS = new Set(["manual"]);
 
 function asString(value: unknown, max = 300): string {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -55,6 +55,7 @@ Deno.serve(async (req) => {
     period_end?: string;
     extend_one_month?: boolean;
     note?: string;
+    manual_plan?: string;
   };
   try {
     body = await req.json();
@@ -84,8 +85,13 @@ Deno.serve(async (req) => {
   const periodStart = parseIsoDateTime(body.period_start);
   const periodEnd = parseIsoDateTime(body.period_end);
   const extendOneMonth = body.extend_one_month === true;
+  const manualPlan = asString(body.manual_plan, 32) || null;
 
-  if (!status && !periodStart && !periodEnd && !extendOneMonth && !provider) {
+  if (manualPlan && !["studio_month", "pro_month", "pro_lifetime"].includes(manualPlan)) {
+    return jsonResponse({ error: "invalid_manual_plan" }, 400, req);
+  }
+
+  if (!status && !periodStart && !periodEnd && !extendOneMonth && !provider && !manualPlan) {
     return jsonResponse({ error: "no_adjustment_specified" }, 400, req);
   }
 
@@ -102,6 +108,7 @@ Deno.serve(async (req) => {
       p_provider: provider || null,
       p_extend_one_month: extendOneMonth,
       p_note: note,
+      p_manual_plan: manualPlan,
     }
   );
 

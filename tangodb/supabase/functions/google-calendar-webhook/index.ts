@@ -1,3 +1,4 @@
+import { shouldPauseGoogleCalendarForOrg } from "../_shared/editionLifecycle.ts";
 import { createServiceClient, logEvent } from "../_shared/supabase.ts";
 import { constantTimeEqual, lookupWatchChannel } from "../_shared/googleCalendarWatch.ts";
 
@@ -33,6 +34,14 @@ Deno.serve(async (req) => {
     }
 
     if (resourceState === "sync") {
+      if (await shouldPauseGoogleCalendarForOrg(admin, watch.organization_id)) {
+        logEvent("gcal_webhook_edition_skip", {
+          channel_id: channelId,
+          organization_id: watch.organization_id,
+        });
+        return new Response(null, { status: 200 });
+      }
+
       const bindingId =
         watch.binding_kind === "member"
           ? watch.member_binding_id

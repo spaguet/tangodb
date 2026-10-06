@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useOrganization } from "../organization/OrganizationProvider";
+import { useOrgEdition } from "./useOrgEdition";
 import {
   FREEBUSY_INVOKE_TIMEOUT_MS,
   WEEKLY_RECURRENCE_SLOT_CAP,
@@ -28,7 +29,9 @@ export function useGoogleCalendarFreebusy({
   enabled = true,
 }: UseGoogleCalendarFreebusyOptions) {
   const { settings } = useOrganization();
+  const { editionAllows } = useOrgEdition();
   const timeZone = settings?.timezone ?? "UTC";
+  const googleCalendarAllowed = editionAllows("google_calendar");
   const [busyByKey, setBusyByKey] = useState<Map<string, GoogleFreebusyInterval[]>>(new Map());
   const [isChecking, setIsChecking] = useState(false);
   const requestIdRef = useRef(0);
@@ -51,7 +54,7 @@ export function useGoogleCalendarFreebusy({
     `${slot.date}|${slot.timeStart}|${slot.timeEnd}`;
 
   useEffect(() => {
-    if (!enabled || !teacherMemberId || normalizedSlots.length === 0) {
+    if (!enabled || !googleCalendarAllowed || !teacherMemberId || normalizedSlots.length === 0) {
       setBusyByKey(new Map());
       setIsChecking(false);
       return;
@@ -104,7 +107,7 @@ export function useGoogleCalendarFreebusy({
       requestIdRef.current += 1;
       abortController.abort();
     };
-  }, [enabled, teacherMemberId, normalizedSlots, timeZone]);
+  }, [enabled, googleCalendarAllowed, teacherMemberId, normalizedSlots, timeZone]);
 
   const overlappingSlots = useMemo(() => {
     const keys = new Set<string>();

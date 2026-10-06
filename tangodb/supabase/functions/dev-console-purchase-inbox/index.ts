@@ -16,7 +16,7 @@ type InboxAction =
   | "resume_addon"
   | "update_addon_period";
 
-type InboxKindFilter = "lifetime" | "monthly" | "addon" | "all";
+type InboxKindFilter = "lifetime" | "monthly" | "studio" | "addon" | "all";
 
 interface PurchaseInboxBody {
   action?: InboxAction;
@@ -59,8 +59,48 @@ function defaultAddonPeriod(): { periodStart: string; periodEnd: string } {
 function kindToRequestKind(kind: InboxKindFilter): string | null {
   if (kind === "lifetime") return "crm_license";
   if (kind === "monthly") return "crm_subscription";
+  if (kind === "studio") return "crm_studio_subscription";
   if (kind === "addon") return "renter_miniapp_addon";
   return null;
+}
+
+function isMonthRequestKind(kind: string): boolean {
+  return kind === "crm_subscription" || kind === "crm_studio_subscription";
+}
+
+async function enrichRequestsWithEdition(
+  admin: ReturnType<typeof createServiceClient>,
+  rows: Record<string, unknown>[]
+) {
+  const orgIds = [
+    ...new Set(rows.map((row) => asString(row.organization_id, 80)).filter(Boolean)),
+  ];
+  const editionByOrg = new Map<string, { active: string | null; ceiling: string | null }>();
+
+  await Promise.all(
+    orgIds.map(async (orgId) => {
+      const [{ data: activeEdition, error: activeError }, { data: ceiling, error: ceilingError }] =
+        await Promise.all([
+          admin.rpc("organization_active_edition", { p_org_id: orgId }),
+          admin.rpc("organization_effective_ceiling", { p_org_id: orgId }),
+        ]);
+
+      editionByOrg.set(orgId, {
+        active: activeError ? null : (activeEdition as string | null),
+        ceiling: ceilingError ? null : (ceiling as string | null),
+      });
+    })
+  );
+
+  return rows.map((row) => {
+    const orgId = asString(row.organization_id, 80);
+    const edition = editionByOrg.get(orgId);
+    return {
+      ...row,
+      edition_active: edition?.active ?? null,
+      edition_ceiling: edition?.ceiling ?? null,
+    };
+  });
 }
 
 function mapRpcActivateError(message: string, req: Request) {
@@ -68,8 +108,26 @@ function mapRpcActivateError(message: string, req: Request) {
   if (lower.includes("request_not_found")) {
     return jsonResponse({ error: "request_not_found" }, 404, req);
   }
+  if (lower.includes("already_pro_lifetime")) {
+    return jsonResponse({ error: "already_pro_lifetime" }, 400, req);
+  }
   if (lower.includes("month_on_lifetime_forbidden") || lower.includes("already_lifetime")) {
     return jsonResponse({ error: "activation_forbidden" }, 400, req);
+  }
+  if (lower.includes("studio_not_configured")) {
+    return jsonResponse({ error: "studio_not_configured" }, 400, req);
+  }
+  if (lower.includes("ceiling_blocks_sku")) {
+    return jsonResponse({ error: "ceiling_blocks_sku" }, 400, req);
+  }
+  if (lower.includes("preview_month_only")) {
+    return jsonResponse({ error: "preview_month_only" }, 400, req);
+  }
+  if (lower.includes("unknown_request_kind")) {
+    return jsonResponse({ error: "unknown_request_kind" }, 400, req);
+  }
+  if (lower.includes("editions_lifecycle_off")) {
+    return jsonResponse({ error: "editions_lifecycle_off" }, 400, req);
   }
   if (lower.includes("period_override_note_required")) {
     return jsonResponse({ error: "period_override_note_required" }, 400, req);
@@ -174,7 +232,9 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "inbox_list_failed" }, 500, req);
     }
 
-    return jsonResponse({ ok: true, requests: data ?? [] }, 200, req);
+    const enriched = await enrichRequestsWithEdition(admin, (data ?? []) as Record<string, unknown>[]);
+
+    return jsonResponse({ ok: true, requests: enriched }, 200, req);
   }
 
   const requestId = asString(body.request_id, 80);
@@ -315,6 +375,15 @@ Deno.serve(async (req) => {
 
   const requestKind = purchaseRequest.request_kind as string;
 
+  if (
+    requestKind !== "renter_miniapp_addon" &&
+    requestKind !== "crm_license" &&
+    requestKind !== "crm_subscription" &&
+    requestKind !== "crm_studio_subscription"
+  ) {
+    return jsonResponse({ error: "unknown_request_kind" }, 400, req);
+  }
+
   if (requestKind === "renter_miniapp_addon") {
     const defaults = defaultAddonPeriod();
     const periodStart = parseIsoDate(body.period_start) ?? defaults.periodStart;
@@ -418,10 +487,9 @@ Deno.serve(async (req) => {
   const result = rpcResult as Record<string, unknown>;
   const alreadyActivated = result.already_activated === true;
 
-  const auditAction =
-    requestKind === "crm_subscription"
-      ? "purchase_request.activate_month"
-      : "purchase_request.activate_lifetime";
+  const auditAction = isMonthRequestKind(requestKind)
+    ? "purchase_request.activate_month"
+    : "purchase_request.activate_lifetime";
 
   await admin.from("platform_audit_log").insert({
     actor_user_id: auth.user.id,
@@ -440,7 +508,7 @@ Deno.serve(async (req) => {
     },
   });
 
-  if (requestKind === "crm_subscription") {
+  if (isMonthRequestKind(requestKind)) {
     return jsonResponse(
       {
         ok: true,

@@ -1,20 +1,19 @@
 import { Navigate, useLocation } from "react-router-dom";
+import EditionUpsellScreen from "../components/edition/EditionUpsellScreen";
 import { usePermissions } from "../hooks/usePermissions";
 import { useOrganization } from "../organization/OrganizationProvider";
-import { findFirstAccessibleSettingsSection, permissionOptionsFromSettings } from "../lib/permissions";
+import { findFirstAccessibleSettingsSection } from "../lib/permissions";
 import { normalizeOrgModules } from "../lib/orgModules";
 
 export default function SettingsIndexRedirect() {
   const location = useLocation();
-  const { role, scope, isReadOnly, membership } = usePermissions();
+  const { role, options } = usePermissions();
   const { settings } = useOrganization();
   const modules = normalizeOrgModules(settings?.modules);
 
-  const options = permissionOptionsFromSettings(settings, scope, {
-    restrictedAdmin: membership?.meta?.restricted_admin ?? false,
-    isReadOnly,
-  });
-
   const first = findFirstAccessibleSettingsSection(role, modules, options);
-  return <Navigate to={first ? `/settings/${first}` : "/"} replace state={location.state} />;
+  if (!first) {
+    return <EditionUpsellScreen requiredEdition="pro" />;
+  }
+  return <Navigate to={`/settings/${first}`} replace state={location.state} />;
 }

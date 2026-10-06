@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { v1ConfigFixture, v2ConfigFixture } from "./platformPaymentContract.fixtures.ts";
+import { v1ConfigFixture, v2ConfigFixture, v3ConfigFixture } from "./platformPaymentContract.fixtures.ts";
 import {
   parsePlatformPaymentConfig,
   preparePaymentConfigForSave,
@@ -42,6 +42,46 @@ describe("platformPaymentContract", () => {
       assert.equal(quote.amount, "750000");
       assert.equal(quote.currency, "VND");
     }
+  });
+
+  it("v2 studio quote is studio_not_configured", () => {
+    const quote = resolvePaymentQuote(v2ConfigFixture, "crm_studio_subscription", "bankTransfer");
+    assert.equal(quote.ok, false);
+    if (!quote.ok) assert.equal(quote.code, "studio_not_configured");
+  });
+
+  it("v2 studio quote does not use Pro monthly price", () => {
+    const quote = resolvePaymentQuote(v2ConfigFixture, "crm_studio_subscription", "vietnameseBankTransfer");
+    assert.equal(quote.ok, false);
+    if (!quote.ok) assert.equal(quote.code, "studio_not_configured");
+  });
+
+  it("v3 studio uses canon and VND override", () => {
+    const quote = resolvePaymentQuote(
+      v3ConfigFixture,
+      "crm_studio_subscription",
+      "vietnameseBankTransfer"
+    );
+    assert.equal(quote.ok, true);
+    if (quote.ok) {
+      assert.equal(quote.amount, "650000");
+      assert.equal(quote.currency, "VND");
+    }
+  });
+
+  it("v3 round-trip preserves studio fields from Dev Console form", () => {
+    const form = configToFormState(v3ConfigFixture);
+    const payload = formStateToConfig(form);
+    const reparsed = parsePlatformPaymentConfig(payload);
+    assert.equal(reparsed.schemaVersion, 3);
+    assert.equal(reparsed.crmStudioMonthly?.amount, "19");
+    assert.equal(reparsed.vietnameseBankTransfer?.studioMonthlyAmount, "650000");
+  });
+
+  it("invalid sku is fail-closed", () => {
+    const quote = resolvePaymentQuote(v2ConfigFixture, "renter_miniapp_addon" as "crm_license", "bankTransfer");
+    assert.equal(quote.ok, false);
+    if (!quote.ok) assert.equal(quote.code, "invalid_sku");
   });
 
   it("v2 crypto requires stable id as method code", () => {
@@ -108,7 +148,7 @@ describe("platformPaymentContract", () => {
     const prepared = preparePaymentConfigForSave(incoming, v1ConfigFixture, 1);
     assert.equal(prepared.ok, true);
     if (prepared.ok) {
-      assert.equal(prepared.config.schemaVersion, 2);
+      assert.equal(prepared.config.schemaVersion, 3);
       assert.ok(Array.isArray(prepared.config.crypto) || prepared.pricingRevision >= 1);
       const crypto = prepared.config.crypto as Array<{ id?: string }> | undefined;
       if (crypto?.length) assert.ok(crypto[0].id);

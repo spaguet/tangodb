@@ -77,6 +77,8 @@ import {
 import { useOfflineStore } from "./store/offline";
 import { reportOfflineEvent } from "./lib/offline/monitoring";
 import { usePermissions } from "./hooks/usePermissions";
+import { useOrgEdition } from "./hooks/useOrgEdition";
+import { capabilityForPanel, capabilityForSettingsSection } from "./lib/orgEdition";
 import { useI18n } from "./hooks/useI18n";
 import { useDismissOnRouteChange } from "./hooks/useDismissOnRouteChange";
 import {
@@ -89,7 +91,6 @@ import {
 import {
   panelIdFromPath,
   canAccessSettingsSection,
-  permissionOptionsFromSettings,
   canAccessFinanceNav,
 } from "./lib/permissions";
 import { showRenterTopupNav } from "./lib/showRenterTopupNav";
@@ -193,7 +194,9 @@ function AppLayout() {
   const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
-  const { canAccessPanel, role, scope, isReadOnly, membership, can } = usePermissions();
+  const { canAccessPanel, role, scope, isReadOnly, membership, can, options: permissionOptions } =
+    usePermissions();
+  const { editionAllows } = useOrgEdition();
   const subscriptionsTab = useUIStore((s) => s.subscriptionsTab);
   const setSubscriptionsTab = useUIStore((s) => s.setSubscriptionsTab);
   const personalTab = useUIStore((s) => s.personalTab);
@@ -202,10 +205,15 @@ function AppLayout() {
   const { showPurchaseCta } = useCrmLicensePurchaseUi();
   const { config: paymentConfig } = usePlatformPaymentConfig(true);
   const orgModules = normalizeOrgModules(settings?.modules);
-  const permissionOptions = permissionOptionsFromSettings(settings, scope, {
-    restrictedAdmin: membership?.meta?.restricted_admin ?? false,
-    isReadOnly,
-  });
+
+  const navEditionAllowed = (item: NavItem) => {
+    if (item.settingsSection) {
+      const cap = capabilityForSettingsSection(item.settingsSection);
+      return !cap || editionAllows(cap);
+    }
+    const cap = capabilityForPanel(panelIdFromPath(item.path));
+    return !cap || editionAllows(cap);
+  };
 
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: ToastType } | null>(null);
@@ -322,6 +330,7 @@ function AppLayout() {
         if (section.moduleKey && !orgModules[section.moduleKey]) return null;
         const visibleItems = section.items.filter((item) => {
           if (item.moduleKey && !orgModules[item.moduleKey]) return false;
+          if (!navEditionAllowed(item)) return false;
           if (claimsMismatch) {
             if (item.path === "/finance" || item.settingsSection) return false;
           }
@@ -406,6 +415,8 @@ function AppLayout() {
         <div className="md:hidden fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-slate-200 z-40 flex justify-around items-center px-0.5 shadow-md pb-[env(safe-area-inset-bottom)]">
           {mobileTabs.filter((item) => {
             if (item.moduleKey && !orgModules[item.moduleKey]) return false;
+            const cap = capabilityForPanel(panelIdFromPath(item.path));
+            if (cap && !editionAllows(cap)) return false;
             return canAccessPanel(panelIdFromPath(item.path));
           }).map((item) => {
             const active =

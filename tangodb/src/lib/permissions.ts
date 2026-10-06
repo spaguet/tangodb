@@ -1,6 +1,14 @@
 import type { MemberRole, OrgModules, TeacherScope } from "../types/organization.ts";
 import { PRESET_MODULES } from "../types/organization.ts";
 import {
+  capabilityForSettingsSection,
+  editionAllows,
+  panelAllowedByEdition,
+  type OrgEditionSnapshot,
+} from "./orgEdition.ts";
+
+export type { OrgEditionSnapshot };
+import {
   DEFAULT_ORG_MODULES,
   isModuleEnabled,
   moduleKeyFromPanel,
@@ -130,6 +138,7 @@ export interface PermissionOptions {
   restrictedAdmin?: boolean;
   isReadOnly?: boolean;
   context?: PermissionContext;
+  edition?: OrgEditionSnapshot | null;
 }
 
 const STRATEGIC_ROLES: MemberRole[] = ["owner", "director"];
@@ -606,6 +615,14 @@ export function canAccessPanel(
   panel: PanelId,
   options?: PermissionOptions
 ): boolean {
+  if (
+    role === "accountant" &&
+    options?.edition?.lifecycleEnabled &&
+    options.edition.activeEdition !== "pro"
+  ) {
+    return false;
+  }
+
   if (isRestrictedReceptionAdmin(role, options)) {
     switch (panel) {
       case "attendance":
@@ -801,9 +818,31 @@ export function findFirstAccessibleSettingsSection(
     const moduleKey = moduleKeyFromSettingsSection(section);
     if (moduleKey && !isModuleEnabled(modules, moduleKey)) continue;
     if (section === "data" && !canAccessDataExportSection(role, modules, options)) continue;
+    if (!settingsSectionAllowedByEditionInner(section, role, modules, options)) continue;
     if (canAccessSettingsSection(role, section, options)) return section;
   }
   return null;
+}
+
+function settingsSectionAllowedByEditionInner(
+  section: SettingsSectionId,
+  role: MemberRole | null,
+  modules: OrgModules,
+  options?: PermissionOptions
+): boolean {
+  const cap = capabilityForSettingsSection(section);
+  if (!cap) return true;
+  if (section === "data") {
+    const operational =
+      editionAllows(options?.edition, "export_operational") &&
+      can(role, "dashboard.export", options);
+    const financial =
+      editionAllows(options?.edition, "export_financial") &&
+      isModuleEnabled(modules, "finance_basic") &&
+      can(role, "finance.export", options);
+    return operational || financial;
+  }
+  return editionAllows(options?.edition, cap);
 }
 
 /** Первая доступная панель с учётом module gate. */
@@ -812,17 +851,29 @@ export function findFirstEnabledAccessiblePanelPath(
   modules: OrgModules,
   options?: PermissionOptions
 ): string | null {
-  if (canAccessPayrollRoute(role, modules, options) && isTeacherPayrollOnly(role, options)) {
+  if (
+    canAccessPayrollRoute(role, modules, options) &&
+    isTeacherPayrollOnly(role, options) &&
+    editionAllows(options?.edition, "payroll")
+  ) {
     return "/finance/payroll";
   }
 
-  if (canAccessRentalInboxRoute(role, modules, options) && isRentalInboxOnly(role, options)) {
+  if (
+    canAccessRentalInboxRoute(role, modules, options) &&
+    isRentalInboxOnly(role, options) &&
+    editionAllows(options?.edition, "hall_rent")
+  ) {
     return "/finance/rental-inbox";
   }
 
   for (const { panel, path } of PANEL_FALLBACK_PATHS) {
     const moduleKey = moduleKeyFromPanel(panel);
     if (moduleKey && !isModuleEnabled(modules, moduleKey)) continue;
+    if (panel === "settings") {
+      if (!findFirstAccessibleSettingsSection(role, modules, options)) continue;
+    }
+    if (!panelAllowedByEdition(panel, options?.edition)) continue;
     if (canAccessPanel(role, panel, options)) return path;
   }
   return null;
@@ -866,9 +917,20 @@ export function canAccessFinanceNav(
   modules: OrgModules,
   options?: PermissionOptions
 ): boolean {
-  if (canAccessPanel(role, "finance", options)) return true;
-  if (canAccessRentalInboxRoute(role, modules, options)) return true;
-  return canAccessPayrollRoute(role, modules, options) && isTeacherPayrollOnly(role, options);
+  if (canAccessPanel(role, "finance", options) && editionAllows(options?.edition, "finance")) {
+    return true;
+  }
+  if (
+    canAccessRentalInboxRoute(role, modules, options) &&
+    editionAllows(options?.edition, "hall_rent")
+  ) {
+    return true;
+  }
+  return (
+    canAccessPayrollRoute(role, modules, options) &&
+    isTeacherPayrollOnly(role, options) &&
+    editionAllows(options?.edition, "payroll")
+  );
 }
 
 export function panelIdFromPath(pathname: string): PanelId {

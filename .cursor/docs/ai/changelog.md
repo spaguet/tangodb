@@ -1,3 +1,63 @@
+2026-10-05 — fix(egress) **2.12.17**: календарный воркер больше не вызывает сам себя. Тик — не больше 2 batch и 30 с, kick — 20 с и только если lease свободен. Необработанный хвост batch возвращается в очередь через минуту, а не сразу. Падение задачи идёт через `markJobRetry`: после 10 попыток она `dead`, а не повторяется каждые 2 минуты. Drain аренды и платформенных уведомлений — не больше 4 batch и короче интервала крона.
+
+2026-10-05 — fix(egress) **2.12.16**: повторная проверка цикла. JWT mismatch больше не сбрасывает счётчик попыток из‑за нового `exp` (иначе `refreshSession` и инвалидация memberships шли без остановки). Календарный воркер: не больше 6 batch, self-call только если тик что-то закрыл, ошибка проверки lease останавливает новый тик, kick не цепляет общий воркер, клиентский kick не чаще раза в минуту. Удаление события аренды в календарь только если слот был `confirmed`. `due_pairs` закрыт от anon/authenticated. Ответ `renter-booking-worker` без тела drain.
+
+2026-10-05 — fix(egress) **2.12.15**: `renter-booking-worker` больше не крутит `run_renter_booking_maintenance` 110 с по слотам сотрудника в резерве T−24 (`renter_booking_maintenance_due_pairs`, `progressed`, лимит 4 батча / 30 с, в лог только первая ошибка ≤200 символов). `rentals_calendar_sync_enqueue` только при смене полей события календаря. `calendar-sync-worker` — не больше 3 self-call и пропуск тика, пока жив lease. Индекс `idx_rentals_miniapp_lifecycle_date`.
+
+2026-10-04 — fix(editions) **2.12.14** / E11: статический смоук F122–F124 (`editionsE11Smoke.test.ts`, блок в `rbac-regression-check.mjs`); починка fallback accountant Lite/Studio → upsell Pro (не `/settings`, не `/prices` на Studio); settings fallback только при доступной секции; `supabase.ts` — безопасный `import.meta.env` в Node-скриптах. Полный якорь §5.3 на staging — §22 руками; SQL-тесты editions требуют локальный `DATABASE_URL`.
+
+2026-10-04 — feat(editions) **2.12.12** / E9: `convert_expired_demo_to_lite` + ветка `purge_expired_demo_organizations` при `editions_lifecycle` (trial_end → licensed Lite, данные на месте); flag off — purge 2.11; `onboardingStarterData` только при живом `demo_active` (F101); `editions_e9_test`.
+
+2026-10-04 — feat(editions) **2.12.11** / E8: фоновые джобы при `editions_lifecycle` — Edge `_shared/editionLifecycle.ts`, calendar-sync-worker skip без Pro (без delete в Google), webhook skip CRM writes (F36), renew-watches/freebusy/set-freebusy fail-closed; SQL cron reconcile/horizon + member reconcile pause; expire-cron лог `canceled_count`; `editions_e8_jobs` + `editions_e8_test`.
+
+2026-10-04 — feat(editions) **2.12.10** / E7: `/settings/license` — три карточки Lite/Studio/Pro, режим (`set_organization_active_edition`) vs отмена месяца (`cancel_organization_monthly_entitlement`), Pro lifetime «вернуть Pro», `purchaseSkuLock` по entitlements (F72), покупка Studio/Pro/Lifetime на licensed Lite, `ManualPurchasePanel` + Studio SKU, grace renew CTA, i18n ru/en.
+
+2026-09-22 — feat(editions) **2.12.9** / E6c: Dev Console Billing (entitlements columns, SKU picker Studio/Pro month/lifetime, lifecycle flag on Billing, без stripe/canned note), Metrics (`dev_console_edition_metrics`), Tenants (edition badge, canPurge F73, anti-abuse purge F79, T−7 month, transfer pro_lifetime), Keys copy generate≠entitlements; Edge `dev-console-runtime-flags`, search-billing RPC, purge `force_anti_abuse`; SQL digest Studio vs Pro; miniapp **0.1.27**; DC **0.2.0**; `editions_e6c_test`.
+
+2026-09-22 — feat(editions) **2.12.8** / E6b: Dev Console Inbox — `rowKind` switch 4 kind + fail-closed unknown (F76); `isMonthly`/preview/override для Pro и Studio month (F93); фильтр `studio` отдельно от `monthly`; подписи «Studio / месяц», «Pro / месяц», «Pro / пожизненно»; Edge `dev-console-purchase-inbox` — enrich list `organization_active_edition`/`organization_effective_ceiling`, Activate month для `crm_studio_subscription`, расширенный `mapRpcActivateError` (F83); `purchaseInboxKind.test.ts`.
+
+2026-09-22 — feat(editions) **2.12.7** / E6a: `platformPaymentContract` schemaVersion **3** + `crmStudioMonthly`, per-method `studioMonthlyAmount` (≠ Pro `monthlyAmount`), backward read v2; Dev Console Payment methods UI + `formStateToConfig`; `parsePurchaseQuoteSku` + Studio SKU; `create-purchase-quote` → `studio_not_configured` / `already_pro_lifetime`; тесты CRM + Edge `purchaseQuotePolicy_test`.
+
+2026-09-22 — feat(editions) **2.12.6** / E5: occupancy после даунгрейда — `scheduleEditionOccupancy` + серые чипы leftover аренды/персоналки/мероприятия (клик → просмотр, снятие **будущих** слотов); create по `hall_rent` / `personal_lessons` / `calendar_events`; Google freebusy только Pro (`useGoogleCalendarFreebusy`); настройки TZ — ошибка Mini App hold + CTA в расписание (F111); vitest `scheduleEditionOccupancy.test.ts`.
+
+2026-09-22 — feat(editions) **2.12.5** / E4: миграция `20261218000005_editions_e4_roster.sql` — `schedule_group_roster`, `roster_attendance`, RPC add/remove/mark (без payroll/freeze/subscription_id); `useGroupRoster` + журнал в `AttendancePanel` (roster ∪ абонементы, F42 dedup, freeze скрыт на Lite); `editions_e4_test`; gen-types таблицы/RPC в `database.ts`.
+
+2026-09-22 — feat(editions) **2.12.4** / E3: миграция `20261218000004_editions_e3_rpc_gates.sql` — `edition_allows` на write-RPC §18.9, venue-ack skip на Studio (F95), `enqueue_calendar_sync` no-op без Pro (F96), `upsert_renter` create / `create_renter` (F115), close occurrence без venue accruals на non-Pro, export ∩ edition; `create_group_subscription` + `p_category` для private-пакетов; удалён PostgREST insert в `useSubscriptions` (F120); `editions_e3_test`.
+
+2026-09-22 — feat(editions) **2.12.3** / E2: `orgEdition.ts` + `useOrgEdition` (RPC `get_organization_edition`, `editions_lifecycle_enabled`), nav/route ∩ edition, `EditionUpsellScreen`, accountant/reception fallback → upsell Pro (F123/F124), `isReadOnly` без month-lock (F108), grace-баннер в `CrmSubscriptionRenewalBanner` (F122), `PurchaseSkuLock` studio/pro month, `/renters` ⊂ `hall_rent`, rental toolbar ⊂ `hall_rent`, `useFinanceRentalScreensEnabled` ⊂ Pro.
+
+2026-09-21 — feat(editions) **2.12.2** / E1c: CHECK `crm_studio_subscription`, preview/Activate month `IN` (F109), dual-write `_sync_organization_edition_mirrors`, wrap `dev_console_adjust_organization_subscription` (F113), expire с веткой флага, purge `p_force_anti_abuse` + licensed Lite (F70/F79/F104), notification CASE Studio (F114), `activate_access_key` → `pro_lifetime`, `editions_e1c_test`.
+
+2026-09-21 — feat(editions) **2.12.1** / E1b: time-aware хелперы (`organization_active_edition`, `edition_allows`, капы), wrap `organization_allows_writes` / `renter_miniapp_addon_is_active` (флаг off = 2.11), триггеры INSERT≠UPDATE §18.12, RPC `get_organization_edition` / `set_organization_active_edition` / `cancel_organization_monthly_entitlement`, кап members в invite/accept/update_team_member, `editions_e1b_test`.
+
+2026-09-21 — feat(editions) **2.12.0** / E1a: SQL `organization_entitlements`, `organization_edition_state`, `organization_edition_events`, `platform_runtime_flags` (seed `editions_lifecycle` off), backfill non-purged org, demo self-service seeds `trial_pro`+`free_lifetime`, dual-write stubs, `editions_e1a_test` (one_raising XOR). Write-path 2.11 без изменений.
+
+2026-09-21 — docs(editions): аудит ТЗ **r14** vs код 2.11.48 — early-return nav (`isTeacherPayrollOnly` / `isRentalInboxOnly`), `canAccessFinanceNav`, settings-index accountant→hall-rent (F124); F116→§18.9; §18.9 vs §18.12; §5.2 grace vs ceiling; E0 DoD §11.9; карта источников истины. Код CRM не менялся, **2.11.48**.
+
+2026-09-21 — docs(editions): редакторский аудит **r13** — канон п.9 vs F123 (upsell Pro, не «следующий хит»); канон шапки r8–r12; §14 п.8 → §18.9; §7 п.28 якоря; §12 nav fallback. Код не менялся, **2.11.48**.
+
+2026-09-21 — docs(editions): аудит ТЗ **r12** vs код 2.11.48 — E2/F123: `findFirstEnabledAccessiblePanelPath` + `PanelAccessRoute`, не только NAV-1; `isReadOnly` без `suspended`; §11.14/§4.3 grace+DELETE licenses; reception fallback; §22 E1a–E1c. Код CRM не менялся, **2.11.48**.
+
+2026-09-21 — docs(editions): аудит ТЗ **r11** vs код 2.11.48 — DELETE licenses не во время grace; флаг on = E1–E9; Activate Studio при off → `editions_lifecycle_off`; accountant fallback vs `canReadScopedCrm=false` (F123); `ReadOnlyBanner` vs E2 (F122). Код CRM не менялся, версия **2.11.48**.
+
+2026-09-21 — docs(editions): редакторская сверка **r9** `crm_product_editions.md` — порядок ревизий, `trial_end`/clamp по rank vs ceiling, §6 vs F108 (`isReadOnly` до флага), дубль §1, оглавление, §18.3/E9 согласованы. Продукт не менялся, код не начат.
+
+2026-09-21 — docs(editions): промпты реализации **§16** (E0–E11, нарезка E1a–E1c и E6a–E6c) + чеклист очереди с галочками в шапке `crm_product_editions.md`. Продукт не менялся, код не начат, rev **r8**.
+
+2026-09-21 — docs(editions): аудит ТЗ **r7** vs код 2.11.48 — имена SQL/Edge как в базе (`dev_console_adjust_organization_subscription` + `extend_one_month`), `preview_activate`/Activate month-ветка равенство `crm_subscription`, notification CASE ELSE = Lifetime, Keys generate vs issue, accountant fallback на Studio, leftover pair-cron, TZ Mini App слоты, `create_renter`, `useFinanceRentalScreensEnabled`, `parsePurchaseQuoteSku`. F109–F121, §17.14, §18.15. Код CRM не менялся, версия **2.11.48**.
+
+2026-09-21 — docs(editions): аудит ТЗ **r6** vs код 2.11.48 — cutover whiplash (флаг off = write-path 2.11), advisory lock bigint, триггеры INSERT≠UPDATE, XOR raising-instrument, Inbox `isMonthly`/Edge filter, Billing canned note, касса Studio vs SELECT `payments`, venue-ack и GCal-enqueue, неполный матричный список RPC, сигнатура purge. F91–F108, §17.13, §18.12–§18.14. Код CRM не менялся, версия **2.11.48**.
+
+2026-09-21 — docs(editions): аудит ТЗ **r5** vs код 2.11.48 — time-aware хелперы (касса с `period_end` без cron), гейты PostgREST+RPC, капы restore/lock/expired-invite, Inbox `rowKind`/Studio filter, purge licensed vs anti-abuse `suspended`, матрица capability×write-path, Dev Console Metrics/Billing/paymentConfig, F75–F90. Код CRM не менялся, версия **2.11.48**.
+
+2026-09-21 — docs(editions): аудит ТЗ vs код 2.11.48 — фазы grace, dual-write DELETE licenses, `isReadOnly`, капы (инвайты/archive), payroll skip, payout кошелька, флаг cutover вне payment config, Dev Console JOIN/Inbox labels, F43–F58, §21–§22. Код CRM не менялся, версия **2.11.48**.
+
+2026-09-21 — docs(editions): ревизия ТЗ Lite/Studio/Pro — сняты противоречия режима vs cancel; dual-write entitlements; журнал Lite = roster-таблицы (не nullable attendance); капы 1/1/200/8; Dev Console §17; схема БД §18; capability↔nav §19; payment config v3 §20. Код CRM не менялся, версия **2.11.48**.
+
+2026-09-20 — docs(editions): витринные имена зафиксированы как **Lite / Studio / Pro** в ru и en (латиница, без перевода «Студия»).
+
+2026-09-20 — docs(editions): черновик ТЗ **Lite / Studio / Pro** — `.cursor/docs/ai/crm_product_editions.md` (матрица возможностей, ceiling vs active edition, expire→Lite, журнал без абонемента, риски F1–F30). Код CRM не менялся, версия **2.11.48**.
+
 2026-09-18 — ux(nav): микропатч **2.11.48** — пункт «Арендаторы» в боковом меню перенесён в секцию «Клиенты» сразу после «База клиентов»; видимость по модулю `locations` на уровне пункта (`NavItem.moduleKey`).
 
 2026-09-18 — fix(nav): микропатч **2.11.47** — левое меню и внутренние CTA снова меняют экран, а не только URL. У `BrowserRouter` выключен `useTransitions`: React Router 7 откладывал смену `Outlet` через `startTransition`, а Query-обновления кассы/дашборда не давали переходу закоммититься. «Прайс-лист» снова обычный `Link` на `/prices` (без `window.location.assign`).

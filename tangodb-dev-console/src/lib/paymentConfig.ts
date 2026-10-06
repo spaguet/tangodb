@@ -1,4 +1,4 @@
-export const PLATFORM_PAYMENT_SCHEMA_VERSION = 2;
+export const PLATFORM_PAYMENT_SCHEMA_VERSION = 3;
 
 export interface CrmPriceForm {
   amount: string;
@@ -15,6 +15,8 @@ export interface CryptoPaymentMethod {
   currency: string;
   monthlyAmount: string;
   monthlyCurrency: string;
+  studioMonthlyAmount: string;
+  studioMonthlyCurrency: string;
   qrImageUrl: string;
 }
 
@@ -29,6 +31,8 @@ export interface BankTransferConfig {
   currency: string;
   monthlyAmount: string;
   monthlyCurrency: string;
+  studioMonthlyAmount: string;
+  studioMonthlyCurrency: string;
   qrImageUrl: string;
 }
 
@@ -41,6 +45,8 @@ export interface MirPaymentConfig {
   currency: string;
   monthlyAmount: string;
   monthlyCurrency: string;
+  studioMonthlyAmount: string;
+  studioMonthlyCurrency: string;
   qrImageUrl: string;
 }
 
@@ -53,6 +59,8 @@ export interface VietnameseBankTransferConfig {
   currency: string;
   monthlyAmount: string;
   monthlyCurrency: string;
+  studioMonthlyAmount: string;
+  studioMonthlyCurrency: string;
   qrImageUrl: string;
 }
 
@@ -71,6 +79,7 @@ export interface PaymentConfigFormState {
   pricingRevision: number;
   crmLifetime: CrmPriceForm;
   crmMonthly: CrmPriceForm;
+  crmStudioMonthly: CrmPriceForm;
   crypto: CryptoPaymentMethod[];
   bankTransfer: BankTransferConfig;
   vietnameseBankTransfer: VietnameseBankTransferConfig;
@@ -84,6 +93,7 @@ export type ManualPaymentConfigPayload = {
   pricingRevision?: number;
   crmLifetime?: { amount: string; currency: string };
   crmMonthly?: { amount: string; currency: string };
+  crmStudioMonthly?: { amount: string; currency: string };
   crypto?: Array<{
     id?: string;
     methodCode?: string;
@@ -95,6 +105,8 @@ export type ManualPaymentConfigPayload = {
     currency?: string;
     monthlyAmount?: string;
     monthlyCurrency?: string;
+    studioMonthlyAmount?: string;
+    studioMonthlyCurrency?: string;
     qrImageUrl?: string;
   }>;
   bankTransfer?: Partial<BankTransferConfig> & { methodCode?: string } | null;
@@ -114,6 +126,8 @@ export const emptyCryptoRow = (): CryptoPaymentMethod => ({
   currency: "",
   monthlyAmount: "",
   monthlyCurrency: "",
+  studioMonthlyAmount: "",
+  studioMonthlyCurrency: "",
   qrImageUrl: "",
 });
 
@@ -123,6 +137,7 @@ export const emptyPaymentConfigForm = (): PaymentConfigFormState => ({
   pricingRevision: 1,
   crmLifetime: emptyCrmPrice(),
   crmMonthly: emptyCrmPrice(),
+  crmStudioMonthly: emptyCrmPrice(),
   crypto: [emptyCryptoRow()],
   bankTransfer: {
     beneficiary: "",
@@ -135,6 +150,8 @@ export const emptyPaymentConfigForm = (): PaymentConfigFormState => ({
     currency: "",
     monthlyAmount: "",
     monthlyCurrency: "",
+    studioMonthlyAmount: "",
+    studioMonthlyCurrency: "",
     qrImageUrl: "",
   },
   vietnameseBankTransfer: {
@@ -146,6 +163,8 @@ export const emptyPaymentConfigForm = (): PaymentConfigFormState => ({
     currency: "",
     monthlyAmount: "",
     monthlyCurrency: "",
+    studioMonthlyAmount: "",
+    studioMonthlyCurrency: "",
     qrImageUrl: "",
   },
   mir: {
@@ -157,6 +176,8 @@ export const emptyPaymentConfigForm = (): PaymentConfigFormState => ({
     currency: "",
     monthlyAmount: "",
     monthlyCurrency: "",
+    studioMonthlyAmount: "",
+    studioMonthlyCurrency: "",
     qrImageUrl: "",
   },
   contacts: {
@@ -194,6 +215,8 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
       currency: trim(row.currency) || undefined,
       monthlyAmount: trim(row.monthlyAmount) || undefined,
       monthlyCurrency: trim(row.monthlyCurrency) || undefined,
+      studioMonthlyAmount: trim(row.studioMonthlyAmount) || undefined,
+      studioMonthlyCurrency: trim(row.studioMonthlyCurrency) || undefined,
       qrImageUrl: trim(row.qrImageUrl) || undefined,
     }))
     .filter((row) => row.coin && row.address);
@@ -210,6 +233,8 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
     currency: trim(form.bankTransfer.currency) || undefined,
     monthlyAmount: trim(form.bankTransfer.monthlyAmount) || undefined,
     monthlyCurrency: trim(form.bankTransfer.monthlyCurrency) || undefined,
+    studioMonthlyAmount: trim(form.bankTransfer.studioMonthlyAmount) || undefined,
+    studioMonthlyCurrency: trim(form.bankTransfer.studioMonthlyCurrency) || undefined,
     qrImageUrl: trim(form.bankTransfer.qrImageUrl) || undefined,
   };
 
@@ -223,6 +248,8 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
     currency: trim(form.vietnameseBankTransfer.currency) || undefined,
     monthlyAmount: trim(form.vietnameseBankTransfer.monthlyAmount) || undefined,
     monthlyCurrency: trim(form.vietnameseBankTransfer.monthlyCurrency) || undefined,
+    studioMonthlyAmount: trim(form.vietnameseBankTransfer.studioMonthlyAmount) || undefined,
+    studioMonthlyCurrency: trim(form.vietnameseBankTransfer.studioMonthlyCurrency) || undefined,
     qrImageUrl: trim(form.vietnameseBankTransfer.qrImageUrl) || undefined,
   };
 
@@ -236,6 +263,8 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
     currency: trim(form.mir.currency) || undefined,
     monthlyAmount: trim(form.mir.monthlyAmount) || undefined,
     monthlyCurrency: trim(form.mir.monthlyCurrency) || undefined,
+    studioMonthlyAmount: trim(form.mir.studioMonthlyAmount) || undefined,
+    studioMonthlyCurrency: trim(form.mir.studioMonthlyCurrency) || undefined,
     qrImageUrl: trim(form.mir.qrImageUrl) || undefined,
   };
 
@@ -254,8 +283,15 @@ export function formStateToConfig(form: PaymentConfigFormState): ManualPaymentCo
 
   const crmLifetime = optionalPrice(form.crmLifetime);
   const crmMonthly = optionalPrice(form.crmMonthly);
+  const crmStudioMonthly = optionalPrice(form.crmStudioMonthly);
   if (crmLifetime?.amount) payload.crmLifetime = { amount: crmLifetime.amount, currency: crmLifetime.currency };
   if (crmMonthly?.amount) payload.crmMonthly = { amount: crmMonthly.amount, currency: crmMonthly.currency };
+  if (crmStudioMonthly?.amount) {
+    payload.crmStudioMonthly = {
+      amount: crmStudioMonthly.amount,
+      currency: crmStudioMonthly.currency,
+    };
+  }
 
   if (crypto.length) payload.crypto = crypto;
   if (bankTransfer.beneficiary || bankTransfer.ibanOrAccount) payload.bankTransfer = bankTransfer;
@@ -292,6 +328,7 @@ export function configToFormState(raw: unknown): PaymentConfigFormState {
   form.pricingRevision = Number.isInteger(revision) && revision >= 1 ? revision : 1;
   form.crmLifetime = readPrice(value.crmLifetime);
   form.crmMonthly = readPrice(value.crmMonthly);
+  form.crmStudioMonthly = readPrice(value.crmStudioMonthly);
 
   if (Array.isArray(value.crypto) && value.crypto.length > 0) {
     form.crypto = value.crypto
@@ -306,6 +343,8 @@ export function configToFormState(raw: unknown): PaymentConfigFormState {
         currency: String(row.currency ?? ""),
         monthlyAmount: String(row.monthlyAmount ?? ""),
         monthlyCurrency: String(row.monthlyCurrency ?? ""),
+        studioMonthlyAmount: String(row.studioMonthlyAmount ?? ""),
+        studioMonthlyCurrency: String(row.studioMonthlyCurrency ?? ""),
         qrImageUrl: String(row.qrImageUrl ?? ""),
       }));
   }
@@ -323,6 +362,8 @@ export function configToFormState(raw: unknown): PaymentConfigFormState {
       currency: String(bank.currency ?? ""),
       monthlyAmount: String(bank.monthlyAmount ?? ""),
       monthlyCurrency: String(bank.monthlyCurrency ?? ""),
+      studioMonthlyAmount: String(bank.studioMonthlyAmount ?? ""),
+      studioMonthlyCurrency: String(bank.studioMonthlyCurrency ?? ""),
       qrImageUrl: String(bank.qrImageUrl ?? ""),
     };
   }
@@ -342,6 +383,8 @@ export function configToFormState(raw: unknown): PaymentConfigFormState {
       currency: String(bank.currency ?? ""),
       monthlyAmount: String(bank.monthlyAmount ?? ""),
       monthlyCurrency: String(bank.monthlyCurrency ?? ""),
+      studioMonthlyAmount: String(bank.studioMonthlyAmount ?? ""),
+      studioMonthlyCurrency: String(bank.studioMonthlyCurrency ?? ""),
       qrImageUrl: String(bank.qrImageUrl ?? ""),
     };
   }
@@ -357,6 +400,8 @@ export function configToFormState(raw: unknown): PaymentConfigFormState {
       currency: String(mir.currency ?? ""),
       monthlyAmount: String(mir.monthlyAmount ?? ""),
       monthlyCurrency: String(mir.monthlyCurrency ?? ""),
+      studioMonthlyAmount: String(mir.studioMonthlyAmount ?? ""),
+      studioMonthlyCurrency: String(mir.studioMonthlyCurrency ?? ""),
       qrImageUrl: String(mir.qrImageUrl ?? ""),
     };
   }

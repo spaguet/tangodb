@@ -15,6 +15,7 @@ import { markJobDone, type OutboxJob } from "./calendarSyncCommon.ts";
 import type { GoogleOAuthConfig } from "./googleOAuth.ts";
 import { logEvent } from "./supabase.ts";
 import { constantTimeEqual } from "./constantTime.ts";
+import { shouldPauseGoogleCalendarForOrg } from "./editionLifecycle.ts";
 
 export { constantTimeEqual };
 
@@ -377,6 +378,9 @@ export async function renewExpiringWatchChannels(
     .lte("expiration", thresholdIso);
 
   for (const row of (expiring ?? []) as WatchChannelRow[]) {
+    if (await shouldPauseGoogleCalendarForOrg(admin, row.organization_id)) {
+      continue;
+    }
     const bindingId = bindingIdFromWatchRow(row);
     try {
       await stopExistingWatch(admin, config, row);
@@ -405,6 +409,9 @@ export async function renewExpiringWatchChannels(
     .eq("enabled", true);
 
   for (const binding of memberBindings ?? []) {
+    if (await shouldPauseGoogleCalendarForOrg(admin, binding.organization_id as string)) {
+      continue;
+    }
     const { data: existing } = await admin
       .from("google_calendar_watch_channels")
       .select("id")
@@ -438,6 +445,9 @@ export async function renewExpiringWatchChannels(
     .eq("enabled", true);
 
   for (const binding of orgBindings ?? []) {
+    if (await shouldPauseGoogleCalendarForOrg(admin, binding.organization_id as string)) {
+      continue;
+    }
     const { data: existing } = await admin
       .from("google_calendar_watch_channels")
       .select("id")

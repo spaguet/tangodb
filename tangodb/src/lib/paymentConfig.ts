@@ -74,6 +74,7 @@ export interface ManualPaymentConfig {
   pricingRevision?: number;
   crmLifetime?: CrmPrice | null;
   crmMonthly?: CrmPrice | null;
+  crmStudioMonthly?: CrmPrice | null;
   crypto?: CryptoPaymentMethod[];
   bankTransfer?: BankTransferConfig | null;
   vietnameseBankTransfer?: VietnameseBankTransferConfig | null;
@@ -136,6 +137,7 @@ export function parseManualPaymentConfig(raw: unknown): ManualPaymentConfig {
     pricingRevision: parsed.pricingRevision,
     crmLifetime: parsed.crmLifetime,
     crmMonthly: parsed.crmMonthly,
+    crmStudioMonthly: parsed.crmStudioMonthly,
     crypto: crypto?.length ? crypto : undefined,
     bankTransfer: bankTransfer?.beneficiary || bankTransfer?.ibanOrAccount ? bankTransfer : null,
     vietnameseBankTransfer:

@@ -16,7 +16,6 @@ import {
   getOrganizationIdFromSession,
 } from "../lib/authClaims";
 import { supabase } from "../lib/supabase";
-import { isCrmSubscriptionWriteClosed } from "../lib/crmSubscriptionState";
 import { reportClientError } from "../lib/reportClientError";
 import { normalizeOrgModules } from "../lib/orgModules";
 import { normalizeTeacherScope } from "../lib/teacherScope";
@@ -457,12 +456,6 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
         refreshAttemptsRef.current += 1;
         lastRefreshFingerprintRef.current = claimsFingerprint;
 
-        const newFingerprint = getClaimsFingerprint(data.session);
-        if (newFingerprint && newFingerprint !== claimsFingerprint) {
-          refreshAttemptsRef.current = 0;
-          lastRefreshFingerprintRef.current = null;
-        }
-
         void queryClient.invalidateQueries({ queryKey: membershipsQueryKey });
         if (organizationId) {
           void queryClient.invalidateQueries({ queryKey: ["organization-context", organizationId] });
@@ -502,15 +495,10 @@ export function OrganizationProvider({ children }: { children: ReactNode }) {
 
   const isReadOnly =
     organization?.status === "demo_retention" ||
+    organization?.status === "purged" ||
     (organization?.status === "demo_active" &&
       !!organization.demo_expires_at &&
-      new Date(organization.demo_expires_at) <= new Date()) ||
-    (organization?.status === "licensed" &&
-      isCrmSubscriptionWriteClosed({
-        licenseType: license?.license_type,
-        subscriptionStatus: subscription?.status,
-        currentPeriodEnd: subscription?.current_period_end,
-      }));
+      new Date(organization.demo_expires_at) <= new Date());
 
   const value = useMemo(
     () => ({

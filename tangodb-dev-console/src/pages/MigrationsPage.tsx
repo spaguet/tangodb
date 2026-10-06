@@ -240,6 +240,11 @@ export default function MigrationsPage() {
       <div className="text-xs text-slate-600 space-y-1">
         <p>Available paths: v2 ↔ v3 (stub transforms until v3 schema ships).</p>
         <p>Apply sets org status to licensed and updates organization_licenses.crm_version_id.</p>
+        <p>
+          Edition backfill (Lite/Studio/Pro entitlements) выполнен в миграции{" "}
+          <code className="text-slate-500">20261218000001_editions_e1a_entitlements.sql</code> — не применяйте
+          licenses вручную.
+        </p>
       </div>
     </div>
   );

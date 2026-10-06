@@ -57,9 +57,11 @@ import GoogleCalendarSyncStatusBadge from "../integrations/GoogleCalendarSyncSta
 import { useGoogleCalendarSyncStatus } from "../../hooks/useGoogleCalendarSyncStatus";
 import { googleCalendarSyncTargetFromLesson } from "../../lib/googleCalendarApi";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
+import { canOccupancyReleaseLesson } from "../../lib/scheduleEditionOccupancy";
 
 interface LessonInfoPopupProps {
   lesson: GroupDisplayLesson | PersonalDisplayLesson | null;
+  occupancyEditionRelease?: boolean;
   locationName?: string;
   disciplineName?: string;
   teacherName?: string;
@@ -94,6 +96,7 @@ function lessonTitle(
 
 export default function LessonInfoPopup({
   lesson,
+  occupancyEditionRelease = false,
   locationName,
   disciplineName,
   teacherName,
@@ -188,7 +191,13 @@ export default function LessonInfoPopup({
     ? directoryClients.find((c) => c.id === profileClient.id) ?? profileClient
     : null;
 
+  const occupancyPersonalRelease =
+    occupancyEditionRelease &&
+    lesson?.kind === "personal" &&
+    canOccupancyReleaseLesson(lesson);
+
   const canEdit =
+    !occupancyEditionRelease &&
     lesson &&
     !isSubstituteOnlyTeacher(role, memberId, lesson) &&
     (lesson.kind === "group"
@@ -201,7 +210,7 @@ export default function LessonInfoPopup({
         )
       : canWritePersonalLesson(role, memberId, lesson, can, isReadOnly, canEditPastSchedule));
 
-  const canDelete = canEdit;
+  const canDelete = occupancyPersonalRelease || canEdit;
 
   const canCancelOneOccurrence =
     lesson?.kind === "group" &&
@@ -246,6 +255,7 @@ export default function LessonInfoPopup({
   }, [lesson, fullPersonalLesson]);
 
   const canPay =
+    !occupancyEditionRelease &&
     personalPayLesson != null &&
     canPayPersonalLesson(role, memberId, personalPayLesson, can, isReadOnly);
 
@@ -789,7 +799,7 @@ export default function LessonInfoPopup({
         onConfirm={handleDelete}
         onCancel={() => setDeleteConfirmOpen(false)}
         alternateConfirmLabel={
-          lesson?.kind === "personal" && canDeletePersonalSeries
+          lesson?.kind === "personal" && canDeletePersonalSeries && !occupancyEditionRelease
             ? t("schedule.lessonInfo.deletePersonalSeriesConfirm", {
                 count: personalSeriesFromDate.length,
               })
@@ -801,7 +811,7 @@ export default function LessonInfoPopup({
         }
         alternatePending={deletePersonalLessonSeries.isPending || deleteGroupSchedule.isPending}
         onAlternateConfirm={
-          lesson?.kind === "personal" && canDeletePersonalSeries
+          lesson?.kind === "personal" && canDeletePersonalSeries && !occupancyEditionRelease
             ? handleDeletePersonalSeries
             : lesson?.kind === "group" && canDeleteGroupAllDays
               ? handleDeleteGroupAllDays

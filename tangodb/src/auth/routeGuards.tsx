@@ -7,6 +7,15 @@ import { useApplyScheduledSubscriptionMemberChanges } from "../hooks/useApplySch
 import { useGuestI18n } from "../hooks/useI18n";
 import { getOrganizationIdFromSession, isRenterActorFromSession } from "../lib/authClaims";
 import { isSyntheticTelegramEmail } from "../lib/telegram";
+import EditionUpsellScreen from "../components/edition/EditionUpsellScreen";
+import {
+  capabilityForPath,
+  capabilityForSettingsSection,
+  editionAllows,
+  financeSubpathAllowedByEdition,
+  pathAllowedByEdition,
+  requiredEditionForCapability,
+} from "../lib/orgEdition";
 import {
   findFirstAccessibleSettingsSection,
   findFirstEnabledAccessiblePanelPath,
@@ -16,7 +25,7 @@ import {
   canAccessFinanceNav,
   canAccessPayrollRoute,
   canAccessRentalInboxRoute,
-  permissionOptionsFromSettings,
+  can,
 } from "../lib/permissions";
 import {
   isModuleEnabled,
@@ -221,18 +230,49 @@ export function OrgWorkspaceRoute() {
   return <Outlet />;
 }
 
+function redirectOrEditionUpsell(
+  role: ReturnType<typeof usePermissions>["role"],
+  modules: ReturnType<typeof normalizeOrgModules>,
+  options: ReturnType<typeof usePermissions>["options"],
+  location: ReturnType<typeof useLocation>
+) {
+  const fallbackPath = findFirstEnabledAccessiblePanelPath(role, modules, options);
+  if (fallbackPath) return <Navigate to={fallbackPath} replace />;
+  const cap = capabilityForPath(location.pathname, location.search);
+  return (
+    <EditionUpsellScreen
+      requiredEdition={cap ? requiredEditionForCapability(cap) : "pro"}
+    />
+  );
+}
+
+function settingsSectionEditionAllowed(
+  section: NonNullable<ReturnType<typeof settingsSectionFromPath>>,
+  role: ReturnType<typeof usePermissions>["role"],
+  modules: ReturnType<typeof normalizeOrgModules>,
+  options: ReturnType<typeof usePermissions>["options"]
+): boolean {
+  const cap = capabilityForSettingsSection(section);
+  if (!cap) return true;
+  if (section === "data") {
+    return (
+      (editionAllows(options.edition, "export_operational") &&
+        can(role, "dashboard.export", options)) ||
+      (editionAllows(options.edition, "export_financial") &&
+        isModuleEnabled(modules, "finance_basic") &&
+        can(role, "finance.export", options))
+    );
+  }
+  return editionAllows(options.edition, cap);
+}
+
 export function PanelAccessRoute() {
   const location = useLocation();
-  const { canAccessPanel, role, scope, isReadOnly, membership } = usePermissions();
+  const { canAccessPanel, role, options } = usePermissions();
   const { settings, claimsMismatch } = useOrganization();
   const panel = panelIdFromPath(location.pathname);
   const settingsSection = settingsSectionFromPath(location.pathname);
   const modules = normalizeOrgModules(settings?.modules);
-
-  const options = permissionOptionsFromSettings(settings, scope, {
-    restrictedAdmin: membership?.meta?.restricted_admin ?? false,
-    isReadOnly,
-  });
 
   if (claimsMismatch && (settingsSection || panel === "finance")) {
     const fallbackPath = findFirstEnabledAccessiblePanelPath(role, modules, options);
@@ -243,26 +283,34 @@ export function PanelAccessRoute() {
     const settingsModuleKey = moduleKeyFromSettingsSection(settingsSection);
     if (settingsModuleKey && !isModuleEnabled(modules, settingsModuleKey)) {
       const fallbackSection = findFirstAccessibleSettingsSection(role, modules, options);
-      return <Navigate to={fallbackSection ? `/settings/${fallbackSection}` : "/"} replace />;
+      if (fallbackSection) {
+        return <Navigate to={`/settings/${fallbackSection}`} replace />;
+      }
+      return redirectOrEditionUpsell(role, modules, options, location);
     }
     if (!canAccessSettingsSection(role, settingsSection, options)) {
       const fallbackSection = findFirstAccessibleSettingsSection(role, modules, options);
       const notice = settingsSection === "team" ? { settingsAccessNotice: "team" as const } : undefined;
-      return (
-        <Navigate
-          to={fallbackSection ? `/settings/${fallbackSection}` : "/"}
-          replace
-          state={notice}
-        />
-      );
+      if (fallbackSection) {
+        return (
+          <Navigate
+            to={`/settings/${fallbackSection}`}
+            replace
+            state={notice}
+          />
+        );
+      }
+      return redirectOrEditionUpsell(role, modules, options, location);
+    }
+    if (!settingsSectionEditionAllowed(settingsSection, role, modules, options)) {
+      return redirectOrEditionUpsell(role, modules, options, location);
     }
     return <Outlet />;
   }
 
   const panelModuleKey = moduleKeyFromPanel(panel);
   if (panelModuleKey && !isModuleEnabled(modules, panelModuleKey)) {
-    const fallbackPath = findFirstEnabledAccessiblePanelPath(role, modules, options);
-    return <Navigate to={fallbackPath ?? "/"} replace />;
+    return redirectOrEditionUpsell(role, modules, options, location);
   }
 
   const isFinanceRoot =
@@ -273,14 +321,33 @@ export function PanelAccessRoute() {
 
   const isPayrollRoute = location.pathname.startsWith("/finance/payroll");
   if (isPayrollRoute && canAccessPayrollRoute(role, modules, options)) {
-    return <Outlet />;
+    if (financeSubpathAllowedByEdition(location.pathname, options.edition)) {
+      return <Outlet />;
+    }
+    return redirectOrEditionUpsell(role, modules, options, location);
   }
 
   const isRentalInboxRoute =
     location.pathname.startsWith("/finance/rental-inbox") ||
     location.pathname.startsWith("/finance/renter-topup");
   if (isRentalInboxRoute && canAccessRentalInboxRoute(role, modules, options)) {
-    return <Outlet />;
+    if (financeSubpathAllowedByEdition(location.pathname, options.edition)) {
+      return <Outlet />;
+    }
+    return redirectOrEditionUpsell(role, modules, options, location);
+  }
+
+  if (location.pathname.startsWith("/finance") && canAccessPanel(panel)) {
+    if (!financeSubpathAllowedByEdition(location.pathname, options.edition)) {
+      return redirectOrEditionUpsell(role, modules, options, location);
+    }
+  }
+
+  if (
+    !pathAllowedByEdition(location.pathname, location.search, options.edition) &&
+    canAccessPanel(panel)
+  ) {
+    return redirectOrEditionUpsell(role, modules, options, location);
   }
 
   if (!canAccessPanel(panel)) {
@@ -289,7 +356,7 @@ export function PanelAccessRoute() {
       if (fallbackPath) return <Navigate to={fallbackPath} replace />;
       return <Outlet />;
     }
-    return <Navigate to="/" replace />;
+    return redirectOrEditionUpsell(role, modules, options, location);
   }
 
   return <Outlet />;

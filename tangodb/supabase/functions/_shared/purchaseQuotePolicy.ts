@@ -42,10 +42,19 @@ export function isUuid(value: string): boolean {
   return UUID_RE.test(value.trim());
 }
 
-export type PurchaseQuoteSku = "crm_license" | "crm_subscription";
+export type PurchaseQuoteSku =
+  | "crm_license"
+  | "crm_subscription"
+  | "crm_studio_subscription";
 
 export function parsePurchaseQuoteSku(raw: string): PurchaseQuoteSku | null {
   const sku = raw.trim();
-  if (sku === "crm_license" || sku === "crm_subscription") return sku;
+  if (
+    sku === "crm_license" ||
+    sku === "crm_subscription" ||
+    sku === "crm_studio_subscription"
+  ) {
+    return sku;
+  }
   return null;
 }

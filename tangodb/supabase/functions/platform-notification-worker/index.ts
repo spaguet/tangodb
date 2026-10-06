@@ -5,7 +5,7 @@ import { handleOptions, jsonResponse, verifyCronSecret } from "../_shared/http.t
 import { drainPlatformNotificationOutbox } from "../_shared/platformNotificationOutboxDrain.ts";
 import { createServiceClient, logEvent } from "../_shared/supabase.ts";
 
-export const WORKER_TIME_BUDGET_MS = 110_000;
+export const WORKER_TIME_BUDGET_MS = 30_000;
 const DEFAULT_BATCH_SIZE = 10;
 
 function workerId(): string {
@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
   let batchSize = DEFAULT_BATCH_SIZE;
   try {
     const body = (await req.json().catch(() => ({}))) as { batch_size?: number };
-    if (typeof body.batch_size === "number" && body.batch_size >= 1 && body.batch_size <= 50) {
+    if (typeof body.batch_size === "number" && body.batch_size >= 1 && body.batch_size <= DEFAULT_BATCH_SIZE) {
       batchSize = Math.floor(body.batch_size);
     }
   } catch {
@@ -40,6 +40,12 @@ Deno.serve(async (req) => {
     timeBudgetMs: WORKER_TIME_BUDGET_MS,
   });
 
-  logEvent("platform_notification_worker_complete", { worker_id: runId, drain });
+  logEvent("platform_notification_worker_complete", {
+    worker_id: runId,
+    claimed: drain.claimed,
+    sent: drain.sent,
+    dead: drain.dead,
+    batches: drain.batches,
+  });
   return jsonResponse({ ok: true, worker_id: runId, ...drain }, 200, req);
 });

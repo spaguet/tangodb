@@ -6,10 +6,13 @@ import {
   purchaseCtaPath,
   purchaseSkuLock,
 } from "../lib/crmLicensePurchase";
+import { renewalPurchasePath } from "../lib/orgEdition";
 import { useDemoLicenseUi } from "./useDemoLicenseUi";
+import { useOrgEdition } from "./useOrgEdition";
 
 export function useCrmLicensePurchaseUi() {
   const { organization, role, license, subscription } = useOrganization();
+  const { edition } = useOrgEdition();
   const demo = useDemoLicenseUi();
 
   return useMemo(() => {
@@ -27,12 +30,20 @@ export function useCrmLicensePurchaseUi() {
         })
       : null;
 
+    const renewPath =
+      kind === "renew" && edition ? renewalPurchasePath(edition) : purchaseCtaPath(kind ?? "buy");
+
     return {
       ...demo,
       showPurchaseCta: kind !== null,
-      purchasePath: kind ? purchaseCtaPath(kind) : LICENSE_PURCHASE_PATH,
+      purchasePath: kind ? renewPath : LICENSE_PURCHASE_PATH,
       ctaKind: kind,
-      skuLock: purchaseSkuLock({ orgStatus, licenseType, subscriptionStatus }),
+      skuLock: purchaseSkuLock({
+        orgStatus,
+        licenseType,
+        subscriptionStatus,
+        edition,
+      }),
     };
-  }, [demo, organization, role, license, subscription]);
+  }, [demo, organization, role, license, subscription, edition]);
 }

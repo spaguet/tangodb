@@ -150,96 +150,57 @@ export function useAddSubscription() {
       const subscriptionType = sub.type.trim();
       const pairMonth = normalizeSubscriptionPairMonth(subscriptionType, sub.pairMonth);
       const expiresAt = isMonthly ? computeMonthlyExpiresAt(sub.activationDate) : null;
-      const isGroupSale = (sub.scheduleGroupIds?.length ?? 0) > 0 || sub.category === "group";
+      const scheduleGroupIds = sub.scheduleGroupIds ?? [];
+      const category = sub.category ?? "group";
 
-      if (isGroupSale && (sub.scheduleGroupIds?.length ?? 0) > 0) {
-        const { data, error } = await supabase.rpc("create_group_subscription", {
-          p_type: subscriptionType,
-          p_client_id1: sub.clientId1,
-          p_client_id2: sub.clientId2 || null,
-          p_client_id3: sub.clientId3 || null,
-          p_client_id4: sub.clientId4 || null,
-          p_lessons_total: isMonthly ? 0 : sub.lessonsTotal,
-          p_activation_date: sub.activationDate,
-          p_pair_month: pairMonth,
-          p_discipline_id: sub.disciplineId,
-          p_price_id: sub.priceId ?? null,
-          p_billing_model: billingModel,
-          p_schedule_group_ids: sub.scheduleGroupIds,
-          p_subscription_id: id,
-          p_capacity_override_reason: sub.capacityOverrideReason ?? null,
-          p_expires_at: expiresAt,
-        });
-
-        if (error) return { success: false as const, error: error.message };
-
-        const result = data as {
-          success?: boolean;
-          error?: string;
-          id?: string;
-          class_id?: string;
-          max_capacity?: number;
-          occupied?: number;
-          requested?: number;
-        } | null;
-
-        if (!result?.success) {
-          if (result?.error === "group_capacity_exceeded") {
-            return {
-              success: false as const,
-              error: "subscriptions.error.groupCapacityExceeded",
-              capacityConflict: {
-                classId: String(result.class_id ?? ""),
-                maxCapacity: Number(result.max_capacity ?? 0),
-                occupied: Number(result.occupied ?? 0),
-                requested: Number(result.requested ?? 0),
-              },
-            };
-          }
-          return { success: false as const, error: result?.error ?? "subscriptions.error.sellFailed" };
-        }
-
-        return { success: true as const, id: result.id ?? id };
-      }
-
-      const { error } = await supabase.from("subscriptions").insert({
-        id,
-        organization_id: organizationId,
-        type: subscriptionType,
-        client_id1: sub.clientId1,
-        client_id2: sub.clientId2 || null,
-        client_id3: sub.clientId3 || null,
-        client_id4: sub.clientId4 || null,
-        lessons_total: isMonthly ? 0 : sub.lessonsTotal,
-        lessons_left: isMonthly ? 0 : sub.lessonsTotal,
-        freeze_used: 0,
-        activation_date: sub.activationDate,
-        status: "active",
-        pair_month: pairMonth,
-        discipline_id: sub.disciplineId,
-        price_id: sub.priceId ?? null,
-        category: sub.category ?? "group",
-        billing_model: billingModel,
-        expires_at: expiresAt,
+      const { data, error } = await supabase.rpc("create_group_subscription", {
+        p_type: subscriptionType,
+        p_client_id1: sub.clientId1,
+        p_client_id2: sub.clientId2 || null,
+        p_client_id3: sub.clientId3 || null,
+        p_client_id4: sub.clientId4 || null,
+        p_lessons_total: isMonthly ? 0 : sub.lessonsTotal,
+        p_activation_date: sub.activationDate,
+        p_pair_month: pairMonth,
+        p_discipline_id: sub.disciplineId,
+        p_price_id: sub.priceId ?? null,
+        p_billing_model: billingModel,
+        p_schedule_group_ids: scheduleGroupIds,
+        p_subscription_id: id,
+        p_capacity_override_reason: sub.capacityOverrideReason ?? null,
+        p_expires_at: expiresAt,
+        p_category: category,
       });
 
       if (error) return { success: false as const, error: error.message };
 
-      if ((sub.scheduleGroupIds?.length ?? 0) > 0) {
-        const groupRows = sub.scheduleGroupIds!.map((scheduleGroupId) => ({
-          organization_id: organizationId,
-          subscription_id: id,
-          schedule_group_id: scheduleGroupId,
-        }));
+      const result = data as {
+        success?: boolean;
+        error?: string;
+        id?: string;
+        class_id?: string;
+        max_capacity?: number;
+        occupied?: number;
+        requested?: number;
+      } | null;
 
-        const { error: groupsError } = await supabase.from("subscription_groups").insert(groupRows);
-        if (groupsError) {
-          await supabase.from("subscriptions").delete().eq("id", id);
-          return { success: false as const, error: groupsError.message };
+      if (!result?.success) {
+        if (result?.error === "group_capacity_exceeded") {
+          return {
+            success: false as const,
+            error: "subscriptions.error.groupCapacityExceeded",
+            capacityConflict: {
+              classId: String(result.class_id ?? ""),
+              maxCapacity: Number(result.max_capacity ?? 0),
+              occupied: Number(result.occupied ?? 0),
+              requested: Number(result.requested ?? 0),
+            },
+          };
         }
+        return { success: false as const, error: result?.error ?? "subscriptions.error.sellFailed" };
       }
 
-      return { success: true as const, id };
+      return { success: true as const, id: result.id ?? id };
     },
     onSuccess: (result) => {
       if (result.success) {

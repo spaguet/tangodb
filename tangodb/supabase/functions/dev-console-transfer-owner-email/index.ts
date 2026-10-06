@@ -153,13 +153,24 @@ Deno.serve(async (req) => {
   }
 
   if (verification.lifetime_license_verified === true) {
+    const { data: ent } = await admin
+      .from("organization_entitlements")
+      .select("instrument, status")
+      .eq("organization_id", orgId)
+      .eq("instrument", "pro_lifetime")
+      .in("status", ["active", "past_due"])
+      .maybeSingle();
+
     const { data: license } = await admin
       .from("organization_licenses")
       .select("license_type")
       .eq("organization_id", orgId)
       .maybeSingle();
 
-    if (license?.license_type !== "lifetime" && org.status !== "licensed") {
+    const hasProLifetime = ent != null;
+    const hasLegacyLifetime = license?.license_type === "lifetime";
+
+    if (!hasProLifetime && !hasLegacyLifetime) {
       return jsonResponse({ error: "lifetime_license_not_confirmed" }, 400, req);
     }
     verifiedFactors.push("lifetime_license_verified");

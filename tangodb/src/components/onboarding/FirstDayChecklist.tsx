@@ -13,6 +13,7 @@ import { useSubscriptions } from "../../hooks/useSubscriptions";
 import { usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { useAttendanceRecords } from "../../hooks/useAttendance";
 import { normalizeOrgModules } from "../../lib/orgModules";
+import { useOrgEdition } from "../../hooks/useOrgEdition";
 import { PLACEHOLDER_ORG_NAMES } from "../../types/organization";
 import type { I18nKey } from "../../lib/i18n/keys";
 
@@ -41,6 +42,7 @@ export default function FirstDayChecklist() {
   const { organizationId, settings, organization } = useOrganization();
   const { showFirstDayChecklist, hideFirstDayChecklistUntilSettings } = useBeginnerHints();
   const modules = normalizeOrgModules(settings?.modules);
+  const { editionAllows } = useOrgEdition();
 
   const [collapsed, setCollapsed] = useState(false);
 
@@ -77,22 +79,29 @@ export default function FirstDayChecklist() {
 
   const steps = useMemo<ChecklistStepDef[]>(() => {
     const salePath =
-      modules.group_subscriptions
+      modules.group_subscriptions && editionAllows("group_subscriptions")
         ? "/subscriptions/sell"
-        : modules.personal_lessons
+        : modules.personal_lessons && editionAllows("personal_lessons")
           ? "/personal/sell"
           : "/prices";
-    return [
+    const base: ChecklistStepDef[] = [
       { id: "studio", titleKey: "firstDayChecklist.step.studio", path: "/settings/general" },
       { id: "location", titleKey: "firstDayChecklist.step.location", path: "/settings/locations" },
       { id: "discipline", titleKey: "firstDayChecklist.step.discipline", path: "/settings/disciplines" },
       { id: "prices", titleKey: "firstDayChecklist.step.prices", path: "/prices" },
       { id: "client", titleKey: "firstDayChecklist.step.client", path: "/clients" },
       { id: "schedule", titleKey: "firstDayChecklist.step.schedule", path: "/schedule" },
-      { id: "sale", titleKey: "firstDayChecklist.step.sale", path: salePath },
       { id: "attendance", titleKey: "firstDayChecklist.step.attendance", path: "/attendance" },
     ];
-  }, [modules.group_subscriptions, modules.personal_lessons]);
+    if (editionAllows("group_subscriptions")) {
+      base.splice(6, 0, {
+        id: "sale",
+        titleKey: "firstDayChecklist.step.sale",
+        path: salePath,
+      });
+    }
+    return base;
+  }, [modules.group_subscriptions, modules.personal_lessons, editionAllows]);
 
   const done = useMemo(() => {
     const orgName = organization?.name ?? "";

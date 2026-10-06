@@ -145,7 +145,6 @@ export default function DashboardPage() {
       subscriptionsQuery={subscriptionsQuery}
       todayPaymentsQuery={todayPaymentsQuery}
       showOperationalPayments={showOperationalPayments}
-      personalLessonsEnabled={personalLessonsEnabled}
       onNavigate={handleNavigate}
     />
     </DashboardShell>

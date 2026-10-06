@@ -12,6 +12,96 @@
 
 ## Записи
 
+### VER-1 / CRM-EDITIONS-10 — Узел 2.12: код E0–E10, cutover off (2026-10-04)
+
+- **Дата:** 2026-10-04
+- **Решение:** Подверсия **2.12** (VER-1): реализация редакций Lite / Studio / Pro в CRM **2.12.0–2.12.12** (E1a–E9). Лендинг `tangodb-landing` — три карточки по матрице §3.2 (E10). Флаг `editions_lifecycle` на production **выключен** до E11 смоука и runbook §22.
+- **Контекст:** Промпт E10 §16 `crm_product_editions.md`; закрытые решения §11 зафиксированы в E0 (2026-09-21).
+- **Альтернативы:** Включить флаг после E10 без смоука — отвергнуто (§6, §22).
+- **Почему так:** Лендинг и docs не блокируют prod-флаг; продуктовый канон r14 сохранён (имена Lite/Studio/Pro, demo→Lite без purge, accountant upsell Pro, dual-write, time-aware при on).
+
+### CRM-EDITIONS-9 — Узел 2.12.0 открыт (E1a: entitlements DDL + backfill) (2026-09-21)
+
+- **Дата:** 2026-09-21
+- **Решение:** Подверсия **2.12.0** (VER-1): миграция `20261218000001_editions_e1a_entitlements.sql` — таблицы `organization_entitlements`, `organization_edition_state`, `organization_edition_events`, `platform_runtime_flags` (`editions_lifecycle` off), backfill всех non-purged org, demo self-service seeds `trial_pro`+`free_lifetime`, заготовки dual-write §18.14. Write-path 2.11 (`organization_allows_writes`) **не** менялся — cutover в E1b+.
+- **Контекст:** Промпт E1a §16 `crm_product_editions.md`.
+- **Альтернативы:** Включить lifecycle сразу — отвергнуто (F91 whiplash).
+- **Почему так:** Источник истины редакции в БД до SPA/E2; флаг off сохраняет прод-поведение 2.11.
+
+### CRM-EDITIONS-8 — Аудит спеки r13 vs код 2.11.48: payroll/rental-inbox early-return, settings-index (2026-09-21)
+
+- **Дата:** 2026-09-21
+- **Решение:** E2 обязан гейтить не только цикл `PANEL_FALLBACK_PATHS`, но и **early-return** `findFirstEnabledAccessiblePanelPath` (`isTeacherPayrollOnly` → `/finance/payroll` ⊂ `payroll`; `isRentalInboxOnly` → `/finance/rental-inbox` ⊂ `hall_rent`), `canAccessFinanceNav` и `findFirstAccessibleSettingsSection` (accountant без `settings.manage` первым хитом берёт `hall-rent`). Accountant `license.view` **не** расширять (F40): пустой settings-index = upsell Pro. Детали — `.cursor/docs/ai/crm_product_editions.md` **r14**, F124.
+- **Контекст:** r12/r13 закрыли accountant «следующий хит» renters/prices, но 2.11.48 до цикла fallback отдаёт учителю payroll (JSONB `finance_basic` на даунгрейде не затираем) и кассиру rental-inbox.
+- **Альтернативы:** (1) Затирать `finance_basic` JSONB на даунгрейде — отвергнуто (F13, апгрейд должен вернуть выбор). (2) Дать accountant `license.view` как home — отвергнуто (F40).
+- **Почему так:** Совпадает с фактическим `permissions.ts` 2.11.48; edition режет выше `can()`.
+
+### CRM-EDITIONS-7 — Аудит спеки r10 vs код 2.11.48: grace licenses, флаг E1–E9, accountant RBAC, Activate Studio off (2026-09-21)
+
+
+- **Дата:** 2026-09-21
+- **Решение:** (1) Dual-write `organization_licenses`: во **grace** строку `subscription` **не** удалять (`past_due` = live); DELETE только после grace / `owner_cancel` без lifetime. (2) `editions_lifecycle=on` на prod только после **E1–E9** (не дырявый список без E2/E5/E7). (3) Activate/preview `crm_studio_subscription` при флаге off → `editions_lifecycle_off` (хелпер Mini App при off = тело 2.11, Studio month открыл бы addon). (4) Accountant fallback = **upsell Pro**: `canReadScopedCrm=false`, после `/finance` хит `/renters` затем `/prices` (NAV-1); не обещать клиенты/кассу и не расширять `can()` (F40). (5) E2 выносит grace-баннер из `ReadOnlyBanner` (весь компонент под `isReadOnly`). Детали — `.cursor/docs/ai/crm_product_editions.md` **r11**, F122–F123, канон п.13–14.
+- **Контекст:** r10 согласовал F108/`isReadOnly` до флага, но §3.1 правило 6 читалось как DELETE licenses в grace; §6 список флага пропускал E2/E5/E7; Activate Studio при off был «опционально fail-closed»; F110 обещал accountant «клиенты / операционная касса», чего RBAC 2.11.48 не даёт.
+- **Альтернативы:** (1) DELETE licenses в grace, чтобы 2.11 `isReadOnly` не серил журнал — отвергнуто (ломает инвариант month live ⇒ licenses subscription; E2 и так снимает month-lock). (2) Расширить accountant `clients.read` на Studio — отвергнуто (F40, NAV-1). (3) Оставить Activate Studio при off для «подготовки Inbox» — отвергнуто (F52 Mini App).
+- **Почему так:** Совпадает с фактическим `permissions.ts` / `ReadOnlyBanner` / `renter_miniapp_addon_is_active` 2.11 и с dual-write §18.3.
+
+### CRM-EDITIONS-6 — Аудит спеки r6 vs код 2.11.48: имена SQL/Edge, preview/Activate, Dev Console Billing/Keys (2026-09-21)
+
+
+- **Дата:** 2026-09-21
+- **Решение:** (1) Не плодить `dev_console_adjust_organization_edition` — wrap существующий `dev_console_adjust_organization_subscription` + `p_extend_one_month` в dual-write entitlements. (2) SQL `preview_activate_platform_purchase_request` и month-ветка `activate_platform_purchase_request` — `IN ('crm_subscription','crm_studio_subscription')`; сегодня равенство `crm_subscription` (`preview_month_only` / lifetime-ключ). (3) Platform notification CASE ELSE больше не «Lifetime» для Studio. (4) Accountant/reception fallback — и Studio (`PANEL_FALLBACK` с `/finance`). (5) `apply_scheduled_subscription_member_changes` leftover = consume. (6) Keys: generate не пишет entitlements; consume = `activate_access_key`. (7) `parsePurchaseQuoteSku` + quotes CHECK в одной волне со Studio SKU. Детали — `.cursor/docs/ai/crm_product_editions.md` **r7**, F109–F121, §17.14, §18.15.
+- **Контекст:** r6 закрыл cutover/триггеры/XOR, но спека всё ещё выдумывала имя adjust-RPC и считала UI `isMonthly` достаточным для Activate. Сверка с `preview_activate_platform_purchase_request`, `activate_platform_purchase_request`, `BillingPage.extend_one_month`, `KeysPage` generate/issue, `purchaseQuotePolicy.parsePurchaseQuoteSku`, notification CASE в `20261119000001`.
+- **Альтернативы:** (1) новая SQL-функция adjust edition рядом со старой — отвергнуто (два писателя зеркала); (2) оставить preview equality и мапить Studio в Edge до SQL — отвергнуто (`preview_month_only` всё равно); (3) гейтить pair-cron как продажу — отвергнуто (ломает leftover пары).
+- **Почему так:** Имена и ветки совпадают с 2.11.48; иначе первая продажа Studio в Inbox снова станет lifetime, а Billing extend разъедет entitlements.
+
+### CRM-EDITIONS-5 — Аудит спеки r5 vs код 2.11.48: cutover, триггеры, Dev Console Inbox/Billing (2026-09-21)
+
+- **Дата:** 2026-09-21
+- **Решение:** (1) `editions_lifecycle=off` гейтит **весь** write-path 2.12 (`organization_allows_writes`, `edition_allows`, триггеры early-return), не только persist-cron. Иначе истекший Pro видит Lite, затем 2.11 suspend (whiplash). (2) Кап-lock — один `pg_advisory_xact_lock(bigint)` через `hashtextextended(org || ':edition-cap:' || resource, 0)`, как venue/payroll 2.11; двухключевая форма не принимает два bigint. (3) Триггеры edition/cap — INSERT и точечный restore/reactivate, не UPDATE consume (`mark_attendance` → `subscriptions.lessons_left`) и не rename зала. (4) Partial unique одного raising-instrument (`trial_pro`/`studio_monthly`/`pro_monthly`/`pro_lifetime`); r5 XOR только двух month оставлял `studio_monthly`+`pro_lifetime`. (5) Inbox: `isMonthly` и preview = оба month SKU; Edge `InboxKindFilter` + `studio`; Billing убрать canned note. (6) Studio не снимает `can_read_financial`/SELECT `payments`; venue-ack и `enqueue_calendar_sync` no-op на не-Pro. Детали — `.cursor/docs/ai/crm_product_editions.md` **r6**, F91–F108, §17.13, §18.12–§18.14.
+- **Контекст:** r5 закрыл окно кассы до cron, но велел time-aware writes при выключенном флаге — это ломает обещание cutover «платящие ничего не заметили». Сверка с `PurchaseInboxPage.isMonthly`, `BillingPage.adjustStatus`, `pg_advisory_xact_lock` в существующих миграциях и leftover `useSubscriptions.insert`.
+- **Альтернативы:** (1) оставить time-aware writes при off и не деплоить E2 до флага — отвергнуто (E1 уже меняет SQL, teacher REST обойдёт серый UI); (2) два int-ключа advisory lock через `hashtext` — отвергнуто (коллизии 32-bit; в проекте уже bigint-паттерн); (3) снимать `can_read_financial` на Studio — отвергнуто (операционные платежи в той же таблице).
+- **Почему так:** Совпадает с фактическим 2.11.48 и не взрывает expire/журнал на проде до явного cutover.
+
+### CRM-EDITIONS-4 — Аудит спеки r4 vs код 2.11.48: time-aware, PostgREST, Dev Console Inbox/purge (2026-09-21)
+
+- **Дата:** 2026-09-21
+- **Решение:** (1) Хелперы редакции **time-aware**: `period_end` закрывает кассу сразу, cron только персистит (как 2.11 `organization_has_active_subscription`). `organization_active_edition()` — функция, не сырая колонка. (2) Гейт write = RPC **и** BEFORE INSERT/UPDATE на таблицах с authenticated write (`personal_lessons`, `prices`, `expenses`, `subscriptions`); канон имён — `create_group_subscription`, не вымышленный `sell_subscription`. (3) Капы: restore клиента, `update_team_member(is_active)`, pending invite без expired, `pg_advisory_xact_lock`. (4) Inbox: `rowKind` fail-closed, фильтр Studio ≠ `monthly`; review-hold + `crm_studio_subscription`; ошибки lifetime с алиасом 2.11. (5) Purge: licensed Lite нельзя; `suspended` — только `force_anti_abuse`+note (не `force_licensed`). (6) Dev Console: Metrics/Billing create-manual/paymentConfig Studio override; хвост миграций после `20261217000001`. Детали — `.cursor/docs/ai/crm_product_editions.md` **r5**, F75–F90, §17.12, §18.9–§18.11.
+- **Контекст:** r4 оставлял окно кассы до cron, список RPC не совпадал с кодом, кап обходился restore, Studio в Inbox становился lifetime, F70 запрещал purge любого `suspended` и конфликтовал с anti-abuse.
+- **Альтернативы:** (1) третий гейт `period_open` в каждом RPC — отвергнуто (фаза внутри хелпера); (2) капы только INSERT — отвергнуто (restore/reactivate); (3) фильтр Inbox `monthly` = оба month SKU — отвергнуто (поддержка путает Studio и Pro).
+- **Почему так:** Совпадает с фактическим 2.11.48 (`useAddPersonalLessons` INSERT, `useRestoreClient`, `PurchaseInboxPage.rowKind`, `organization_has_active_subscription` по дате) и не ломает ручной рельс оплаты.
+
+### CRM-EDITIONS-3 — Аудит спеки r2: purge Lite, Dev Console, контракты (2026-09-21)
+
+- **Дата:** 2026-09-21
+- **Решение:** (1) **F70:** `purge_single_organization` запрещает purge при `status=licensed`/`suspended` и/или live `free_lifetime` — не только при строке `organization_licenses` / active month (иначе licensed Lite стирается из Dev Console). (2) **F61:** кап членов — `accept_organization_invite` + триггер INSERT `organization_members`, не только `create_organization_invite`. (3) Схема: `change_reason` дополнен `trial_start`; dual-write демо старта без невалидного `trial`. (4) Dev Console: edition из entitlements/state (не бейдж «Licensed» и не фильтр Billing `none`); `expiring_soon` расширить на month T−7 (F66); platform bot/digest — отдельные тексты Studio (F63). (5) Контракт оплаты: канон `platformPaymentContract.ts` (CRM ↔ Edge), обёртки `paymentConfig.ts`; резолв Studio без fallback на Pro `monthlyAmount` (F69); тесты policy (F67). (6) Runbook: v3 payment config до продажи Studio; E1 включает purge-тест. Детали — `.cursor/docs/ai/crm_product_editions.md` **r3**, F59–F70, §17.9, §18.7.
+- **Контекст:** Повторная сверка r2 с кодом 2.11.48 и текстом спеки выявила ложное «INNER JOIN Billing», дыру purge для вечного Lite, обход капа на accept invite, ссылки на несуществующий `paymentQuote.ts` в CRM и отсутствие формализованных F59–F69.
+- **Альтернативы:** (1) полагаться на `force_licensed` для «очистки» Lite — отвергнуто (риск потери tenant без audit); (2) считать Billing filter `none` = Lite — отвергнуто (orphan licensed ≠ edition); (3) четвёртая копия резолва цен в UI Billing — отвергнуто (drift).
+- Решение CRM-EDITIONS-3 «F70 запрещает purge при `status=licensed`/`suspended`» **сужено r5/r6 F79**: `suspended` можно purge только `force_anti_abuse`+note; licensed Lite — никогда.
+
+### CRM-EDITIONS-2 — Аудит спеки редакций vs код 2.11.48 (2026-09-21)
+
+- **Дата:** 2026-09-21
+- **Решение:** (1) Grace месяца: `past_due` + auto-clamp `active_edition=lite`; вверх без оплаты нельзя; после grace — Lite licensed, не `suspended`. (2) Dual-write: после cancel/expire без lifetime **DELETE** `organization_licenses` (CHECK не знает `none`; иначе 2.11 `isReadOnly` запирает CRM). (3) `isReadOnly` только dead org, не month. (4) Капы: архивные клиенты не считаются; pending invites входят в кап членов; триггер INSERT, не только RPC. (5) Payroll/venue-cost skip на Lite даже у `mark_attendance` leftover. (6) Payout кошелька на Lite разрешён; новые брони нет. (7) Флаг `editions_lifecycle` в `platform_runtime_flags` + Billing, не в payment config. (8) Billing/Tenants LEFT JOIN entitlements. (9) Activate на демо cancel'ит `trial_pro` в той же TX. Детали — `.cursor/docs/ai/crm_product_editions.md` r2, §3.1 фазы, §17–§22, F43–F58.
+- **Контекст:** r1 оставлял внутренние дыры: grace одновременно «держит потолок» и «закрывает кассу»; licenses-строка `subscription` после cancel ломает журнал; капы обходились инвайтом и PostgREST; флаг cutover в JSON цен.
+- **Альтернативы:** (1) третий SQL-гейт `period_open` при живом `active=studio` на grace — отвергнуто (дыра «вернуть Studio»); (2) тип licenses `none` — отвергнуто (ломает CHECK 2.11); (3) капы только в RPC — отвергнуто (прямой INSERT clients).
+- **Почему так:** совпадает с фактическим 2.11 (`isCrmSubscriptionWriteClosed`, Inbox `kindLabel`, Billing JOIN, `expire_crm_organization_subscriptions` → suspend) и не взрывает зеркала.
+
+### CRM-EDITIONS-1 — Ревизия спеки редакций: истина в entitlements, режим ≠ cancel (2026-09-21)
+
+- **Дата:** 2026-09-21
+- **Решение:** (1) Источник редакции — `organization_entitlements` + `organization_edition_state`; `organization_licenses` / `organization_subscriptions` (обе 1:1) — dual-write зеркала 2.11, lifetime **не** перезаписывать месяцем. (2) `free_lifetime` живёт всегда с момента org; trial = `instrument trial_pro`, не четвёртая edition. (3) Два действия владельца: `owner_mode` (active вниз, потолок жив) и `owner_cancel` (месяц сразу canceled). Expire после grace → Lite, не `suspended`. (4) Журнал Lite — новые `schedule_group_roster` + `roster_attendance`, не nullable `attendance.subscription_id`. (5) Капы Lite на INSERT: 1 зал, 1 направление, 200 клиентов, 8 членов; overs с демо не режем. (6) schemaVersion 3 с чтением v2; Studio fail-closed не ломает Pro. (7) Dev Console: Inbox/Billing/Tenants/Payment methods/Metrics обязаны писать и показывать entitlements; purge licensed Lite запрещён. Детали — `.cursor/docs/ai/crm_product_editions.md` §3–4, §17–20.
+- **Контекст:** Черновик 2026-09-20 конфликтовал сам с собой (даунгрейд то отменяет месяц, то нет), unique entitlements ломал повторную покупку, журнал расходился с реальной схемой attendance, Dev Console и dual-write были намёком в одну строку.
+- **Альтернативы:** (1) колонки `organizations.edition` — отвергнуто (потолок и режим разной жизни); (2) nullable `attendance.subscription_id` — отвергнуто (unique, payroll, freeze, offline); (3) кап 100/5 — не дефолт кода, пока владелец не сменит §11.4.
+- **Почему так:** Можно выпускать Lite, не взрывая 2.11 биллинг и журнал; поддержка в Dev Console видит ту же истину, что CRM.
+
+### CRM-EDITIONS-0 — Три редакции CRM (Lite / Studio / Pro) (2026-09-20)
+
+- **Дата:** 2026-09-20
+- **Решение:** Целевой контур зафиксирован в `.cursor/docs/ai/crm_product_editions.md`. Текущая CRM = **Pro**. Коды и витринные имена: `lite` / `studio` / `pro` → на экране ru и en одинаково **Lite / Studio / Pro** (латиница, без «Студия» и без Basic). Два факта на орг: `purchased_ceiling` и `active_edition`. Lite бесплатен и бессрочен. Studio — отдельный месячный SKU. Pro — существующие month/lifetime. Даунгрейд **не удаляет** данные. Истечение месяца → Lite, не `suspended`. Модули JSONB не являются тарифом. Код не начат; подверсия реализации — **2.12**. Открытые продуктовые пункты — §11 той спеки.
+- **Контекст:** Нужны бесплатный вход, более дешёвая операционная CRM и полный текущий продукт; сценарий Lite→Studio→Pro→Lite без поломки журнала и истории.
+- **Альтернативы:** (1) только JSONB-модули как «тариф» — отвергнуто (S36, обход RPC); (2) три деплоя — отвергнуто; (3) имена Lite/Basic/Pro — Basic пересекается с `finance_basic`; (4) RU-подпись «Студия» — отвергнуто владельцем, везде латиница Studio.
+- **Почему так:** Один SPA и один tenant; оплата расширяет write-path, не копирует базу; lifetime Pro не сгорает из-за режима Lite. Одно имя тарифа не нужно переводить и склонять.
+
 ### HALL-RENT-STAFF-T24 — staff-бронь не списывает 50% в окне T−24 (2026-09-14)
 
 - **Дата:** 2026-09-14

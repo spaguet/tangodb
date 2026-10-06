@@ -66,7 +66,6 @@ export function getNavSections(t: TranslateFn): NavSection[] {
           icon: Building2,
           label: t("nav.item.renters"),
           path: "/renters",
-          moduleKey: "locations",
         },
       ],
     },

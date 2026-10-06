@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: purgeCheck.code }, 403, req);
   }
 
-  if (sku === "crm_subscription") {
+  if (sku === "crm_subscription" || sku === "crm_studio_subscription") {
     const { data: hasLifetime, error: lifetimeError } = await admin.rpc(
       "organization_has_lifetime_license",
       { p_org_id: organizationId }
@@ -105,7 +105,7 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: "quote_unavailable" }, 500, req);
     }
     if (hasLifetime === true) {
-      return jsonResponse({ error: "lifetime_org_monthly_forbidden" }, 403, req);
+      return jsonResponse({ error: "already_pro_lifetime" }, 403, req);
     }
   }
 

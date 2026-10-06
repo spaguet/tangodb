@@ -6,6 +6,8 @@ import RequirePermission from "../../components/RequirePermission";
 import DeveloperContacts from "../../components/license/DeveloperContacts";
 import SupportDeveloperMessageButton from "../../components/support/SupportDeveloperMessageButton";
 import ManualPurchasePanel from "../../components/license/ManualPurchasePanel";
+import EditionLicensePlanCards from "../../components/license/EditionLicensePlanCards";
+import LicenseEditionOwnerActions from "../../components/license/LicenseEditionOwnerActions";
 import { usePlatformPaymentConfig } from "../../hooks/usePlatformPaymentConfig";
 import { useToast } from "../../App";
 import { useOrganization } from "../../organization/OrganizationProvider";
@@ -15,13 +17,20 @@ import {
   canShowManualPurchasePanel,
   MONTHLY_PURCHASE_PATH,
   purchaseSkuLock,
+  shouldHidePaidPurchaseSkus,
 } from "../../lib/crmLicensePurchase";
+import { liveStudioMonthlyInstrument, renewalPurchasePath } from "../../lib/orgEdition";
 import DemoPurchaseCta from "../../components/demo/DemoPurchaseCta";
 import { useCrmSubscriptionUi } from "../../hooks/useCrmSubscriptionUi";
+import { useOrgEdition } from "../../hooks/useOrgEdition";
+import {
+  useCancelOrganizationMonthlyEntitlement,
+  useSetOrganizationActiveEdition,
+} from "../../hooks/useOrganizationEditionMutations";
 import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
+import type { ProductEdition } from "../../lib/orgEdition";
 import { btnAddCls } from "../../components/ui/buttonStyles";
-
 const STATUS_TONES: Record<string, string> = {
   demo_active: "text-indigo-700 bg-indigo-50 border-indigo-100",
   demo_retention: "text-amber-800 bg-amber-50 border-amber-100",
@@ -49,19 +58,31 @@ const BILLING_PERIOD_KEYS: Record<string, I18nKey> = {
   yearly: "license.billing.yearly",
 };
 
+const EDITION_STATUS_KEYS: Record<ProductEdition, I18nKey> = {
+  lite: "license.edition.statusLite",
+  studio: "license.edition.statusStudio",
+  pro: "license.edition.statusPro",
+};
+
 export default function LicenseSettingsPage() {
   const { t, formatDate, formatDateTime } = useI18n();
   const toast = useToast();
   const [searchParams] = useSearchParams();
-  const { organization, orgLoading, license, subscription, refreshOrganization } = useOrganization();
-  const { tMinus7, writeClosed, graceDaysLeft } = useCrmSubscriptionUi();
+  const { organization, orgLoading, license, subscription, refreshOrganization, role } =
+    useOrganization();
+  const { edition, editionLoading, refreshEdition } = useOrgEdition();
+  const { tMinus7, writeClosed, graceDaysLeft, purchasePath } = useCrmSubscriptionUi();
   const { config: paymentConfig } = usePlatformPaymentConfig(true);
   const activateKey = useActivateAccessKey();
+  const setEdition = useSetOrganizationActiveEdition();
+  const cancelMonthly = useCancelOrganizationMonthlyEntitlement();
   const [key, setKey] = useState("");
   const [error, setError] = useState<string | null>(null);
   const loading = activateKey.isPending;
 
-  if (orgLoading || !organization) return <LoadingState label={t("license.loading")} />;
+  if (orgLoading || editionLoading || !organization) {
+    return <LoadingState label={t("license.loading")} />;
+  }
 
   const isLifetime = license?.license_type === "lifetime";
   const hasSubscription = license?.license_type === "subscription" && !!subscription;
@@ -69,18 +90,28 @@ export default function LicenseSettingsPage() {
   const statusTone = STATUS_TONES[organization.status] ?? STATUS_TONES.suspended;
   const isDemo = isDemoOrgStatus(organization.status);
   const isPurchaseFlow = searchParams.get("purchase") === "1";
-  const showManualPurchase = canShowManualPurchasePanel({
-    isPurchaseFlow,
-    orgStatus: organization.status,
+  const hidePaidSkus = shouldHidePaidPurchaseSkus({
     licenseType: license?.license_type,
-    subscriptionStatus: subscription?.status,
-    dataPurgeAt: organization.data_purge_at,
+    edition,
   });
+  const showManualPurchase =
+    !hidePaidSkus &&
+    canShowManualPurchasePanel({
+      isPurchaseFlow,
+      orgStatus: organization.status,
+      licenseType: license?.license_type,
+      subscriptionStatus: subscription?.status,
+      dataPurgeAt: organization.data_purge_at,
+    });
   const skuLock = purchaseSkuLock({
     orgStatus: organization.status,
     licenseType: license?.license_type,
     subscriptionStatus: subscription?.status,
+    edition,
   });
+  const canManageEdition = role === "owner" || role === "director";
+  const studioMonthLive = Boolean(liveStudioMonthlyInstrument(edition));
+  const renewHref = edition ? renewalPurchasePath(edition) : MONTHLY_PURCHASE_PATH;
 
   const forgotPasswordLinkText = t("license.ownerRecovery.forgotPasswordLink");
   const forgotPasswordParts = t("license.ownerRecovery.forgotPassword").split(forgotPasswordLinkText);
@@ -92,6 +123,7 @@ export default function LicenseSettingsPage() {
     try {
       const data = await activateKey.mutateAsync(key.trim());
       await refreshOrganization();
+      await refreshEdition();
       setKey("");
       toast(
         data.upgraded ? t("license.activate.successUpgraded") : t("license.activate.success"),
@@ -109,8 +141,35 @@ export default function LicenseSettingsPage() {
     }
   };
 
+  const handleSwitchMode = async (target: ProductEdition) => {
+    try {
+      await setEdition.mutateAsync(target);
+      await refreshOrganization();
+      await refreshEdition();
+      toast(t("license.edition.modeSwitchSuccess", { edition: t(`license.edition.name.${target}`) }), "success");
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "";
+      if (message === "edition_active_above_ceiling") {
+        toast(t("license.edition.errorAboveCeiling"), "error");
+      } else {
+        toast(t("license.edition.errorGeneric"), "error");
+      }
+    }
+  };
+
+  const handleCancelMonthly = async () => {
+    try {
+      await cancelMonthly.mutateAsync();
+      await refreshOrganization();
+      await refreshEdition();
+      toast(t("license.edition.cancelMonthlySuccess"), "success");
+    } catch {
+      toast(t("license.edition.errorGeneric"), "error");
+    }
+  };
+
   return (
-    <div className="panel-card-stack max-w-xl">
+    <div className="panel-card-stack max-w-3xl">
       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
         <div>
           <h2 className="text-base font-semibold text-slate-900">
@@ -119,11 +178,24 @@ export default function LicenseSettingsPage() {
           <p className="text-xs text-slate-500 mt-1">
             {showManualPurchase ? t("license.subtitle.purchase") : t("license.subtitle.default")}
           </p>
+          {edition && (
+            <p className="text-xs text-indigo-700 mt-1 font-medium">
+              {t(EDITION_STATUS_KEYS[edition.activeEdition])}
+              {edition.effectiveCeiling !== edition.activeEdition && (
+                <span className="text-slate-500 font-normal">
+                  {" · "}
+                  {t("license.edition.ceilingHint", {
+                    edition: t(`license.edition.name.${edition.effectiveCeiling}`),
+                  })}
+                </span>
+              )}
+            </p>
+          )}
         </div>
         {isDemo && !isPurchaseFlow && <DemoPurchaseCta variant="banner" />}
         {hasSubscription && !isPurchaseFlow && (
           <RequirePermission action="license.purchase" mode="hide">
-            <Link to={MONTHLY_PURCHASE_PATH} className={btnAddCls}>
+            <Link to={renewHref} className={btnAddCls}>
               <ShoppingBag className="w-3.5 h-3.5 shrink-0" />
               {t("license.plan.payNextMonth")}
             </Link>
@@ -134,7 +206,31 @@ export default function LicenseSettingsPage() {
         )}
       </div>
 
+      {edition && (
+        <RequirePermission action="license.view" mode="hide">
+          <EditionLicensePlanCards
+            edition={edition}
+            prices={{
+              studioMonthly: paymentConfig.crmStudioMonthly,
+              proMonthly: paymentConfig.crmMonthly,
+              proLifetime: paymentConfig.crmLifetime,
+            }}
+            canManage={canManageEdition}
+            onSwitchMode={handleSwitchMode}
+            modePending={setEdition.isPending}
+          />
+        </RequirePermission>
+      )}
+
       <div className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-4">
+        {edition && canManageEdition && (
+          <LicenseEditionOwnerActions
+            edition={edition}
+            onCancelMonthly={handleCancelMonthly}
+            cancelPending={cancelMonthly.isPending}
+          />
+        )}
+
         <div className={`flex items-start gap-3 rounded-lg border px-3 py-3 ${statusTone}`}>
           {isLifetime || (hasSubscription && subscription?.status === "active") ? (
             <CheckCircle2 className="w-5 h-5 shrink-0 mt-0.5" />
@@ -188,12 +284,21 @@ export default function LicenseSettingsPage() {
                 {t("license.renewal.tMinus7Body", { date: formatDateTime(subscription.current_period_end) })}
               </p>
             )}
+            {writeClosed && canManageEdition && (
+              <Link to={purchasePath} className="text-xs text-indigo-700 hover:underline inline-block">
+                {t("license.edition.graceRenewCta")}
+              </Link>
+            )}
           </div>
         </div>
 
         {showManualPurchase && (
           <RequirePermission action="license.purchase" mode="hide">
-            <ManualPurchasePanel skuLock={skuLock} planPrefill={searchParams.get("plan")} />
+            <ManualPurchasePanel
+              skuLock={skuLock}
+              planPrefill={searchParams.get("plan")}
+              showStudioUpgradeNote={studioMonthLive && skuLock === "studio_month"}
+            />
           </RequirePermission>
         )}
 

@@ -1,5 +1,6 @@
 import type { MemberRole, OrgModules, TeacherScope } from "../types/organization";
 import type { DisplayLesson, PersonalDisplayLesson } from "../types";
+import type { EditionCapability } from "./orgEdition";
 import { personalLessonHasScheduleDebt } from "./personalLessonPayment";
 import { t } from "./i18n";
 import { isModuleEnabled } from "./orgModules";
@@ -98,6 +99,7 @@ export interface ScheduleGridAddOptions {
   isReadOnly: boolean;
   modules: OrgModules;
   teachersCanAddGroupLessons?: boolean;
+  editionAllows?: (capability: EditionCapability) => boolean;
 }
 
 export function isLessonInTeacherScope(
@@ -165,6 +167,7 @@ export function canAddPersonalFromGrid(
   context?: { disciplineId?: string | null; locationId?: string | null }
 ): boolean {
   if (options.isReadOnly) return false;
+  if (options.editionAllows && !options.editionAllows("personal_lessons")) return false;
   if (!isModuleEnabled(options.modules, "personal_lessons")) return false;
   return can("personal_lessons.write", context);
 }
@@ -175,8 +178,13 @@ export function canClickEmptyCell(
   options: ScheduleGridAddOptions,
   context?: { disciplineId?: string | null; locationId?: string | null }
 ): boolean {
+  const canAddRental =
+    !options.isReadOnly &&
+    (!options.editionAllows || options.editionAllows("hall_rent")) &&
+    can("rentals.write", context);
   return (
     canOfferGroupLessonAdd(role, can, options, context) ||
-    canAddPersonalFromGrid(role, can, options, context)
+    canAddPersonalFromGrid(role, can, options, context) ||
+    canAddRental
   );
 }

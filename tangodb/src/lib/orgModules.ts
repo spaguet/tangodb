@@ -11,12 +11,22 @@ export const DEFAULT_ORG_MODULES: OrgModules = {
   finance_basic: true,
 };
 
+const ORG_MODULE_KEYS = Object.keys(DEFAULT_ORG_MODULES) as (keyof OrgModules)[];
+
 export function normalizeOrgModules(raw: Partial<OrgModules> | null | undefined): OrgModules {
-  const merged = { ...DEFAULT_ORG_MODULES, ...(raw ?? {}) };
-  return {
-    ...merged,
-    finance_basic: raw?.finance_basic ?? true,
-  };
+  const next = { ...DEFAULT_ORG_MODULES };
+  for (const key of ORG_MODULE_KEYS) {
+    if (raw && typeof raw[key] === "boolean") {
+      next[key] = raw[key] as boolean;
+    }
+  }
+  next.finance_basic = raw?.finance_basic ?? true;
+  return next;
+}
+
+/** Persist only known module keys (F8). */
+export function sanitizeOrgModulesForPersist(modules: OrgModules): OrgModules {
+  return normalizeOrgModules(modules);
 }
 
 export function isModuleEnabled(modules: OrgModules, key: keyof OrgModules): boolean {

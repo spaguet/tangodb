@@ -46,3 +46,14 @@ export const v2ConfigFixture = {
     },
   ],
 };
+
+export const v3ConfigFixture = {
+  ...v2ConfigFixture,
+  schemaVersion: 3,
+  crmStudioMonthly: { amount: "19", currency: "USD" },
+  vietnameseBankTransfer: {
+    ...v2ConfigFixture.vietnameseBankTransfer,
+    studioMonthlyAmount: "650000",
+    studioMonthlyCurrency: "VND",
+  },
+};

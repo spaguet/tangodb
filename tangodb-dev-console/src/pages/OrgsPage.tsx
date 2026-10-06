@@ -1,32 +1,7 @@
 import { useState } from "react";
 import { Check, Copy, Key, Mail, Trash2, UserCog } from "lucide-react";
 import { invokeDevFunction } from "../lib/supabase";
-
-interface TenantRow {
-  id: string;
-  name: string;
-  slug: string | null;
-  status: string;
-  demo_expires_at: string | null;
-  demo_days_left: number | null;
-  created_at: string;
-  crm_version_code: string | null;
-  schema_version_locked: boolean;
-  payment_ref: string | null;
-  owner_email: string | null;
-  owner_display_name: string | null;
-  last_sign_in_at: string | null;
-  telegram_masked: string | null;
-  license_badge: string;
-  storage_rows: number;
-  storage_display: string;
-  key_metadata: {
-    key_type: string;
-    status: string;
-    activated_at: string | null;
-    recipient_email: string | null;
-  } | null;
-}
+import type { TenantRow } from "../lib/devConsoleEdition";
 
 type ModalKind = "password" | "purge" | "issueKey" | "transferOwner" | null;
 
@@ -90,7 +65,7 @@ export default function OrgsPage() {
   const [issuedKey, setIssuedKey] = useState<string | null>(null);
   const [purgeNameConfirm, setPurgeNameConfirm] = useState("");
   const [purgeReason, setPurgeReason] = useState("");
-  const [purgeForceLicensed, setPurgeForceLicensed] = useState(false);
+  const [purgeForceAntiAbuse, setPurgeForceAntiAbuse] = useState(false);
   const [issueKeySignature, setIssueKeySignature] = useState("");
   const [copied, setCopied] = useState(false);
   const [copiedUuid, setCopiedUuid] = useState<string | null>(null);
@@ -130,7 +105,7 @@ export default function OrgsPage() {
     setIssuedKey(null);
     setPurgeNameConfirm("");
     setPurgeReason("");
-    setPurgeForceLicensed(false);
+    setPurgeForceAntiAbuse(false);
     setIssueKeySignature("");
     setCopied(false);
     setTransferEmail("");
@@ -236,19 +211,20 @@ export default function OrgsPage() {
     setModalLoading(true);
     setModalError("");
     try {
-      const needsForce = isLicensedTenant(activeTenant);
       await invokeDevFunction("dev-console-purge-org", {
         organization_id: activeTenant.id,
         org_name_confirm: purgeNameConfirm,
         reason: purgeReason || undefined,
-        force_licensed: needsForce ? purgeForceLicensed : undefined,
+        force_anti_abuse: activeTenant.purge_requires_anti_abuse ? purgeForceAntiAbuse : undefined,
       });
       closeModal();
       await search();
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Purge failed";
       if (msg === "licensed_org_purge_forbidden") {
-        setModalError("Удаление licensed org запрещено без override.");
+        setModalError("Удаление licensed org запрещено (F70).");
+      } else if (msg === "anti_abuse_purge_required") {
+        setModalError("Suspended org: включите anti-abuse purge и укажите reason.");
       } else if (msg === "org_name_mismatch") {
         setModalError("Название org не совпадает — введите точное имя.");
       } else {
@@ -271,16 +247,15 @@ export default function OrgsPage() {
   };
 
   const badgeColor = (badge: string) => {
-    if (badge === "Lifetime") return "bg-emerald-900/50 text-emerald-300";
-    if (badge === "Subscription") return "bg-blue-900/50 text-blue-300";
+    if (badge === "Pro") return "bg-emerald-900/50 text-emerald-300";
+    if (badge === "Studio") return "bg-violet-900/50 text-violet-300";
+    if (badge === "Lite") return "bg-sky-900/50 text-sky-300";
     if (badge === "Demo") return "bg-amber-900/50 text-amber-300";
+    if (badge === "Suspended") return "bg-rose-900/50 text-rose-300";
     return "bg-slate-800 text-slate-300";
   };
 
-  const isLicensedTenant = (t: TenantRow) =>
-    t.status === "licensed" || t.license_badge === "Lifetime";
-
-  const canPurge = (t: TenantRow) => t.status !== "purged";
+  const canPurge = (t: TenantRow) => t.can_purge;
 
   return (
     <div className="space-y-4 max-w-[1400px]">
@@ -400,6 +375,12 @@ export default function OrgsPage() {
                   <span className={`text-xs px-2 py-0.5 rounded-full ${badgeColor(t.license_badge)}`}>
                     {t.license_badge}
                   </span>
+                  {t.over_cap && (
+                    <span className="text-xs text-rose-400 block">over-cap</span>
+                  )}
+                  {t.needs_review && (
+                    <span className="text-xs text-amber-400 block">needs review</span>
+                  )}
                 </td>
                 <td className="px-3 py-2 text-slate-400">
                   {t.storage_display}
@@ -601,7 +582,7 @@ export default function OrgsPage() {
                         <input
                           type="checkbox"
                           checked={transferVerification.lifetime_license_verified}
-                          disabled={activeTenant.license_badge !== "Lifetime" && activeTenant.status !== "licensed"}
+                          disabled={!activeTenant.has_pro_lifetime}
                           onChange={(e) =>
                             setTransferVerification((v) => ({
                               ...v,
@@ -610,7 +591,7 @@ export default function OrgsPage() {
                           }
                           className="mt-0.5 rounded"
                         />
-                        <span>Lifetime / licensed org ({activeTenant.license_badge})</span>
+                        <span>Pro lifetime entitlement подтверждён</span>
                       </label>
                       <label className="flex items-start gap-2 cursor-pointer">
                         <input
@@ -757,9 +738,9 @@ export default function OrgsPage() {
               <>
                 <h3 className="text-lg font-semibold text-rose-300">Удалить базу</h3>
                 <p className="text-sm text-slate-400">
-                  {isLicensedTenant(activeTenant)
-                    ? "Licensed / Lifetime org — необратимое удаление. Требуется подтверждение и причина."
-                    : "Необратимое удаление demo org и всех данных."}
+                  {activeTenant.purge_requires_anti_abuse
+                    ? "Suspended (anti-fraud): purge только с force anti-abuse и обязательной причиной."
+                    : "Необратимое удаление demo org и всех данных. Licensed org purge запрещён."}
                 </p>
                 <label className="block space-y-1">
                   <span className="text-xs text-slate-500">Подтвердите название org</span>
@@ -772,7 +753,7 @@ export default function OrgsPage() {
                 </label>
                 <label className="block space-y-1">
                   <span className="text-xs text-slate-500">
-                    Причина{isLicensedTenant(activeTenant) ? " *" : " (optional)"}
+                    Причина{activeTenant.purge_requires_anti_abuse ? " *" : " (optional)"}
                   </span>
                   <input
                     value={purgeReason}
@@ -780,17 +761,15 @@ export default function OrgsPage() {
                     className="w-full px-3 py-2 bg-slate-950 border border-slate-700 rounded-lg text-sm"
                   />
                 </label>
-                {isLicensedTenant(activeTenant) && (
+                {activeTenant.purge_requires_anti_abuse && (
                   <label className="flex items-start gap-2 text-xs text-amber-300 cursor-pointer">
                     <input
                       type="checkbox"
-                      checked={purgeForceLicensed}
-                      onChange={(e) => setPurgeForceLicensed(e.target.checked)}
+                      checked={purgeForceAntiAbuse}
+                      onChange={(e) => setPurgeForceAntiAbuse(e.target.checked)}
                       className="mt-0.5 rounded"
                     />
-                    <span>
-                      Подтверждаю принудительное удаление licensed org (тест, мошенничество, украденный ключ)
-                    </span>
+                    <span>Подтверждаю anti-abuse purge (org.purged_abuse)</span>
                   </label>
                 )}
                 {modalError && <p className="text-sm text-rose-400">{modalError}</p>}
@@ -804,8 +783,8 @@ export default function OrgsPage() {
                     disabled={
                       modalLoading ||
                       purgeNameConfirm !== activeTenant.name ||
-                      (isLicensedTenant(activeTenant) &&
-                        (!purgeForceLicensed || !purgeReason.trim()))
+                      (activeTenant.purge_requires_anti_abuse &&
+                        (!purgeForceAntiAbuse || !purgeReason.trim()))
                     }
                     className="px-4 py-2 bg-rose-700 hover:bg-rose-600 rounded-lg text-sm font-semibold cursor-pointer disabled:opacity-50"
                   >

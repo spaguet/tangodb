@@ -8,7 +8,12 @@ coverage/
 *.log
 .env*
 !.env.example
+.cursor/login
+
 .vercel
+
+# Production DB dumps (never commit tenant data)
+backups/**/*.sql
 
 # Local working copies / drafts
 pics/

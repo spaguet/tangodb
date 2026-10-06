@@ -14,6 +14,7 @@ import {
   resolveFreebusyConsentScopes,
 } from "../_shared/googleOAuth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { shouldPauseGoogleCalendarForOrg } from "../_shared/editionLifecycle.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 20;
@@ -77,6 +78,10 @@ Deno.serve(async (req) => {
 
   if (!member.is_active) {
     return jsonResponse({ error: "member_not_active" }, 403, req);
+  }
+
+  if (await shouldPauseGoogleCalendarForOrg(admin, member.organization_id)) {
+    return jsonResponse({ error: "edition_forbidden", code: "edition_forbidden" }, 403, req);
   }
 
   const { data: binding } = await admin

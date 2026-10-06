@@ -13,6 +13,7 @@ import { logEvent } from "./supabase.ts";
 import { sendTelegramMessagePlain } from "./telegramSend.ts";
 
 const DEFAULT_BATCH_SIZE = 10;
+const MAX_DRAIN_BATCHES = 4;
 const GATE_WAIT_SECONDS = 300;
 /** Must stay below claim lease (120s) so a hung fetch cannot outlive the lock. */
 const LEASE_SECONDS = 120;
@@ -167,7 +168,7 @@ export async function drainRenterTelegramOutbox(
     batches: 0,
   };
 
-  while (Date.now() - started < options.timeBudgetMs) {
+  while (Date.now() - started < options.timeBudgetMs && result.batches < MAX_DRAIN_BATCHES) {
     const { data: rows, error: claimError } = await admin.rpc("claim_renter_telegram_outbox", {
       p_batch_size: batchSize,
       p_worker_id: options.workerId,

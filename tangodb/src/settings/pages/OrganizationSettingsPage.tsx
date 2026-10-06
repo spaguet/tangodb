@@ -11,7 +11,11 @@ import { useSettings } from "../SettingsProvider";
 import { useI18n } from "../../hooks/useI18n";
 import { resolveMutationError } from "../../lib/resolveMutationError";
 import type { I18nKey } from "../../lib/i18n/keys";
-import { ORG_MODULE_GROUPS, type OrgModuleGroupId } from "../../lib/orgModules";
+import {
+  ORG_MODULE_GROUPS,
+  sanitizeOrgModulesForPersist,
+  type OrgModuleGroupId,
+} from "../../lib/orgModules";
 
 const PRESET_KEYS: Record<OrgPreset, I18nKey> = {
   dance_school: "settings.org.preset.danceSchool",
@@ -182,7 +186,7 @@ export default function OrganizationSettingsPage() {
   const handleSave = async () => {
     const res = await updateSettings({
       org_preset: orgPreset,
-      modules,
+      modules: sanitizeOrgModulesForPersist(modules),
       teachers_can_manage_disciplines: teachersCanManageDisciplines,
       teachers_can_sell_subscriptions: teachersCanSellSubscriptions,
       teachers_can_sell_personal_lessons: teachersCanSellPersonalLessons,

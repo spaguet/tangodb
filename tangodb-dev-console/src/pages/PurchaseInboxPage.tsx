@@ -2,9 +2,14 @@ import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { Calendar, Check, Copy, Inbox, KeyRound, Pause, Play, RefreshCw, Smartphone, XCircle } from "lucide-react";
 import { invokeDevFunction } from "../lib/supabase";
+import {
+  type InboxKindFilter,
+  type PurchaseRequestKind,
+  isMonthlyRequestKind,
+  kindLabel,
+  rowKind,
+} from "../lib/purchaseInboxKind";
 import SupportInboxPanel from "./SupportInboxPanel";
-
-type PurchaseRequestKind = "crm_license" | "crm_subscription" | "renter_miniapp_addon";
 
 interface PurchaseRequestRow {
   id: string;
@@ -14,7 +19,7 @@ interface PurchaseRequestRow {
   contact_email: string | null;
   contact_telegram: string | null;
   payment_comment: string;
-  request_kind?: PurchaseRequestKind | null;
+  request_kind?: string | null;
   status: "new" | "activated" | "closed";
   email_sent: boolean;
   access_key_id: string | null;
@@ -23,27 +28,21 @@ interface PurchaseRequestRow {
   activated_period_end: string | null;
   closed_at: string | null;
   created_at: string;
+  edition_active?: string | null;
+  edition_ceiling?: string | null;
   organization?: { status: string } | { status: string }[] | null;
 }
 
 type InboxStatus = "new" | "activated" | "closed" | "all";
-type InboxKind = "all" | "lifetime" | "monthly" | "addon";
+type InboxKind = InboxKindFilter;
 
 function orgStatus(row: PurchaseRequestRow): string {
   const org = Array.isArray(row.organization) ? row.organization[0] : row.organization;
   return org?.status ?? "unknown";
 }
 
-function rowKind(row: PurchaseRequestRow): PurchaseRequestKind {
-  if (row.request_kind === "renter_miniapp_addon") return "renter_miniapp_addon";
-  if (row.request_kind === "crm_subscription") return "crm_subscription";
-  return "crm_license";
-}
-
-function kindLabel(kind: PurchaseRequestKind): string {
-  if (kind === "renter_miniapp_addon") return "Mini App add-on";
-  if (kind === "crm_subscription") return "CRM monthly";
-  return "CRM lifetime";
+function rowKindFor(row: PurchaseRequestRow) {
+  return rowKind(row.request_kind);
 }
 
 function defaultPeriod(): { start: string; end: string } {
@@ -108,7 +107,7 @@ export default function PurchaseInboxPage() {
       setRows(list);
 
       const monthlyNew = list.filter(
-        (r) => r.status === "new" && rowKind(r) === "crm_subscription"
+        (r) => r.status === "new" && isMonthlyRequestKind(rowKindFor(r))
       );
       const previews: Record<string, { start: string; end: string }> = {};
       await Promise.all(
@@ -163,7 +162,11 @@ export default function PurchaseInboxPage() {
     setBusyId(row.id);
     setError("");
     try {
-      const kindRow = rowKind(row);
+      const kindRow = rowKindFor(row);
+      if (kindRow === "unknown") {
+        setError("unknown_request_kind");
+        return;
+      }
       let payload: Record<string, unknown> = { action: "activate" as const, request_id: row.id };
 
       if (kindRow === "renter_miniapp_addon") {
@@ -173,7 +176,7 @@ export default function PurchaseInboxPage() {
           period_start: period.start,
           period_end: period.end,
         };
-      } else if (kindRow === "crm_subscription") {
+      } else if (isMonthlyRequestKind(kindRow)) {
         const override = monthOverrides[row.id];
         if (override?.start && override?.end) {
           if (!override.note.trim()) {
@@ -206,7 +209,7 @@ export default function PurchaseInboxPage() {
           [row.id]: `${result.period_start} — ${result.period_end}`,
         }));
       }
-      if (kindRow === "crm_subscription" && result.period_start && result.period_end) {
+      if (isMonthlyRequestKind(kindRow) && result.period_start && result.period_end) {
         setMonthSuccess((current) => ({
           ...current,
           [row.id]: `${formatDateTime(result.period_start)} — ${formatDateTime(result.period_end)}`,
@@ -340,8 +343,9 @@ export default function PurchaseInboxPage() {
         {(
           [
             ["all", "All kinds"],
-            ["lifetime", "Lifetime"],
-            ["monthly", "Monthly"],
+            ["lifetime", "Pro lifetime"],
+            ["monthly", "Pro / month"],
+            ["studio", "Studio / month"],
             ["addon", "Add-on (legacy)"],
           ] as const
         ).map(([value, label]) => (
@@ -363,9 +367,10 @@ export default function PurchaseInboxPage() {
       <div className="space-y-3">
         {rows.map((row) => {
           const period = periodForRow(row);
-          const kindRow = rowKind(row);
+          const kindRow = rowKindFor(row);
+          const isUnknown = kindRow === "unknown";
           const isAddon = kindRow === "renter_miniapp_addon";
-          const isMonthly = kindRow === "crm_subscription";
+          const isMonthly = isMonthlyRequestKind(kindRow);
           const monthPeriod = monthPeriodForRow(row);
 
           return (
@@ -394,6 +399,16 @@ export default function PurchaseInboxPage() {
                     Contact: {row.contact_email ?? row.requester_email ?? "no email"}
                     {row.contact_telegram ? ` · ${row.contact_telegram}` : ""}
                   </p>
+                  {(row.edition_active || row.edition_ceiling) && (
+                    <p className="text-xs text-slate-400">
+                      Edition active: {row.edition_active ?? "—"} · ceiling: {row.edition_ceiling ?? "—"}
+                    </p>
+                  )}
+                  {isUnknown && (
+                    <p className="text-xs text-rose-400">
+                      unknown_request_kind — Activate disabled until request_kind is valid
+                    </p>
+                  )}
                   {row.status === "activated" && isMonthly && (
                     <p className="text-xs text-emerald-300">
                       Assigned period: {formatDateTime(row.activated_period_start)} —{" "}
@@ -523,7 +538,7 @@ export default function PurchaseInboxPage() {
                       </button>
                     </div>
                   ) : null}
-                  {row.status === "new" && kindRow === "crm_license" ? (
+                  {row.status === "new" && !isUnknown && kindRow === "crm_license" ? (
                     <button
                       type="button"
                       onClick={() => void activate(row)}

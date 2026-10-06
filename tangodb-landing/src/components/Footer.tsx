@@ -9,6 +9,7 @@ type Props = {
 };
 
 const NAV_LINKS = [
+  { key: "footer.nav.editions" as const, href: "#editions" },
   { key: "footer.nav.features" as const, href: "#features" },
   { key: "footer.nav.audience" as const, href: "#audience" },
   { key: "footer.nav.pricing" as const, href: "#pricing" },

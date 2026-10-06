@@ -1,9 +1,15 @@
 /**
- * Platform payment config contract (schemaVersion 2).
+ * Platform payment config contract (schemaVersion 3).
  * Keep tangodb/supabase/functions/_shared/platformPaymentContract.ts in sync.
  */
 
-export const PLATFORM_PAYMENT_SCHEMA_VERSION = 2;
+export const PLATFORM_PAYMENT_SCHEMA_VERSION = 3;
+
+/** Pro lifetime/month canon fields exist from schema v2 onward. */
+const SCHEMA_WITH_PRO_PRICE_CANON = 2;
+
+/** Studio month canon requires schema v3 + crmStudioMonthly. */
+const SCHEMA_WITH_STUDIO_PRICE_CANON = 3;
 
 export const FIXED_PAYMENT_METHOD_CODES = {
   bankTransfer: "bankTransfer",
@@ -14,7 +20,7 @@ export const FIXED_PAYMENT_METHOD_CODES = {
 export type FixedPaymentMethodCode =
   (typeof FIXED_PAYMENT_METHOD_CODES)[keyof typeof FIXED_PAYMENT_METHOD_CODES];
 
-export type PlatformPaymentSku = "crm_license" | "crm_subscription";
+export type PlatformPaymentSku = "crm_license" | "crm_subscription" | "crm_studio_subscription";
 
 export type CrmPrice = {
   amount: string;
@@ -32,6 +38,8 @@ export type CryptoMethodRow = {
   currency?: string;
   monthlyAmount?: string;
   monthlyCurrency?: string;
+  studioMonthlyAmount?: string;
+  studioMonthlyCurrency?: string;
   qrImageUrl?: string;
 };
 
@@ -50,6 +58,8 @@ export type BankMethodRow = {
   currency?: string;
   monthlyAmount?: string;
   monthlyCurrency?: string;
+  studioMonthlyAmount?: string;
+  studioMonthlyCurrency?: string;
   qrImageUrl?: string;
 };
 
@@ -58,6 +68,7 @@ export type PlatformPaymentConfigV2 = {
   pricingRevision: number;
   crmLifetime?: CrmPrice | null;
   crmMonthly?: CrmPrice | null;
+  crmStudioMonthly?: CrmPrice | null;
   crypto?: CryptoMethodRow[];
   bankTransfer?: BankMethodRow | null;
   vietnameseBankTransfer?: BankMethodRow | null;
@@ -88,6 +99,7 @@ export type PaymentQuoteFailure = {
     | "invalid_amount"
     | "invalid_currency"
     | "monthly_not_configured"
+    | "studio_not_configured"
     | "crypto_missing_id";
 };
 
@@ -164,6 +176,8 @@ function normalizeCryptoRow(row: Record<string, unknown>): CryptoMethodRow | nul
     currency: trim(row.currency) || undefined,
     monthlyAmount: trim(row.monthlyAmount) || undefined,
     monthlyCurrency: trim(row.monthlyCurrency) || undefined,
+    studioMonthlyAmount: trim(row.studioMonthlyAmount) || undefined,
+    studioMonthlyCurrency: trim(row.studioMonthlyCurrency) || undefined,
     qrImageUrl: trim(row.qrImageUrl) || undefined,
   };
 }
@@ -192,11 +206,13 @@ function normalizeBankRow(
     currency: trim(row.currency) || undefined,
     monthlyAmount: trim(row.monthlyAmount) || undefined,
     monthlyCurrency: trim(row.monthlyCurrency) || undefined,
+    studioMonthlyAmount: trim(row.studioMonthlyAmount) || undefined,
+    studioMonthlyCurrency: trim(row.studioMonthlyCurrency) || undefined,
     qrImageUrl: trim(row.qrImageUrl) || undefined,
   };
 }
 
-/** Parse raw JSON from platform_payment_methods.config (v1 + v2). */
+/** Parse raw JSON from platform_payment_methods.config (v1 + v2 + v3). */
 export function parsePlatformPaymentConfig(raw: unknown): ParsedPlatformPaymentConfig {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return { schemaVersion: 1, pricingRevision: 1 };
@@ -242,6 +258,7 @@ export function parsePlatformPaymentConfig(raw: unknown): ParsedPlatformPaymentC
     pricingRevision,
     crmLifetime: parsePrice(value.crmLifetime),
     crmMonthly: parsePrice(value.crmMonthly),
+    crmStudioMonthly: parsePrice(value.crmStudioMonthly),
     crypto: crypto?.length ? crypto : undefined,
     bankTransfer,
     vietnameseBankTransfer,
@@ -265,14 +282,29 @@ function resolveSkuPrice(
   methodLifetimeAmount?: string,
   methodLifetimeCurrency?: string,
   methodMonthlyAmount?: string,
-  methodMonthlyCurrency?: string
+  methodMonthlyCurrency?: string,
+  methodStudioMonthlyAmount?: string,
+  methodStudioMonthlyCurrency?: string
 ): { amount: string; currency: string } | null {
+  if (sku === "crm_studio_subscription") {
+    if (config.schemaVersion < SCHEMA_WITH_STUDIO_PRICE_CANON) return null;
+    const canonical = config.crmStudioMonthly;
+    const amount = trim(methodStudioMonthlyAmount) || canonical?.amount || "";
+    const currency =
+      normalizeCurrency(trim(methodStudioMonthlyCurrency) || canonical?.currency || "") ??
+      normalizeCurrency(canonical?.currency || "");
+    if (!canonical && !trim(methodStudioMonthlyAmount)) return null;
+    if (!amount || !currency) return null;
+    if (!isPositiveDecimal(amount)) return null;
+    return { amount, currency };
+  }
+
   const isLifetime = sku === "crm_license";
   const canonical = isLifetime ? config.crmLifetime : config.crmMonthly;
   const overrideAmount = isLifetime ? methodLifetimeAmount : methodMonthlyAmount;
   const overrideCurrency = isLifetime ? methodLifetimeCurrency : methodMonthlyCurrency;
 
-  if (config.schemaVersion >= PLATFORM_PAYMENT_SCHEMA_VERSION) {
+  if (config.schemaVersion >= SCHEMA_WITH_PRO_PRICE_CANON) {
     if (!canonical) {
       if (sku === "crm_subscription") return null;
     }
@@ -430,7 +462,11 @@ export function resolvePaymentQuote(
   sku: PlatformPaymentSku,
   methodCode: string
 ): PaymentQuoteResult {
-  if (sku !== "crm_license" && sku !== "crm_subscription") {
+  if (
+    sku !== "crm_license" &&
+    sku !== "crm_subscription" &&
+    sku !== "crm_studio_subscription"
+  ) {
     return { ok: false, code: "invalid_sku" };
   }
 
@@ -447,10 +483,13 @@ export function resolvePaymentQuote(
     match.row.amount,
     match.row.currency,
     match.row.monthlyAmount,
-    match.row.monthlyCurrency
+    match.row.monthlyCurrency,
+    match.row.studioMonthlyAmount,
+    match.row.studioMonthlyCurrency
   );
 
   if (!price) {
+    if (sku === "crm_studio_subscription") return { ok: false, code: "studio_not_configured" };
     if (sku === "crm_subscription") return { ok: false, code: "monthly_not_configured" };
     return { ok: false, code: "invalid_amount" };
   }
@@ -497,12 +536,15 @@ export function pricingFingerprint(config: ParsedPlatformPaymentConfig): string 
   const slice = {
     crmLifetime: config.crmLifetime,
     crmMonthly: config.crmMonthly,
+    crmStudioMonthly: config.crmStudioMonthly,
     crypto: config.crypto?.map((row) => ({
       id: row.id,
       amount: row.amount,
       currency: row.currency,
       monthlyAmount: row.monthlyAmount,
       monthlyCurrency: row.monthlyCurrency,
+      studioMonthlyAmount: row.studioMonthlyAmount,
+      studioMonthlyCurrency: row.studioMonthlyCurrency,
     })),
     bankTransfer: pickPricingFields(config.bankTransfer),
     vietnameseBankTransfer: pickPricingFields(config.vietnameseBankTransfer),
@@ -518,6 +560,8 @@ function pickPricingFields(row: BankMethodRow | null | undefined) {
     currency: row.currency,
     monthlyAmount: row.monthlyAmount,
     monthlyCurrency: row.monthlyCurrency,
+    studioMonthlyAmount: row.studioMonthlyAmount,
+    studioMonthlyCurrency: row.studioMonthlyCurrency,
   };
 }
 
@@ -554,6 +598,7 @@ export function preparePaymentConfigForSave(
   }
 
   const crmMonthly = parsedIncoming.crmMonthly ?? parsedExisting.crmMonthly ?? null;
+  const crmStudioMonthly = parsedIncoming.crmStudioMonthly ?? parsedExisting.crmStudioMonthly ?? null;
 
   const crypto = Array.isArray(base.crypto)
     ? (base.crypto as Record<string, unknown>[]).map((row) => {
@@ -574,6 +619,7 @@ export function preparePaymentConfigForSave(
     crypto,
     crmLifetime: crmLifetime ?? undefined,
     crmMonthly: crmMonthly ?? undefined,
+    crmStudioMonthly: crmStudioMonthly ?? undefined,
   };
 
   if (withMeta.bankTransfer && typeof withMeta.bankTransfer === "object") {

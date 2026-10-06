@@ -5,6 +5,7 @@ import {
 } from "../_shared/http.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
 import {
+  calendarSyncLeaseHeld,
   KICK_BATCH_SIZE,
   KICK_TIME_BUDGET_MS,
   runCalendarSyncBatches,
@@ -69,6 +70,11 @@ Deno.serve(async (req) => {
     return jsonResponse({ error: "Forbidden" }, 403, req);
   }
 
+  if (await calendarSyncLeaseHeld(admin)) {
+    logEvent("gcal_kick_skipped_lease_held", { organization_id: organizationId });
+    return jsonResponse({ ok: true, skipped: "lease_held" }, 200, req);
+  }
+
   let oauthConfig;
   try {
     oauthConfig = await loadGoogleOAuthConfigOrThrow();
@@ -84,7 +90,7 @@ Deno.serve(async (req) => {
       timeBudgetMs: KICK_TIME_BUDGET_MS,
       workerId: `calendar-sync-kick-${crypto.randomUUID()}`,
       organizationId,
-      chainIfNeeded: true,
+      chainIfNeeded: false,
     });
 
     return jsonResponse(
@@ -101,7 +107,7 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     const message = err instanceof Error ? err.message : "unknown";
-    logEvent("gcal_kick_error", { organization_id: organizationId, message });
+    logEvent("gcal_kick_error", { organization_id: organizationId, message: message.slice(0, 200) });
     if (message === "Claim failed") {
       return jsonResponse({ error: "Claim failed" }, 500, req);
     }

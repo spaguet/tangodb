@@ -18,9 +18,11 @@ import EditRentalSlotModal from "./EditRentalSlotModal";
 import CancelRentalModal from "./CancelRentalModal";
 import RentalTariffLookupLink from "./RentalTariffLookupLink";
 import type { LocationOption } from "./CreateRentalDialog";
+import { canOccupancyReleaseLesson } from "../../lib/scheduleEditionOccupancy";
 
 interface RentalInfoPopupProps {
   lesson: RentalDisplayLesson | null;
+  occupancyEditionRelease?: boolean;
   locations: LocationOption[];
   toast: (msg: string, type?: "success" | "error" | "info") => void;
   onClose: () => void;
@@ -38,6 +40,7 @@ function paymentStatusLabel(status: string | null | undefined, t: (key: string) 
 
 export default function RentalInfoPopup({
   lesson,
+  occupancyEditionRelease = false,
   locations,
   toast,
   onClose,
@@ -50,7 +53,14 @@ export default function RentalInfoPopup({
   const canSeeCashAmounts = can("rentals.payments.write");
   const canLookupTariffs = canReadRentalTariffs(role, options);
   const canManage =
-    !isReadOnly && can("rentals.write");
+    !occupancyEditionRelease && !isReadOnly && can("rentals.write");
+
+  const canOccupancyCancel =
+    occupancyEditionRelease &&
+    lesson != null &&
+    !isReadOnly &&
+    can("schedule.write") &&
+    canOccupancyReleaseLesson(lesson);
 
   const detailQuery = useRentalDetail(lesson?.rentalId ?? null, !!lesson);
   const teamQuery = useTeamMembers();
@@ -78,6 +88,7 @@ export default function RentalInfoPopup({
   const visiblePayments = filterVisibleRentalCorrectionPayments(detail?.payments ?? []);
 
   const canRecordPayment =
+    !occupancyEditionRelease &&
     canSeeCashAmounts &&
     !isReadOnly &&
     lesson.bookingStatus === "confirmed" &&
@@ -85,11 +96,13 @@ export default function RentalInfoPopup({
     paymentStatus !== "overpaid";
 
   const canEditAmount =
+    !occupancyEditionRelease &&
     canSeeCashAmounts &&
     !isReadOnly &&
     lesson.bookingStatus === "confirmed";
 
   const canEditSlot =
+    !occupancyEditionRelease &&
     canWriteRentals(role, options) &&
     !isReadOnly &&
     lesson.bookingStatus === "confirmed";
@@ -233,7 +246,7 @@ export default function RentalInfoPopup({
                   {t("schedule.rental.recordPaymentTitle")}
                 </button>
               ) : null}
-              {canManage && lesson.bookingStatus === "confirmed" ? (
+              {(canManage || canOccupancyCancel) && lesson.bookingStatus === "confirmed" ? (
                 <button type="button" onClick={() => setCancelOpen(true)} className="px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 rounded-lg cursor-pointer">
                   {seriesId ? t("rentalSeries.cancelOccurrenceAction") : t("schedule.rental.cancelAction")}
                 </button>

@@ -11,6 +11,7 @@ import {
 } from "../_shared/googleCalendarClient.ts";
 import { accountHasFreebusyScopes } from "../_shared/googleOAuth.ts";
 import { checkRateLimit } from "../_shared/rateLimit.ts";
+import { shouldPauseGoogleCalendarForOrg } from "../_shared/editionLifecycle.ts";
 import { createServiceClient, createUserClient, logEvent } from "../_shared/supabase.ts";
 
 const RATE_LIMIT = 60;
@@ -120,6 +121,10 @@ Deno.serve(async (req) => {
   }
   if (!canQueryFreebusy) {
     return jsonResponse({ error: "Forbidden" }, 403, req);
+  }
+
+  if (await shouldPauseGoogleCalendarForOrg(admin, teacherMember.organization_id)) {
+    return jsonResponse({ error: "edition_forbidden", code: "edition_forbidden" }, 403, req);
   }
 
   const { data: binding } = await admin

@@ -29,6 +29,7 @@ Deno.serve(async (req) => {
   logEvent("expire_crm_subscriptions_complete", {
     past_due: Number((data as Record<string, unknown>)?.past_due_count ?? 0),
     suspended: Number((data as Record<string, unknown>)?.suspended_count ?? 0),
+    canceled: Number((data as Record<string, unknown>)?.canceled_count ?? 0),
     digest_ok: !digestError,
     digest_expiring: Number((digest as Record<string, unknown> | null)?.expiring_count ?? 0),
     digest_overdue: Number((digest as Record<string, unknown> | null)?.overdue_count ?? 0),

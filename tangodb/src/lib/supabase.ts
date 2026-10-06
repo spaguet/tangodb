@@ -1,8 +1,10 @@
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database";
 
-const configuredUrl = import.meta.env.VITE_SUPABASE_URL ?? "";
-const configuredKey = import.meta.env.VITE_SUPABASE_ANON_KEY ?? "";
+const viteEnv =
+  typeof import.meta !== "undefined" && import.meta.env ? import.meta.env : ({} as ImportMetaEnv);
+const configuredUrl = viteEnv.VITE_SUPABASE_URL ?? "";
+const configuredKey = viteEnv.VITE_SUPABASE_ANON_KEY ?? "";
 /** Node assert-scripts import this module without Vite env; keep browser fail-fast if misconfigured. */
 const isBrowser = typeof window !== "undefined";
 const supabaseUrl = configuredUrl || (!isBrowser ? "http://127.0.0.1:54321" : "");

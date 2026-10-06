@@ -1,5 +1,5 @@
 import { assertEquals } from "https://deno.land/std@0.224.0/assert/mod.ts";
-import { v2ConfigFixture } from "../../../src/lib/platformPaymentContract.fixtures.ts";
+import { v2ConfigFixture, v3ConfigFixture } from "../../../src/lib/platformPaymentContract.fixtures.ts";
 import { resolvePaymentQuote } from "./paymentQuote.ts";
 import {
   assertQuoteCreationAllowed,
@@ -43,9 +43,29 @@ Deno.test("assertQuoteCreationAllowed rejects past purge and short window", () =
 Deno.test("parsePurchaseQuoteSku and isUuid", () => {
   assertEquals(parsePurchaseQuoteSku("crm_license"), "crm_license");
   assertEquals(parsePurchaseQuoteSku("crm_subscription"), "crm_subscription");
+  assertEquals(parsePurchaseQuoteSku("crm_studio_subscription"), "crm_studio_subscription");
   assertEquals(parsePurchaseQuoteSku("renter_miniapp_addon"), null);
   assertEquals(isUuid("not-a-uuid"), false);
   assertEquals(isUuid("a0900000-0000-4000-8000-000000000001"), true);
+});
+
+Deno.test("resolvePaymentQuote studio on v2 is studio_not_configured", () => {
+  const result = resolvePaymentQuote(v2ConfigFixture, "crm_studio_subscription", "bankTransfer");
+  assertEquals(result.ok, false);
+  if (result.ok) throw new Error("unreachable");
+  assertEquals(result.code, "studio_not_configured");
+});
+
+Deno.test("resolvePaymentQuote studio on v3 uses studio override not Pro monthly", () => {
+  const result = resolvePaymentQuote(
+    v3ConfigFixture,
+    "crm_studio_subscription",
+    "vietnameseBankTransfer"
+  );
+  assertEquals(result.ok, true);
+  if (!result.ok) throw new Error("unreachable");
+  assertEquals(result.amount, "650000");
+  assertEquals(result.currency, "VND");
 });
 
 Deno.test("resolvePaymentQuote rejects spoofed monthly without config", () => {

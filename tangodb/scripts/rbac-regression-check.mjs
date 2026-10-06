@@ -15,6 +15,7 @@ import {
   isRentalInboxOnly,
   findFirstAccessiblePanelPath,
   findFirstEnabledAccessiblePanelPath,
+  findFirstAccessibleSettingsSection,
   panelIdFromPath,
   assertReceptionPermissions,
   EMPTY_TEACHER_SCOPE,
@@ -30,6 +31,25 @@ import {
   filterAccessibleLocations,
   locationIdsFromScheduleGroupScope,
 } from "../src/hooks/useLocations.ts";
+
+function editionSnapshot(active) {
+  return {
+    organizationId: "00000000-0000-4000-8000-000000000001",
+    activeEdition: active,
+    effectiveCeiling: active,
+    persistedActiveEdition: active,
+    liveMonthPhase: null,
+    liveInstruments: [],
+    caps: {
+      locations: 1,
+      disciplines: 1,
+      clients_active: 50,
+      members: 5,
+      pending_invites: 0,
+    },
+    lifecycleEnabled: true,
+  };
+}
 
 const ROLES = ["owner", "director", "admin", "teacher", "accountant"];
 const defaultModules = normalizeOrgModules({});
@@ -392,6 +412,45 @@ assert(!canAccessPanel("admin", "settings", { ...optsFor("admin"), restrictedAdm
 assert(!canManageVenueCostRules("admin"), "admin no manage venue cost");
 assert(!canWriteRentalTariffs("admin", optsFor("admin")), "admin no write tariffs without finance");
 assert(canWriteRentalTariffs("owner", optsFor("owner")), "owner write tariffs");
+
+// E11 edition smoke (F122–F124) — lifecycle on
+const liteEdition = { edition: editionSnapshot("lite") };
+const studioEdition = { edition: editionSnapshot("studio") };
+assert(
+  findFirstEnabledAccessiblePanelPath("accountant", defaultModules, {
+    ...optsFor("accountant"),
+    ...liteEdition,
+  }) === null,
+  "E11: accountant Lite → upsell (no /finance loop)"
+);
+assert(
+  findFirstEnabledAccessiblePanelPath("accountant", defaultModules, {
+    ...optsFor("accountant"),
+    ...studioEdition,
+  }) === null,
+  "E11: accountant Studio → upsell (no /finance loop)"
+);
+assert(
+  findFirstEnabledAccessiblePanelPath("teacher", defaultModules, {
+    ...optsFor("teacher"),
+    ...liteEdition,
+  }) !== "/finance/payroll",
+  "E11: teacher Lite not home /finance/payroll"
+);
+assert(
+  findFirstEnabledAccessiblePanelPath("admin", defaultModules, {
+    restrictedAdmin: true,
+    ...liteEdition,
+  }) === "/attendance",
+  "E11: reception Lite → /attendance not /subscriptions"
+);
+assert(
+  findFirstAccessibleSettingsSection("accountant", defaultModules, {
+    ...optsFor("accountant"),
+    ...liteEdition,
+  }) === null,
+  "E11: accountant Lite has no settings section (upsell Pro)"
+);
 
 // RBAC-8 export flags
 assert(!can("accountant", "dashboard.export", optsFor("accountant")), "accountant no dashboard.export");

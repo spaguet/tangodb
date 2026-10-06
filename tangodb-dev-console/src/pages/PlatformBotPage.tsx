@@ -187,6 +187,7 @@ export default function PlatformBotPage() {
         </h2>
         <p className="text-xs text-slate-500 mt-1">
           Outbound-only: Detect / paste chat_id / Save / Send test. Username бота в CRM не показывается.
+          Digest T−7: подписи Studio / месяц vs Pro / месяц (SQL E6c).
           {supabaseEnvError ? ` ${supabaseEnvError}` : ""}
         </p>
       </div>

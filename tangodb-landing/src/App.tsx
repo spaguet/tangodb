@@ -4,6 +4,7 @@ import { CrmCapabilities } from "./components/CrmCapabilities";
 
 import { DemoSection } from "./components/DemoSection";
 
+import { EditionsSection } from "./components/EditionsSection";
 import { Features } from "./components/Features";
 
 import { Footer } from "./components/Footer";
@@ -55,6 +56,8 @@ export default function App() {
         <Hero locale={locale} t={t} />
 
         <TrustSection locale={locale} t={t} />
+
+        <EditionsSection locale={locale} t={t} />
 
         <Features locale={locale} t={t} />
 

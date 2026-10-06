@@ -13,9 +13,36 @@ import { loadPaymentConfig, savePaymentConfig, supabaseEnvError } from "../lib/s
 const MAX_QR_IMAGE_BYTES = 250 * 1024;
 
 const SHARED_AMOUNT_HINT =
-  "QR и номер счёта общие для lifetime и месяца. Меняется только сумма на экране покупки.";
+  "QR и номер счёта общие для lifetime, Pro / месяц и Studio / месяц. Меняется только сумма на экране покупки.";
 
 function MonthlyPriceFields({
+  amount,
+  currency,
+  onAmount,
+  onCurrency,
+  labelPrefix = "Pro / месяц",
+}: {
+  amount: string;
+  currency: string;
+  onAmount: (value: string) => void;
+  onCurrency: (value: string) => void;
+  labelPrefix?: string;
+}) {
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+      <Field
+        label={`Сумма (${labelPrefix})`}
+        type="number"
+        value={amount}
+        onChange={onAmount}
+        placeholder="29"
+      />
+      <Field label={`Валюта (${labelPrefix})`} value={currency} onChange={onCurrency} placeholder="USD" />
+    </div>
+  );
+}
+
+function StudioMonthlyPriceFields({
   amount,
   currency,
   onAmount,
@@ -27,16 +54,13 @@ function MonthlyPriceFields({
   onCurrency: (value: string) => void;
 }) {
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-      <Field
-        label="Сумма / месяц"
-        type="number"
-        value={amount}
-        onChange={onAmount}
-        placeholder="29"
-      />
-      <Field label="Валюта / месяц" value={currency} onChange={onCurrency} placeholder="USD" />
-    </div>
+    <MonthlyPriceFields
+      amount={amount}
+      currency={currency}
+      onAmount={onAmount}
+      onCurrency={onCurrency}
+      labelPrefix="Studio / месяц"
+    />
   );
 }
 
@@ -105,6 +129,7 @@ export default function PaymentMethodsPage() {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [studioSaveWarning, setStudioSaveWarning] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -138,6 +163,13 @@ export default function PaymentMethodsPage() {
     setSaving(true);
     setError("");
     setSuccess("");
+    setStudioSaveWarning("");
+    const studioCanonEmpty = !form.crmStudioMonthly.amount.trim();
+    if (studioCanonEmpty) {
+      setStudioSaveWarning(
+        "Канон Studio / месяц пуст — quote для Studio будет fail-closed (studio_not_configured). Pro lifetime и Pro month сохранятся."
+      );
+    }
     try {
       const config = formStateToConfig(form);
       const saved = await savePaymentConfig(config, form.pricingRevision);
@@ -208,8 +240,8 @@ export default function PaymentMethodsPage() {
           </Section>
 
           <Section
-            title="CRM — ежемесячно"
-            description="Каноническая цена месяца CRM. Пока не заполнена, server quote для monthly остаётся fail-closed."
+            title="CRM — Pro / месяц"
+            description="Каноническая цена месяца Pro (SKU crm_subscription). Пока не заполнена, server quote для Pro month остаётся fail-closed."
           >
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Field
@@ -226,6 +258,37 @@ export default function PaymentMethodsPage() {
                 value={form.crmMonthly.currency}
                 onChange={(currency) =>
                   setForm((prev) => ({ ...prev, crmMonthly: { ...prev.crmMonthly, currency } }))
+                }
+                placeholder="USD"
+              />
+            </div>
+          </Section>
+
+          <Section
+            title="CRM — Studio / месяц"
+            description="Каноническая цена месяца Studio (SKU crm_studio_subscription). Отдельно от Pro month — не подставляется из Pro."
+          >
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <Field
+                label="Сумма"
+                type="number"
+                value={form.crmStudioMonthly.amount}
+                onChange={(amount) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    crmStudioMonthly: { ...prev.crmStudioMonthly, amount },
+                  }))
+                }
+                placeholder="19"
+              />
+              <Field
+                label="Валюта"
+                value={form.crmStudioMonthly.currency}
+                onChange={(currency) =>
+                  setForm((prev) => ({
+                    ...prev,
+                    crmStudioMonthly: { ...prev.crmStudioMonthly, currency },
+                  }))
                 }
                 placeholder="USD"
               />
@@ -308,6 +371,12 @@ export default function PaymentMethodsPage() {
                     currency={row.monthlyCurrency}
                     onAmount={(monthlyAmount) => updateCrypto(index, { monthlyAmount })}
                     onCurrency={(monthlyCurrency) => updateCrypto(index, { monthlyCurrency })}
+                  />
+                  <StudioMonthlyPriceFields
+                    amount={row.studioMonthlyAmount}
+                    currency={row.studioMonthlyCurrency}
+                    onAmount={(studioMonthlyAmount) => updateCrypto(index, { studioMonthlyAmount })}
+                    onCurrency={(studioMonthlyCurrency) => updateCrypto(index, { studioMonthlyCurrency })}
                   />
                   <QrImageUpload value={row.qrImageUrl} onChange={(qrImageUrl) => updateCrypto(index, { qrImageUrl })} />
                 </div>
@@ -392,6 +461,19 @@ export default function PaymentMethodsPage() {
               }
               onCurrency={(monthlyCurrency) =>
                 setForm((prev) => ({ ...prev, bankTransfer: { ...prev.bankTransfer, monthlyCurrency } }))
+              }
+            />
+            <StudioMonthlyPriceFields
+              amount={form.bankTransfer.studioMonthlyAmount}
+              currency={form.bankTransfer.studioMonthlyCurrency}
+              onAmount={(studioMonthlyAmount) =>
+                setForm((prev) => ({ ...prev, bankTransfer: { ...prev.bankTransfer, studioMonthlyAmount } }))
+              }
+              onCurrency={(studioMonthlyCurrency) =>
+                setForm((prev) => ({
+                  ...prev,
+                  bankTransfer: { ...prev.bankTransfer, studioMonthlyCurrency },
+                }))
               }
             />
             <Field
@@ -481,6 +563,22 @@ export default function PaymentMethodsPage() {
                 }))
               }
             />
+            <StudioMonthlyPriceFields
+              amount={form.vietnameseBankTransfer.studioMonthlyAmount}
+              currency={form.vietnameseBankTransfer.studioMonthlyCurrency}
+              onAmount={(studioMonthlyAmount) =>
+                setForm((prev) => ({
+                  ...prev,
+                  vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, studioMonthlyAmount },
+                }))
+              }
+              onCurrency={(studioMonthlyCurrency) =>
+                setForm((prev) => ({
+                  ...prev,
+                  vietnameseBankTransfer: { ...prev.vietnameseBankTransfer, studioMonthlyCurrency },
+                }))
+              }
+            />
             <Field
               label="Комментарий"
               value={form.vietnameseBankTransfer.note}
@@ -543,6 +641,16 @@ export default function PaymentMethodsPage() {
                 setForm((prev) => ({ ...prev, mir: { ...prev.mir, monthlyCurrency } }))
               }
             />
+            <StudioMonthlyPriceFields
+              amount={form.mir.studioMonthlyAmount}
+              currency={form.mir.studioMonthlyCurrency}
+              onAmount={(studioMonthlyAmount) =>
+                setForm((prev) => ({ ...prev, mir: { ...prev.mir, studioMonthlyAmount } }))
+              }
+              onCurrency={(studioMonthlyCurrency) =>
+                setForm((prev) => ({ ...prev, mir: { ...prev.mir, studioMonthlyCurrency } }))
+              }
+            />
             <Field
               label="Комментарий"
               value={form.mir.note}
@@ -599,6 +707,7 @@ export default function PaymentMethodsPage() {
       )}
 
       {error && <p className="text-sm text-rose-400">{error}</p>}
+      {studioSaveWarning && <p className="text-sm text-amber-400">{studioSaveWarning}</p>}
       {success && <p className="text-sm text-emerald-400">{success}</p>}
     </div>
   );

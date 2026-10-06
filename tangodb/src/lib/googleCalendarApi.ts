@@ -316,10 +316,16 @@ export async function kickCalendarSync(organizationId: string): Promise<void> {
   });
 }
 
+const KICK_COOLDOWN_MS = 60_000;
+const kickNotBefore = new Map<string, number>();
+
 export function kickCalendarSyncInBackground(organizationId: string | null | undefined): void {
   if (!organizationId) return;
+  const now = Date.now();
+  if (now < (kickNotBefore.get(organizationId) ?? 0)) return;
+  kickNotBefore.set(organizationId, now + KICK_COOLDOWN_MS);
   void kickCalendarSync(organizationId).catch(() => {
-    /* queue still processed by cron */
+    /* queue still processed by cron; cooldown stays so a 500 cannot retry in a loop */
   });
 }
 

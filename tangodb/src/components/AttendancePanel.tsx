@@ -57,6 +57,19 @@ import {
   useOnlineStatus,
 } from "../hooks/useOnlineStatus";
 import { usePermissions } from "../hooks/usePermissions";
+import { useOrgEdition } from "../hooks/useOrgEdition";
+import {
+  useAddGroupRosterClient,
+  useGroupRosterForLesson,
+  useMarkRosterAttendance,
+  groupRosterQueryKey,
+  rosterAttendanceQueryKey,
+  type RosterAttendeeForDate,
+  type RosterAttendanceStatus,
+} from "../hooks/useGroupRoster";
+import { useSubscriptions } from "../hooks/useSubscriptions";
+import { useAllSubscriptionMemberChanges } from "../hooks/useSubscriptionMemberChanges";
+import { buildMemberChangesBySubId, subscriptionClientIdsAtDate } from "../lib/subscriptionMembers";
 import { useOrganization } from "../organization/OrganizationProvider";
 import {
   canViewGroupAttendanceLesson,
@@ -543,6 +556,54 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     queue?.operations,
   ]);
 
+  const groupScheduleGroupId =
+    selectedLesson?.kind === "group" ? selectedLesson.scheduleGroupId ?? null : null;
+
+  const {
+    rosterAttendeesForDate,
+    isLoading: rosterLoading,
+    isError: rosterError,
+    error: rosterErr,
+  } = useGroupRosterForLesson(
+    groupScheduleGroupId,
+    selectedLesson && !isOfflineMode ? selectedDate : undefined,
+    selectedMonth
+  );
+
+  const subscriptionsQuery = useSubscriptions();
+  const memberChangesQuery = useAllSubscriptionMemberChanges();
+  const memberChangesBySubId = useMemo(
+    () => buildMemberChangesBySubId(memberChangesQuery.data ?? []),
+    [memberChangesQuery.data]
+  );
+
+  const subscriptionCoveredClientIds = useMemo(() => {
+    const ids = new Set<string>();
+    if (!selectedDate || selectedLesson?.kind !== "group") return ids;
+    for (const subRow of effectiveModalSubs) {
+      const sub = subscriptionsQuery.data?.find((s) => s.id === subRow.subId);
+      if (!sub) continue;
+      for (const cid of subscriptionClientIdsAtDate(
+        sub,
+        memberChangesBySubId[sub.id] ?? [],
+        selectedDate
+      )) {
+        ids.add(cid);
+      }
+    }
+    return ids;
+  }, [effectiveModalSubs, subscriptionsQuery.data, memberChangesBySubId, selectedDate, selectedLesson]);
+
+  const visibleRosterAttendees = useMemo(
+    () => rosterAttendeesForDate.filter((r) => !subscriptionCoveredClientIds.has(r.clientId)),
+    [rosterAttendeesForDate, subscriptionCoveredClientIds]
+  );
+
+  const addRosterClient = useAddGroupRosterClient();
+  const markRosterAttendance = useMarkRosterAttendance();
+  const [rosterAddClientId, setRosterAddClientId] = useState("");
+  const [rosterAddClientQuery, setRosterAddClientQuery] = useState("");
+
   const markAttendance = useMarkAttendance();
   const markPersonalAttendance = useMarkPersonalLessonAttendance();
   const recordSingleVisit = useRecordSingleVisit();
@@ -558,6 +619,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
   } | null>(null);
   const [lastAttendanceChangeAt, setLastAttendanceChangeAt] = useState<Record<string, number>>({});
   const { freezePolicy } = useSettings();
+  const { editionAllows } = useOrgEdition();
+  const canGroupSubscriptions = editionAllows("group_subscriptions");
   const isLoading =
     !isOfflineMode &&
     (locationsLoading ||
@@ -803,6 +866,59 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       }
       toast(t("attendance.success.marked", { status: attendanceStatusLabel(status, t) }), "success");
     }
+  };
+
+  const handleMarkRoster = async (clientId: string, status: RosterAttendanceStatus) => {
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+    if (!canMarkSelectedLesson) {
+      toast(t("attendance.error.pastOnly"), "error");
+      return;
+    }
+    const scheduleGroupId =
+      selectedLesson?.kind === "group" ? selectedLesson.scheduleGroupId ?? null : null;
+    if (!scheduleGroupId) {
+      toast(t("attendance.error.groupUnknown"), "error");
+      return;
+    }
+    const res = await markRosterAttendance.mutateAsync({
+      dateStr: selectedDate,
+      scheduleGroupId,
+      clientId,
+      status,
+    });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "common.saveMarkFailed", t), "error");
+    } else {
+      toast(t("attendance.success.marked", { status: attendanceStatusLabel(status, t) }), "success");
+    }
+  };
+
+  const handleAddRosterClient = async () => {
+    if (!rosterAddClientId) return;
+    if (connectionState !== "online") {
+      toast(translateMutationBlockedMessage(connectionState, t)!, "error");
+      return;
+    }
+    const scheduleGroupId =
+      selectedLesson?.kind === "group" ? selectedLesson.scheduleGroupId ?? null : null;
+    if (!scheduleGroupId) {
+      toast(t("attendance.error.groupUnknown"), "error");
+      return;
+    }
+    const res = await addRosterClient.mutateAsync({
+      scheduleGroupId,
+      clientId: rosterAddClientId,
+    });
+    if (!res.success) {
+      toast(resolveMutationError(res.error, "common.saveFailed", t), "error");
+      return;
+    }
+    setRosterAddClientId("");
+    setRosterAddClientQuery("");
+    toast(t("attendance.roster.addSuccess"), "success");
   };
 
   const handleAttendanceCorrectionSuccess = (result: {
@@ -1055,7 +1171,110 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     void queryClient.invalidateQueries({ queryKey: attendanceQueryKey });
     void queryClient.invalidateQueries({ queryKey: personalLessonsQueryKey });
     void queryClient.invalidateQueries({ queryKey: singleVisitsQueryKey });
+    void queryClient.invalidateQueries({ queryKey: groupRosterQueryKey });
+    void queryClient.invalidateQueries({ queryKey: rosterAttendanceQueryKey });
     toast(t("attendance.info.refreshed"), "info");
+  };
+
+  const renderAddRosterPanel = () => {
+    if (selectedLesson?.kind !== "group" || !groupScheduleGroupId || isOfflineMode) return null;
+    return (
+      <div className="mt-4 pt-4 border-t border-slate-100 space-y-3">
+        <p className="text-xs font-semibold text-slate-600">{t("attendance.roster.addStudent")}</p>
+        <ClientAutocomplete
+          label={t("common.client")}
+          clients={clientsQuery.data ?? []}
+          query={rosterAddClientQuery}
+          selectedId={rosterAddClientId}
+          onQueryChange={(value) => {
+            setRosterAddClientQuery(value);
+            setRosterAddClientId("");
+          }}
+          onSelect={(client) => {
+            setRosterAddClientId(client.id);
+            setRosterAddClientQuery(`${client.lastName} ${client.firstName}`.trim());
+          }}
+          showAddClientButton
+          addClientLinkLabel={t("common.newClient")}
+          modalSubmitLabel={t("clients.form.addSubmit")}
+          toast={toast}
+        />
+        <button
+          type="button"
+          onClick={() => void handleAddRosterClient()}
+          disabled={
+            !rosterAddClientId || connectionState !== "online" || addRosterClient.isPending
+          }
+          className={`${btnAddCls} w-full disabled:opacity-60`}
+        >
+          {t("attendance.roster.addStudentAction")}
+        </button>
+      </div>
+    );
+  };
+
+  const renderRosterAttendanceRow = (row: RosterAttendeeForDate) => {
+    const canMarkNow =
+      connectionState === "online" && canMarkSelectedLesson && !markRosterAttendance.isPending;
+    const connectionTitle = translateConnectionBlockReason(connectionState, t);
+
+    return (
+      <div
+        key={`roster-${row.clientId}`}
+        className="py-4 flex flex-col gap-3 border-b border-slate-100 last:border-0"
+      >
+        <div className="space-y-1.5">
+          <p className="text-[11px] font-sans font-semibold text-emerald-700 leading-snug">
+            {t("attendance.roster.rosterBadge")}
+          </p>
+          <h4 className="text-sm font-semibold text-slate-800 leading-tight">{row.displayName}</h4>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap font-sans">
+          <button
+            type="button"
+            onClick={() => void handleMarkRoster(row.clientId, "present")}
+            disabled={!canMarkNow}
+            title={connectionTitle ?? undefined}
+            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+              row.currentStatus === "present"
+                ? "bg-indigo-600 border-indigo-600 text-white shadow-xs"
+                : "bg-white border-slate-200 text-slate-600 hover:border-indigo-300 hover:bg-indigo-50"
+            }`}
+          >
+            <Check className="w-3.5 h-3.5" />
+            {t("common.present")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleMarkRoster(row.clientId, "absent")}
+            disabled={!canMarkNow}
+            title={connectionTitle ?? undefined}
+            className={`flex items-center justify-center gap-1.5 px-4 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+              row.currentStatus === "absent"
+                ? "bg-rose-600 border-rose-600 text-white shadow-xs"
+                : "bg-white border-slate-200 text-slate-600 hover:border-rose-300 hover:bg-rose-50"
+            }`}
+          >
+            <X className="w-3.5 h-3.5" />
+            {t("common.absent")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleMarkRoster(row.clientId, "excused")}
+            disabled={!canMarkNow}
+            title={connectionTitle ?? undefined}
+            className={`flex items-center justify-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold transition-all border cursor-pointer disabled:opacity-60 ${
+              row.currentStatus === "excused"
+                ? "bg-slate-600 border-slate-600 text-white shadow-xs"
+                : "bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50"
+            }`}
+          >
+            <ShieldCheck className="w-3.5 h-3.5" />
+            {t("common.excusedShort")}
+          </button>
+        </div>
+      </div>
+    );
   };
 
   const renderAttendanceRow = (
@@ -1072,7 +1291,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
     const freezeLocked = !st.canFreeze && st.currentStatus !== "freeze";
     const tariffLabel = getSubscriptionTariffLabel(st, prices);
     const connectionTitle = translateConnectionBlockReason(connectionState, t);
-    const showFreeze = showExtendedMarks && !isMonthly && freezePolicy.freezeEnabled;
+    const showFreeze =
+      showExtendedMarks && !isMonthly && freezePolicy.freezeEnabled && canGroupSubscriptions;
     const showExcused = showExtendedMarks && !isMonthly;
     const canMarkNow =
       (connectionState === "online" || canMarkOffline) && canMarkSelectedLesson && !markAttendance.isPending;
@@ -1232,12 +1452,17 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
       locationId: activePersonalLesson.locationId ?? null,
     });
 
+  const hasGroupJournalRows =
+    effectiveModalSubs.length > 0 || visibleRosterAttendees.length > 0;
+
   const isSubsListView =
     !!selectedLesson &&
     !isPersonalAttendanceView &&
     !subsError &&
+    !rosterError &&
     !(subsLoading && !isOfflineMode) &&
-    effectiveModalSubs.length > 0;
+    !(rosterLoading && !isOfflineMode) &&
+    hasGroupJournalRows;
 
   const useVirtualSubsList = isSubsListView && effectiveModalSubs.length >= 20;
 
@@ -1927,19 +2152,27 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       </>
                     )}
                   </div>
-                ) : subsError ? (
-                  <QueryErrorState error={subsErr} onRetry={handleRefresh} />
-                ) : subsLoading ? (
+                ) : subsError || rosterError ? (
+                  <QueryErrorState
+                    error={subsErr ?? rosterErr}
+                    onRetry={handleRefresh}
+                  />
+                ) : subsLoading || rosterLoading ? (
                   <div className="flex flex-col items-center justify-center py-16 text-slate-400 gap-3">
                     <Loader2 className="w-7 h-7 text-indigo-500 animate-spin" />
                     <p className="text-xs">{t("attendance.loadingSubscriptions")}</p>
                   </div>
-                ) : effectiveModalSubs.length === 0 ? (
+                ) : !hasGroupJournalRows ? (
                   <div>
                     <div className="text-center py-12 text-slate-400 space-y-3">
                       <Ticket className="w-8 h-8 mx-auto text-slate-300" />
-                      <p className="text-sm">{t("attendance.noSubscriptions")}</p>
+                      <p className="text-sm">
+                        {canGroupSubscriptions
+                          ? t("attendance.noSubscriptions")
+                          : t("attendance.roster.emptyHint")}
+                      </p>
                     </div>
+                    {renderAddRosterPanel()}
                     {renderSingleVisitPanel("below")}
                   </div>
                 ) : (
@@ -1950,17 +2183,33 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                       </p>
                     )}
                     <AttendanceMarkLegend
-                      showFreeze={selectedLesson?.kind === "group" && freezePolicy.freezeEnabled}
+                      showFreeze={
+                        selectedLesson?.kind === "group" &&
+                        freezePolicy.freezeEnabled &&
+                        canGroupSubscriptions
+                      }
                       t={t}
                     />
-                    <p className="text-[10px] font-sans bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
-                      {effectiveModalSubs.length}{" "}
-                      {plural(effectiveModalSubs.length, [
-                        t("common.subscription.one"),
-                        t("common.subscription.few"),
-                        t("common.subscription.many"),
-                      ])}
-                    </p>
+                    {effectiveModalSubs.length > 0 ? (
+                      <p className="text-[10px] font-sans bg-slate-100 text-slate-600 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums">
+                        {effectiveModalSubs.length}{" "}
+                        {plural(effectiveModalSubs.length, [
+                          t("common.subscription.one"),
+                          t("common.subscription.few"),
+                          t("common.subscription.many"),
+                        ])}
+                      </p>
+                    ) : null}
+                    {visibleRosterAttendees.length > 0 ? (
+                      <p className="text-[10px] font-sans bg-emerald-50 text-emerald-800 px-2.5 py-1 rounded-full font-semibold inline-block mb-3 tabular-nums ml-0">
+                        {visibleRosterAttendees.length}{" "}
+                        {plural(visibleRosterAttendees.length, [
+                          t("attendance.roster.countOne"),
+                          t("attendance.roster.countFew"),
+                          t("attendance.roster.countMany"),
+                        ])}
+                      </p>
+                    ) : null}
                     {useVirtualSubsList ? (
                       <VirtualList
                         items={effectiveModalSubs}
@@ -1976,6 +2225,8 @@ export default function AttendancePanel({ toast }: AttendancePanelProps) {
                         renderAttendanceRow(st, selectedLesson.kind === "group")
                       )
                     )}
+                    {visibleRosterAttendees.map((row) => renderRosterAttendanceRow(row))}
+                    {renderAddRosterPanel()}
                     {renderSingleVisitPanel("below")}
                   </div>
                 )}

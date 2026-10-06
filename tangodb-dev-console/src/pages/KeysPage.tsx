@@ -62,8 +62,8 @@ export default function KeysPage() {
     <div className="max-w-lg space-y-6">
       <h2 className="text-2xl font-bold text-white">Lifetime keys</h2>
       <p className="text-xs text-slate-500">
-        Ключ привязан к email получателя и активируется только этим аккаунтом. Подпись выдающего обязательна.
-        Скопируйте ключ и передайте клиенту. Реквизиты оплаты — в{" "}
+        Generate создаёт pending key без entitlements. Issue / activate в CRM через `activate_access_key` пишет
+        pro_lifetime. Скопируйте ключ и передайте клиенту. Реквизиты оплаты — в{" "}
         <Link to="/payment-methods" className="text-indigo-400 hover:text-indigo-300 underline">
           Payment methods
         </Link>

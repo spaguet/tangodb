@@ -153,10 +153,22 @@ Deno.serve(async (req) => {
   if (expiringSoon) {
     const now = new Date();
     const in7 = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-    query = query
-      .not("demo_expires_at", "is", null)
-      .gte("demo_expires_at", now.toISOString())
-      .lte("demo_expires_at", in7.toISOString());
+    const { data: monthRows } = await admin
+      .from("organization_subscriptions")
+      .select("organization_id")
+      .eq("status", "active")
+      .not("current_period_end", "is", null)
+      .gte("current_period_end", now.toISOString())
+      .lte("current_period_end", in7.toISOString());
+
+    const monthOrgIds = (monthRows ?? []).map((r: { organization_id: string }) => r.organization_id);
+    const orParts = [
+      `and(demo_expires_at.gte.${now.toISOString()},demo_expires_at.lte.${in7.toISOString()})`,
+    ];
+    if (monthOrgIds.length > 0) {
+      orParts.push(`id.in.(${monthOrgIds.join(",")})`);
+    }
+    query = query.or(orParts.join(","));
   }
 
   if (awaitingPayment) {
@@ -175,7 +187,8 @@ Deno.serve(async (req) => {
   const keyIds = orgRows.map((r) => r.access_key_id).filter(Boolean) as string[];
   const ownerIds = [...new Set(orgRows.map((r) => r.owner_user_id).filter(Boolean))] as string[];
 
-  const [licensesRes, keysRes, storageResults, ownerUsers] = await Promise.all([
+  const [licensesRes, keysRes, storageResults, ownerUsers, editionStates, lifetimeEntitlements, overCapRows] =
+    await Promise.all([
     orgIds.length
       ? admin.from("organization_licenses").select("organization_id, license_type").in("organization_id", orgIds)
       : Promise.resolve({ data: [] }),
@@ -202,6 +215,25 @@ Deno.serve(async (req) => {
         };
       })
     ),
+    orgIds.length
+      ? admin.from("organization_edition_state").select("organization_id, active_edition").in("organization_id", orgIds)
+      : Promise.resolve({ data: [] }),
+    orgIds.length
+      ? admin
+          .from("organization_entitlements")
+          .select("organization_id")
+          .in("organization_id", orgIds)
+          .eq("instrument", "pro_lifetime")
+          .in("status", ["active", "past_due"])
+      : Promise.resolve({ data: [] }),
+    orgIds.length
+      ? Promise.all(
+          orgIds.map(async (orgId) => {
+            const { data } = await admin.rpc("dev_console_org_over_cap", { p_org_id: orgId });
+            return { orgId, overCap: data === true };
+          })
+        )
+      : Promise.resolve([]),
   ]);
 
   const licenseByOrg = new Map(
@@ -218,6 +250,18 @@ Deno.serve(async (req) => {
   );
   const storageByOrg = new Map(storageResults.map(({ orgId, storage }) => [orgId, storage]));
   const ownerById = new Map(ownerUsers.map((o) => [o.userId, o]));
+  const editionByOrg = new Map(
+    (editionStates.data ?? []).map((s: { organization_id: string; active_edition: string }) => [
+      s.organization_id,
+      s.active_edition,
+    ])
+  );
+  const proLifetimeOrgIds = new Set(
+    (lifetimeEntitlements.data ?? []).map((e: { organization_id: string }) => e.organization_id)
+  );
+  const overCapByOrg = new Map(
+    (overCapRows as { orgId: string; overCap: boolean }[]).map((r) => [r.orgId, r.overCap])
+  );
 
   const { data: ownerNames } = orgIds.length
     ? await admin
@@ -246,9 +290,32 @@ Deno.serve(async (req) => {
       | undefined;
 
     let licenseBadge = "Demo";
-    if (row.status === "licensed" && licenseType === "lifetime") licenseBadge = "Lifetime";
-    else if (row.status === "licensed" && licenseType === "subscription") licenseBadge = "Subscription";
-    else if (row.status === "licensed") licenseBadge = "Licensed";
+    const activeEdition = editionByOrg.get(row.id);
+    if (row.status === "demo_active" || row.status === "demo_retention") {
+      licenseBadge = "Demo";
+    } else if (row.status === "suspended") {
+      licenseBadge = "Suspended";
+    } else if (activeEdition === "lite") {
+      licenseBadge = "Lite";
+    } else if (activeEdition === "studio") {
+      licenseBadge = "Studio";
+    } else if (activeEdition === "pro") {
+      licenseBadge = "Pro";
+    } else if (row.status === "licensed" && licenseType === "lifetime") {
+      licenseBadge = "Pro";
+    } else if (row.status === "licensed" && licenseType === "subscription") {
+      licenseBadge = "Pro";
+    } else if (row.status === "licensed") {
+      licenseBadge = "Licensed";
+    }
+
+    const canPurge =
+      row.status !== "purged" &&
+      (row.status === "demo_active" ||
+        row.status === "demo_retention" ||
+        row.status === "suspended");
+    const purgeRequiresAntiAbuse = row.status === "suspended";
+    const needsReview = row.status === "suspended";
 
     const demoExpires = row.demo_expires_at ? new Date(row.demo_expires_at) : null;
     const daysLeft =
@@ -279,6 +346,12 @@ Deno.serve(async (req) => {
       last_sign_in_at: owner?.lastSignIn ?? null,
       telegram_masked: telegramMasked,
       license_badge: licenseBadge,
+      active_edition: activeEdition ?? null,
+      has_pro_lifetime: proLifetimeOrgIds.has(row.id) || licenseType === "lifetime",
+      over_cap: overCapByOrg.get(row.id) ?? false,
+      needs_review: needsReview,
+      can_purge: canPurge,
+      purge_requires_anti_abuse: purgeRequiresAntiAbuse,
       storage_rows: storage?.total_rows ?? 0,
       storage_display: formatBytes(storage?.estimated_bytes ?? 0),
       key_metadata: keyMeta

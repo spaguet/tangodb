@@ -2,24 +2,32 @@ import type { LicenseType, OrgStatus, SubscriptionStatus } from "../types/organi
 import { isDemoOrgStatus } from "./demoLicense";
 import type { PlatformPaymentSku } from "./paymentConfig";
 import { isCrmSubscriptionTMinus7, isCrmSubscriptionWriteClosed } from "./crmSubscriptionState";
+import type { OrgEditionSnapshot } from "./orgEdition";
+import { purchaseSkuLockForEdition } from "./orgEdition";
+import { hasLiveProLifetime } from "./licenseEditionUi";
 
 export const LICENSE_PURCHASE_PATH = "/settings/license?purchase=1";
 export const MONTHLY_PURCHASE_PATH = "/settings/license?purchase=1&plan=monthly";
+export const STUDIO_PURCHASE_PATH = "/settings/license?purchase=1&plan=studio";
 export const LIFETIME_PURCHASE_PATH = "/settings/license?purchase=1&plan=lifetime";
 
-export type PurchasePlanPrefill = "monthly" | "lifetime" | null;
-export type PurchaseSkuLock = "choice" | "monthly";
+export type PurchasePlanPrefill = "monthly" | "lifetime" | "studio" | null;
+export type PurchaseSkuLock = "choice" | "studio_month" | "pro_month";
+/** @deprecated Use `pro_month` in product code; kept for 2.11 tests. */
+export type LegacyPurchaseSkuLock = PurchaseSkuLock | "monthly";
 export type PurchaseCtaKind = "buy" | "renew";
 
 export function parsePurchasePlanParam(raw: string | null | undefined): PurchasePlanPrefill {
   const value = String(raw ?? "").trim().toLowerCase();
   if (value === "monthly") return "monthly";
   if (value === "lifetime") return "lifetime";
+  if (value === "studio") return "studio";
   return null;
 }
 
 export function prefillSkuFromPlan(plan: PurchasePlanPrefill): PlatformPaymentSku | "" {
   if (plan === "monthly") return "crm_subscription";
+  if (plan === "studio") return "crm_studio_subscription";
   if (plan === "lifetime") return "crm_license";
   return "";
 }
@@ -62,7 +70,9 @@ export function isManualPurchaseEligible(input: {
     return !isPurgeDeadlinePassed(input.dataPurgeAt, now);
   }
   if (input.orgStatus === "suspended") return true;
-  return isCrmMonthlyEntitlement(input.licenseType, input.subscriptionStatus);
+  if (isCrmMonthlyEntitlement(input.licenseType, input.subscriptionStatus)) return true;
+  if (input.orgStatus === "licensed" && !isCrmLifetimeLicense(input.licenseType)) return true;
+  return false;
 }
 
 export function canShowManualPurchasePanel(input: {
@@ -80,18 +90,50 @@ export function purchaseSkuLock(input: {
   orgStatus: OrgStatus | string | null | undefined;
   licenseType: LicenseType | string | null | undefined;
   subscriptionStatus?: SubscriptionStatus | string | null;
+  edition?: OrgEditionSnapshot | null;
 }): PurchaseSkuLock {
   if (input.orgStatus === "suspended") return "choice";
-  if (isCrmMonthlyEntitlement(input.licenseType, input.subscriptionStatus)) return "monthly";
+  const fromEdition = purchaseSkuLockForEdition(input.edition ?? null);
+  if (fromEdition !== null) return fromEdition;
+  if (isCrmMonthlyEntitlement(input.licenseType, input.subscriptionStatus)) return "pro_month";
   return "choice";
 }
 
-export function resolveSelectedSku(
+/** Ignores ?plan=studio when Pro month lock is active (F72). */
+export function effectivePurchasePlanPrefill(
   lock: PurchaseSkuLock,
+  rawPlan: PurchasePlanPrefill
+): PurchasePlanPrefill {
+  if (lock === "pro_month" && rawPlan === "studio") return null;
+  return rawPlan;
+}
+
+export function shouldHidePaidPurchaseSkus(input: {
+  licenseType: LicenseType | string | null | undefined;
+  edition?: OrgEditionSnapshot | null;
+}): boolean {
+  if (isCrmLifetimeLicense(input.licenseType)) return true;
+  if (hasLiveProLifetime(input.edition ?? null)) return true;
+  return false;
+}
+
+export function resolveSelectedSku(
+  lock: PurchaseSkuLock | "monthly",
   prefill: PurchasePlanPrefill,
   userSku: PlatformPaymentSku | ""
 ): PlatformPaymentSku | "" {
-  if (lock === "monthly") return "crm_subscription";
+  if (lock === "pro_month" || lock === "monthly") {
+    if (userSku === "crm_license") return "crm_license";
+    const fromPrefill = prefillSkuFromPlan(prefill);
+    if (fromPrefill === "crm_license") return "crm_license";
+    return "crm_subscription";
+  }
+  if (lock === "studio_month") {
+    if (userSku === "crm_subscription" || userSku === "crm_license") return userSku;
+    const fromPrefill = prefillSkuFromPlan(prefill);
+    if (fromPrefill === "crm_subscription" || fromPrefill === "crm_license") return fromPrefill;
+    return "crm_studio_subscription";
+  }
   if (userSku) return userSku;
   return prefillSkuFromPlan(prefill);
 }
