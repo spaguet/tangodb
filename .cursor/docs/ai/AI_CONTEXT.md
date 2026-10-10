@@ -36,8 +36,7 @@ project/
 | Промпты реализации того же контура | `tangodb_personal_tariff_duration_payments_prompts.md` |
 | Аудит CRM 2026-08-19 + промпты починки | `.cursor/docs/ai/crm_audit_2026-08-19.md` |
 | Аудит безопасности CRM 2026-08-22 + промпты S01–S40 + хвост восьмой сверки | `.cursor/docs/ai/crm_security_audit_2026-08-22.md` |
-| Самообслуживание арендаторов (Telegram Mini App, кошелёк, холды) | `.cursor/docs/ai/renter_telegram_miniapp.md` (§1–§7 спека; **§8 промпты R0–R6**) |
-| Аудит Mini App 2026-09-03 + промпты починки F0a–FZ | `.cursor/docs/ai/renter_miniapp_audit_2026-09-03.md` (§1–§10 аудит; **§11 промпты F0a–FZ**) |
+| Снятый узел Telegram Mini App (история, не реализовывать) | `.cursor/docs/ai/renter_telegram_miniapp.md`, `.cursor/docs/ai/renter_miniapp_audit_2026-09-03.md`. Узел удалён в CRM **2.12.18** (см. `decision_log.md` HALL-RENT-MINIAPP-REMOVED). Кассовая аренда зала жива. |
 | Месячная подписка CRM + платформенный бот поддержки | `.cursor/docs/ai/crm_monthly_subscription_and_support_bot.md` (§1–§15 спека; **§16 промпты S0–S7** с чекбоксами) |
 | Редакции CRM Lite / Studio / Pro (тарифы продукта, переходы) | `.cursor/docs/ai/crm_product_editions.md` (ТЗ + архитектура + риски F1–F124; Dev Console §17 / §17.14; БД §18.9–§18.15; гейты §21; cutover §22; **§16 промпты E0–E11** с чекбоксами; CRM **2.12.10** / E7 license UI, rev **r14**) |
 

@@ -900,33 +900,3 @@ export function useDeleteRenterCommunication() {
     },
   });
 }
-
-export function useResetRenterReliability() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (input: { renterId: string; reason: string }) => {
-      const { data, error } = await supabase.rpc("reset_renter_reliability", {
-        p_renter_id: input.renterId,
-        p_reason: input.reason.trim(),
-      });
-
-      if (error) return { success: false as const, error: error.message };
-
-      const result = data as { success?: boolean; error?: string } | null;
-      if (!result?.success) {
-        return {
-          success: false as const,
-          error: result?.error ?? "renters.error.reliabilityResetFailed",
-        };
-      }
-
-      return { success: true as const };
-    },
-    onSuccess: (result, input) => {
-      if (result.success) {
-        invalidateRenterCaches(queryClient, input.renterId);
-      }
-    },
-  });
-}

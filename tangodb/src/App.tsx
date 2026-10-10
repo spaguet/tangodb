@@ -93,8 +93,6 @@ import {
   canAccessSettingsSection,
   canAccessFinanceNav,
 } from "./lib/permissions";
-import { showRenterTopupNav } from "./lib/showRenterTopupNav";
-import { useRenterTopupInbox } from "./hooks/useRenterTopupInbox";
 import { useOrganization } from "./organization/OrganizationProvider";
 import { normalizeOrgModules } from "./lib/orgModules";
 import DemoBrandBadge from "./components/demo/DemoBrandBadge";
@@ -232,16 +230,6 @@ function AppLayout() {
     toastTimer.current = setTimeout(() => setToast(null), 3500);
   }, []);
 
-  const teacherPayrollOnly = can("payroll.read.own") && !can("finance.read");
-  const showTopupNav = showRenterTopupNav(role, permissionOptions, teacherPayrollOnly);
-  const pendingTopupQuery = useRenterTopupInbox({
-    status: "pending",
-    limit: 1,
-    offset: 0,
-    enabled: showTopupNav,
-  });
-  const pendingTopupCount = pendingTopupQuery.data?.total ?? 0;
-
   const navSections = getNavSections(t);
   const mobileTabs = getMobileTabs(t);
   const panelTitle = getPanelTitle(location.pathname, subscriptionsTab, t);
@@ -364,14 +352,6 @@ function AppLayout() {
               >
                 <Icon className="w-3.5 h-3.5 shrink-0" />
                 <span className="min-w-0 leading-snug flex-1">{item.label}</span>
-                {item.path === "/finance" && pendingTopupCount > 0 ? (
-                  <span
-                    className="inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white shrink-0"
-                    title={t("nav.topupBadge", { count: pendingTopupCount })}
-                  >
-                    {pendingTopupCount}
-                  </span>
-                ) : null}
               </button>
             );
           })}

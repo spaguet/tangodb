@@ -206,15 +206,6 @@ export default function PaymentMethodsPage() {
       ) : (
         <div className="space-y-4">
           <Section
-            title="Mini App — доступ с CRM"
-            description="Отдельная ежемесячная цена модуля временно не используется. Mini App открывается при купленном доступе к CRM (lifetime или ежемесячная подписка CRM) и выключен на демо 30 дней. Поле в конфиге сохраняется для будущего возврата оплаты модуля."
-          >
-            <p className="text-sm text-slate-300 leading-relaxed">
-              Сумма add-on в конфиге не показывается в CRM, пока модуль входит в лицензию CRM.
-            </p>
-          </Section>
-
-          <Section
             title="CRM — пожизненно"
             description="Каноническая цена lifetime для витрины. Пер-способные поля ниже могут переопределять сумму для конкретного рельса."
           >

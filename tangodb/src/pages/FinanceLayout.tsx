@@ -9,13 +9,11 @@ import {
   History,
   FileBarChart,
   Inbox,
-  Banknote,
   ChevronDown,
 } from "lucide-react";
 import { useI18n } from "../hooks/useI18n";
 import { usePermissions } from "../hooks/usePermissions";
 import { useFinanceRentalScreensEnabled } from "../hooks/useFinanceRentalScreensEnabled";
-import { useRenterTopupInbox } from "../hooks/useRenterTopupInbox";
 import { isRentalInboxOnly } from "../lib/permissions";
 import { isFinancePrimaryPath, isFinanceRentalPath } from "../lib/financeNavPaths";
 import { getFinanceNav } from "../lib/i18n";
@@ -29,7 +27,6 @@ const FINANCE_NAV_ICONS: Record<string, typeof Landmark> = {
   "/finance/corrections": History,
   "/finance/rental-accruals": FileBarChart,
   "/finance/rental-inbox": Inbox,
-  "/finance/renter-topup": Banknote,
 };
 
 const navLinkCls = (isActive: boolean) =>
@@ -54,18 +51,8 @@ export default function FinanceLayout() {
   const canExpensesRead = can("expenses.read");
   const canPayrollRead = can("payroll.read");
   const canPayrollReadOwn = can("payroll.read.own");
-  const canRentalsPaymentsWrite = can("rentals.payments.write");
   const teacherPayrollOnly = canPayrollReadOwn && !canFinanceRead;
   const rentalInboxOnly = isRentalInboxOnly(role, options);
-  const showTopupNav =
-    rentalScreensEnabled && !teacherPayrollOnly && (rentalInboxOnly || canRentalsPaymentsWrite);
-  const pendingTopupQuery = useRenterTopupInbox({
-    status: "pending",
-    limit: 1,
-    offset: 0,
-    enabled: showTopupNav,
-  });
-  const pendingTopupCount = pendingTopupQuery.data?.total ?? 0;
 
   const financeNav = useMemo(() => {
     const items = getFinanceNav(t).map((item) => ({
@@ -79,9 +66,7 @@ export default function FinanceLayout() {
 
     if (rentalInboxOnly) {
       if (!rentalScreensEnabled) return [];
-      return items.filter(
-        (item) => item.path === "/finance/rental-inbox" || item.path === "/finance/renter-topup"
-      );
+      return items.filter((item) => item.path === "/finance/rental-inbox");
     }
 
     return items.filter((item) => {
@@ -137,11 +122,6 @@ export default function FinanceLayout() {
       <NavLink key={item.path} to={item.path} className={({ isActive }) => navLinkCls(isActive)}>
         <Icon className="w-3.5 h-3.5 shrink-0" />
         {item.label}
-        {item.path === "/finance/renter-topup" && pendingTopupCount > 0 ? (
-          <span className="inline-flex min-w-4 h-4 items-center justify-center rounded-full bg-indigo-600 px-1 text-[10px] font-semibold text-white">
-            {pendingTopupCount}
-          </span>
-        ) : null}
       </NavLink>
     );
   };

@@ -22,7 +22,6 @@ import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { canAddPersonalFromGrid, canClickEmptyCell, canOfferGroupLessonAdd, isLessonInTeacherScope } from "../../lib/scheduleLessonAccess";
 import { hasLocationAccess } from "../../lib/teacherScope";
 import { isActiveLessonConductingMember } from "../../lib/lessonTeacherRoles";
-import { isMiniAppRentalChannel } from "../../lib/rentalMiniAppDisplay";
 import { withEditionOccupancyFields } from "../../lib/scheduleEditionOccupancy";
 import {
   buildSchedulePngFilename,
@@ -54,7 +53,6 @@ import CreateRentalSeriesDialog from "./CreateRentalSeriesDialog";
 import CreateRentalChannelDialog, { type RentalChannelChoice } from "./CreateRentalChannelDialog";
 import EventInfoPopup from "./EventInfoPopup";
 import RentalInfoPopup from "./RentalInfoPopup";
-import MiniAppRentalInfoPopup from "./MiniAppRentalInfoPopup";
 import SchedulePngExportDialog from "./SchedulePngExportDialog";
 import SellPackageModal from "../ui/SellPackageModal";
 
@@ -466,7 +464,7 @@ export default function SchedulePageContainer() {
         if (lesson.guestTeacher) parts.push(lesson.guestTeacher);
       } else if (lesson.kind === "rental") {
         if (lesson.renterName && lesson.purpose) parts.push(lesson.renterName);
-        if (lesson.paymentStatus && lesson.renterName && !isMiniAppRentalChannel(lesson)) {
+        if (lesson.paymentStatus && lesson.renterName) {
           const statusKey =
             lesson.paymentStatus === "paid"
               ? "schedule.rental.paymentPaid"
@@ -888,16 +886,7 @@ export default function SchedulePageContainer() {
       />
 
       <RentalInfoPopup
-        lesson={selectedRental && !isMiniAppRentalChannel(selectedRental) ? selectedRental : null}
-        occupancyEditionRelease={selectedRental?.editionOccupancy === true}
-        locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
-        toast={toast}
-        onClose={() => setSelectedRental(null)}
-        onSuccess={handleScheduleRefresh}
-      />
-
-      <MiniAppRentalInfoPopup
-        lesson={selectedRental && isMiniAppRentalChannel(selectedRental) ? selectedRental : null}
+        lesson={selectedRental}
         occupancyEditionRelease={selectedRental?.editionOccupancy === true}
         locations={locationsQuery.locations.map((l) => ({ id: l.id, name: l.name }))}
         toast={toast}

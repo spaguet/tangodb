@@ -1,6 +1,6 @@
 /**
  * Shared Bot API sendMessage (plain text, no parse_mode, no tenant AES).
- * Call sites: platform-notification-worker and renterTelegramOutboxDrain.
+ * Call site: platform-notification-worker.
  */
 
 const TELEGRAM_API = "https://api.telegram.org";

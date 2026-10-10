@@ -7,8 +7,8 @@ import {
   RENTAL_LESSON_COLOR,
   SCHEDULE_DEBT_COLOR,
 } from "../../lib/scheduleColors";
+import { rentalRemainingAmount } from "../../lib/rentalAmount";
 import { isPastDate } from "../../lib/scheduleWeek";
-import { rentalLessonIsHold, rentalLessonShowsDebtRing } from "../../lib/rentalMiniAppDisplay";
 import { personalLessonHasScheduleDebt } from "../../lib/personalLessonPayment";
 import {
   lessonHeightPx,
@@ -30,8 +30,11 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
   const { lesson, column, columnCount } = item;
   const isPast = isPastDate(lesson.date);
   const personalDebt = lesson.kind === "personal" && personalLessonHasScheduleDebt(lesson);
-  const rentalDebt = lesson.kind === "rental" && rentalLessonShowsDebtRing(lesson);
-  const rentalHold = lesson.kind === "rental" && rentalLessonIsHold(lesson);
+  const rentalDebt =
+    lesson.kind === "rental" &&
+    lesson.bookingStatus !== "cancelled" &&
+    (lesson.paymentStatus === "unpaid" || lesson.paymentStatus === "partial") &&
+    rentalRemainingAmount(lesson.fixedAmount, lesson.paidAmount) > 0;
   const hasDebt = personalDebt || rentalDebt;
   const teacherMasked = lesson.scheduleRestricted === true;
   const editionOccupancy = lesson.editionOccupancy === true;
@@ -92,9 +95,6 @@ export default function LessonBlock({ item, rangeStartMin, title, subtitle, onCl
         left: `${leftPct}%`,
         width: `${widthPct}%`,
         zIndex: highlighted ? 8 : column + 1,
-        backgroundImage: rentalHold
-          ? "repeating-linear-gradient(-45deg, transparent, transparent 5px, rgba(255,255,255,0.22) 5px, rgba(255,255,255,0.22) 9px)"
-          : undefined,
       }}
       title={`${title}${subtitle ? ` · ${subtitle}` : ""}`}
     >

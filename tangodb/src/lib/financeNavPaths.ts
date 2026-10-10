@@ -3,7 +3,6 @@ export const FINANCE_PRIMARY_PATHS = ["/finance/payments", "/finance/debtors"] a
 export const FINANCE_RENTAL_PATHS = [
   "/finance/rental-accruals",
   "/finance/rental-inbox",
-  "/finance/renter-topup",
 ] as const;
 
 export function isFinancePrimaryPath(path: string): boolean {

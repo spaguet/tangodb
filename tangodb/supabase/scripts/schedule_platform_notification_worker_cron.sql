@@ -1,4 +1,4 @@
--- One-time ops: schedule platform-notification-worker (same vault pattern as renter-booking-worker).
+-- One-time ops: schedule platform-notification-worker (vault project_url + cron secret).
 -- Safe to re-run: unschedule first if job exists.
 
 SELECT cron.unschedule(jobid)

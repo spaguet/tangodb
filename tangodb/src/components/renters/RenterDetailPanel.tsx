@@ -25,13 +25,9 @@ import type {
   RenterCommunication,
 } from "../../types";
 import { rentalRemainingAmount } from "../../lib/rentalAmount";
-import { isMiniAppRentalChannel, miniAppLifecycleI18nKey } from "../../lib/rentalMiniAppDisplay";
-import { parseTelegramIdInput } from "../../lib/renterNormalize";
-import { canManageMiniAppRentals, canSeeRenterFinance, canWriteRentals } from "../../lib/permissions";
+import { canSeeRenterFinance, canWriteRentals } from "../../lib/permissions";
 import { useI18n } from "../../hooks/useI18n";
 import { useCan, usePermissions } from "../../hooks/usePermissions";
-import { useStaffRenterWalletTopup, useStaffTopupPreview, useReverseRenterWalletTopup } from "../../hooks/useRenterTopupInbox";
-import { usePreviewRenterWalletPayout } from "../../hooks/useRenterWalletPayout";
 import CreateRentalDialog from "../schedule/CreateRentalDialog";
 import CreateRentalChannelDialog, { type RentalChannelChoice } from "../schedule/CreateRentalChannelDialog";
 import CreateRentalSeriesDialog from "../schedule/CreateRentalSeriesDialog";
@@ -49,7 +45,6 @@ import {
   useUpsertRenter,
   useUpsertRenterContact,
   useUpsertRenterContract,
-  useResetRenterReliability,
 } from "../../hooks/useRenterCrm";
 import { useRenterRentalFinance, useRenterRentalInvoices, useRenterRentalAdvances, useRenterRentalAdvanceAllocations } from "../../hooks/useRentalInvoices";
 import { useIssueRentalInvoiceDocument, useRentalBillingProfile } from "../../hooks/useRentalBillingProfile";
@@ -62,8 +57,6 @@ import {
   CreateRentalInvoiceModal,
   PayRentalInvoiceModal,
   RentalAdvanceAllocationHistory,
-  RenterWalletPayoutModal,
-  RenterWalletAdjustModal,
 } from "./RenterFinanceModals";
 import type { RentalInvoice } from "../../types";
 import { translateMutationBlockedMessage } from "../../hooks/useOnlineStatus";
@@ -75,9 +68,7 @@ import ConfirmDialog from "../ui/ConfirmDialog";
 import LoadingState from "../ui/LoadingState";
 import SectionPillNav, { type SectionPillNavItem } from "../ui/SectionPillNav";
 import QueryErrorState from "../ui/QueryErrorState";
-import { getWalletEntryLabel, isWalletLedgerDebit } from "../../lib/renterWalletEntryLabels";
 import { openTelegramContact, renterTelegramContactHref } from "../../lib/telegram";
-import RenterPackSurchargeReviewPanel from "./RenterPackSurchargeReviewPanel";
 
 interface RenterDetailPanelProps {
   toast: (msg: string, type?: ToastType) => void;
@@ -101,7 +92,6 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const { role, options, isReadOnly } = usePermissions();
   const canWrite = useCan("renters.write");
   const canWriteRentalsSlot = canWriteRentals(role, options);
-  const canWriteMiniApp = canManageMiniAppRentals(role, options);
   const canOpenSchedule = useCan("schedule.read");
   const canSeeFinance = canSeeRenterFinance(role, options);
   const canSeeContacts = useCan("renters.contacts.read");
@@ -110,13 +100,10 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
   const canWriteRentalFinance = useCan("finance.read");
   const canRecordPayments = useCan("rentals.payments.write");
   const canWritePayments = !isReadOnly && canRecordPayments;
-  const canWriteBalance = useCan("renters.balance.write");
-  const canAdjustWallet = !isReadOnly && canWriteBalance;
   const canSeeDocuments = useCan("renters.documents.read");
   const canWriteDocuments = useCan("renters.documents.write");
   const canWriteContacts = useCan("renters.contacts.write");
   const canWriteContracts = useCan("renters.contracts.write");
-  const canManageSettings = useCan("settings.manage");
 
   const resolveInitialTab = (): DetailTab => {
     if (locationState?.initialTab === "finance" && canSeeFinance) return "finance";
@@ -414,11 +401,7 @@ export default function RenterDetailPanel({ toast }: RenterDetailPanelProps) {
             rentals={rentalsQuery.data ?? []}
             locationMap={locationMap}
             canWrite={canWriteRentalFinance}
-            canReviewPackSurcharge={canWriteMiniApp || canWriteRentalFinance}
             canWritePayments={canWritePayments}
-            canAdjustWallet={canAdjustWallet}
-            canWriteDocuments={canWriteDocuments}
-            canManageSettings={canManageSettings}
             toast={toast}
             t={t}
             formatDate={formatDate}
@@ -555,13 +538,11 @@ function OverviewTab({
 }) {
   const { t } = useI18n();
   const { connectionState } = useOnlineStatus();
-  const upsertRenter = useUpsertRenter();
   const [contactName, setContactName] = useState("");
   const [contactRole, setContactRole] = useState("");
   const [contactPhone, setContactPhone] = useState("");
   const [contactPrimary, setContactPrimary] = useState(false);
   const [editingContactId, setEditingContactId] = useState<string | null>(null);
-  const [telegramId, setTelegramId] = useState(renter.telegramId ?? "");
 
   const warnings: string[] = [];
   if (renter.status === "blocked" && renter.blockedReason) {
@@ -602,26 +583,6 @@ function OverviewTab({
     resetContactForm();
   };
 
-  const handleSaveTelegram = async () => {
-    const parsed = parseTelegramIdInput(telegramId);
-    if (!parsed.ok) {
-      toast(t("renters.error.telegramIdInvalid"), "error");
-      return;
-    }
-    const res = await upsertRenter.mutateAsync({
-      renterId,
-      displayName: renter.displayName,
-      counterpartyType: renter.counterpartyType ?? "individual",
-      status: renter.status,
-      telegramId: parsed.value,
-    });
-    if (!res.success) {
-      toast(resolveMutationError(res.error, "renters.error.saveFailed", t), "error");
-      return;
-    }
-    toast(t("renters.success.updated"), "success");
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 font-sans">
       <section className="space-y-3">
@@ -651,36 +612,10 @@ function OverviewTab({
               <dd>{renter.contactEmail}</dd>
             </>
           ) : null}
-          {canMessageTelegram ? (
+          {canMessageTelegram && renter.telegramUsername ? (
             <>
               <dt className={labelCls}>{t("renters.form.telegramUsername")}</dt>
-              <dd className="space-y-1.5">
-                <p>
-                  {renter.telegramUsername ? `@${renter.telegramUsername}` : "—"}
-                  {renter.telegramId ? (
-                    <span className="text-slate-400"> · ID {renter.telegramId}</span>
-                  ) : null}
-                </p>
-                {canWrite ? (
-                  <div className="flex flex-wrap gap-2 items-center">
-                    <input
-                      className={inputCls}
-                      inputMode="numeric"
-                      value={telegramId}
-                      onChange={(e) => setTelegramId(e.target.value)}
-                      placeholder={t("renters.form.telegramIdPlaceholder")}
-                    />
-                    <button
-                      type="button"
-                      disabled={connectionState !== "online" || upsertRenter.isPending}
-                      onClick={() => void handleSaveTelegram()}
-                      className="text-xs font-semibold text-indigo-600 cursor-pointer disabled:opacity-50"
-                    >
-                      {t("common.save")}
-                    </button>
-                  </div>
-                ) : null}
-              </dd>
+              <dd>@{renter.telegramUsername}</dd>
             </>
           ) : null}
           {renter.legalAddress ? (
@@ -716,7 +651,6 @@ function OverviewTab({
                 t={t}
                 formatCurrency={formatCurrency}
                 showCashierOverpaid={false}
-                showWalletBalance={false}
               />
             </div>
           ) : null}
@@ -823,34 +757,22 @@ const btnCashierPrimaryCls =
   "py-1.5 px-3 bg-amber-600 hover:bg-amber-700 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50";
 const btnCashierSecondaryCls =
   "py-1.5 px-3 bg-white border border-amber-300 text-amber-900 text-xs font-semibold rounded-lg cursor-pointer hover:bg-amber-50/80 disabled:opacity-50";
-const btnMiniappPrimaryCls =
-  "py-1.5 px-3 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50";
-const btnMiniappSecondaryCls =
-  "py-1.5 px-3 bg-white border border-indigo-200 text-indigo-800 text-xs font-semibold rounded-lg cursor-pointer hover:bg-indigo-50/80 disabled:opacity-50";
-
 function FinanceContourSection({
   title,
   hint,
-  variant,
   children,
   toolbar,
 }: {
   title: string;
   hint: string;
-  variant: "cashier" | "miniapp";
   children: ReactNode;
   toolbar?: ReactNode;
 }) {
-  const shell =
-    variant === "cashier" ? "border-amber-200/80 bg-amber-50/40" : "border-indigo-200/80 bg-indigo-50/40";
-  const titleCls = variant === "cashier" ? "text-amber-900" : "text-indigo-900";
-  const hintCls = variant === "cashier" ? "text-amber-800/75" : "text-indigo-800/75";
-
   return (
-    <section className={`space-y-3 rounded-lg border p-3 ${shell}`}>
+    <section className="space-y-3 rounded-lg border p-3 border-amber-200/80 bg-amber-50/40">
       <div>
-        <h4 className={`text-xs font-semibold ${titleCls}`}>{title}</h4>
-        <p className={`text-[11px] leading-snug mt-0.5 ${hintCls}`}>{hint}</p>
+        <h4 className="text-xs font-semibold text-amber-900">{title}</h4>
+        <p className="text-[11px] leading-snug mt-0.5 text-amber-800/75">{hint}</p>
       </div>
       {toolbar}
       {children}
@@ -891,24 +813,19 @@ function RenterFinanceContourStats({
   t,
   formatCurrency,
   showCashierOverpaid = true,
-  showWalletBalance = true,
   cashierToolbar,
-  miniappFooter,
 }: {
   finance: RenterFinanceSummary;
   t: (key: import("../../lib/i18n/keys").I18nKey) => string;
   formatCurrency: (amount: number) => string;
   showCashierOverpaid?: boolean;
-  showWalletBalance?: boolean;
   cashierToolbar?: ReactNode;
-  miniappFooter?: ReactNode;
 }) {
   return (
     <div className="space-y-3">
       <FinanceContourSection
         title={t("renters.detail.financeCashierSection")}
         hint={t("renters.detail.financeCashierHint")}
-        variant="cashier"
         toolbar={cashierToolbar}
       >
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
@@ -925,25 +842,6 @@ function RenterFinanceContourStats({
         </div>
       </FinanceContourSection>
 
-      <FinanceContourSection
-        title={t("renters.detail.financeMiniappSection")}
-        hint={t("renters.detail.financeMiniappHint")}
-        variant="miniapp"
-      >
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {showWalletBalance ? (
-            <StatBox label={t("renters.detail.walletBalance")} value={formatCurrency(finance.walletBalance)} />
-          ) : null}
-          <StatBox label={t("renters.detail.spendable")} value={formatCurrency(finance.spendable)} />
-          <StatBox label={t("renters.detail.reservedPrepay")} value={formatCurrency(finance.reservedPrepay)} />
-          <StatBox
-            label={t("renters.detail.miniappDebt")}
-            value={formatCurrency(finance.miniappDebtTotal)}
-            highlight={finance.miniappDebtTotal > 0}
-          />
-        </div>
-        {miniappFooter}
-      </FinanceContourSection>
     </div>
   );
 }
@@ -1012,19 +910,13 @@ function RentalsTab({
                   </td>
                   <td className="py-2 pr-3">{locationMap.get(r.locationId) ?? "—"}</td>
                   <td className="py-2 pr-3">
-                    {r.channel === "miniapp"
-                      ? t(miniAppLifecycleI18nKey(r.lifecycle))
-                      : r.bookingStatus}
+                    {r.bookingStatus}
                   </td>
                   {canSeeFinance ? (
                     <>
                       <td className="py-2 pr-3">{r.fixedAmount != null ? formatCurrency(r.fixedAmount) : "—"}</td>
                       <td className="py-2 pr-3">
-                        {r.channel === "miniapp"
-                          ? (r.debtAmount != null && r.debtAmount > 0
-                            ? formatCurrency(r.debtAmount)
-                            : t(miniAppLifecycleI18nKey(r.lifecycle)))
-                          : (r.paymentStatus ?? "—")}
+                        {r.paymentStatus ?? "—"}
                       </td>
                     </>
                   ) : null}
@@ -1058,11 +950,7 @@ function FinanceTab({
   rentals,
   locationMap,
   canWrite,
-  canReviewPackSurcharge,
   canWritePayments,
-  canAdjustWallet,
-  canWriteDocuments,
-  canManageSettings,
   toast,
   t,
   formatDate,
@@ -1074,11 +962,7 @@ function FinanceTab({
   rentals: RenterRentalRow[];
   locationMap: Map<string, string>;
   canWrite: boolean;
-  canReviewPackSurcharge: boolean;
   canWritePayments: boolean;
-  canAdjustWallet: boolean;
-  canWriteDocuments: boolean;
-  canManageSettings: boolean;
   toast: RenterDetailPanelProps["toast"];
   t: (key: import("../../lib/i18n/keys").I18nKey, vars?: Record<string, string | number>) => string;
   formatDate: (d: string) => string;
@@ -1091,34 +975,6 @@ function FinanceTab({
   const allocationsQuery = useRenterRentalAdvanceAllocations(renterId, canWrite);
   const billingProfileQuery = useRentalBillingProfile(canWrite);
   const issueDocument = useIssueRentalInvoiceDocument();
-  const staffTopup = useStaffRenterWalletTopup();
-  const reverseTopup = useReverseRenterWalletTopup();
-  const resetReliability = useResetRenterReliability();
-  const payoutPreviewQuery = usePreviewRenterWalletPayout({ renterId }, canWritePayments);
-  const [payoutOpen, setPayoutOpen] = useState(false);
-  const [adjustOpen, setAdjustOpen] = useState(false);
-  const [staffAmount, setStaffAmount] = useState("");
-  const [staffMethod, setStaffMethod] = useState<"cash" | "qr">("cash");
-  const [staffReference, setStaffReference] = useState("");
-  const [staffTopupKey, setStaffTopupKey] = useState(() => crypto.randomUUID());
-  const [staffReviewOpen, setStaffReviewOpen] = useState(false);
-  const [reversalEntryId, setReversalEntryId] = useState<string | null>(null);
-  const [reversalReason, setReversalReason] = useState("");
-  const [reversalKey, setReversalKey] = useState(() => crypto.randomUUID());
-  const [reliabilityResetOpen, setReliabilityResetOpen] = useState(false);
-  const [reliabilityResetReason, setReliabilityResetReason] = useState("");
-
-  const staffPreviewAmount = Number(staffAmount.replace(",", "."));
-  const staffPreviewInput =
-    Number.isFinite(staffPreviewAmount) && staffPreviewAmount > 0
-      ? {
-          renterId,
-          amount: staffPreviewAmount,
-          method: staffMethod,
-          externalReference: staffReference,
-        }
-      : null;
-  const staffPreviewQuery = useStaffTopupPreview(staffPreviewInput, staffReviewOpen);
 
   const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
   const [payInvoice, setPayInvoice] = useState<RentalInvoice | null>(null);
@@ -1129,10 +985,9 @@ function FinanceTab({
 
   if (!finance) return null;
   const extended = rentalFinanceQuery.data;
-  const withDebt = rentals.filter((r) => {
-    if (isMiniAppRentalChannel(r)) return (r.debtAmount ?? 0) > 0;
-    return r.fixedAmount != null && r.paidAmount != null && rentalRemainingAmount(r.fixedAmount, r.paidAmount) > 0;
-  });
+  const withDebt = rentals.filter(
+    (r) => r.fixedAmount != null && r.paidAmount != null && rentalRemainingAmount(r.fixedAmount, r.paidAmount) > 0
+  );
   const invoices = invoicesQuery.data ?? [];
   const advances = advancesQuery.data ?? [];
   const allocations = allocationsQuery.data ?? [];
@@ -1147,38 +1002,8 @@ function FinanceTab({
     void invoicesQuery.refetch();
     void advancesQuery.refetch();
     void allocationsQuery.refetch();
-    void payoutPreviewQuery.refetch();
   };
 
-  const onTime = renter.onTimeCount ?? 0;
-  const untimely = renter.untimelyCount ?? 0;
-  const completed = onTime + untimely;
-  const reliabilityRatio = completed >= 4 ? untimely / completed : 0;
-  const showPenaltyGapBanner =
-    completed >= 4 && reliabilityRatio >= 0.5 && !renter.penaltyTariffAppliedAt;
-  const canResetReliability =
-    canManageSettings &&
-    (renter.bookingBannedAt != null ||
-      renter.penaltyTariffAppliedAt != null ||
-      onTime > 0 ||
-      untimely > 0);
-
-  const handleResetReliability = async () => {
-    const reason = reliabilityResetReason.trim();
-    if (reason.length < 3) {
-      toast(t("renters.error.reliabilityResetReasonRequired"), "error");
-      return;
-    }
-    const res = await resetReliability.mutateAsync({ renterId, reason });
-    if (!res.success) {
-      toast(resolveMutationError(res.error, "renters.error.reliabilityResetFailed", t), "error");
-      return;
-    }
-    setReliabilityResetOpen(false);
-    setReliabilityResetReason("");
-    toast(t("renters.detail.reliabilityResetSuccess"), "success");
-    refreshFinance();
-  };
 
   const handleIssueDocument = async (invoice: RentalInvoice) => {
     const res = await issueDocument.mutateAsync({ invoiceId: invoice.id, renterId });
@@ -1198,218 +1023,6 @@ function FinanceTab({
     refreshFinance();
   };
 
-  const handleStaffTopupReview = () => {
-    const amount = Number(staffAmount.replace(",", "."));
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast(t("renter.topup.amountInvalid"), "error");
-      return;
-    }
-    setStaffReviewOpen(true);
-  };
-
-  const handleStaffTopupConfirm = async () => {
-    const amount = Number(staffAmount.replace(",", "."));
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast(t("renter.topup.amountInvalid"), "error");
-      return;
-    }
-    const res = await staffTopup.mutateAsync({
-      renterId,
-      amount,
-      method: staffMethod,
-      idempotencyKey: staffTopupKey,
-      externalReference: staffReference,
-    });
-    if (!res.success) {
-      if (res.error === "idempotency_conflict") {
-        setStaffTopupKey(crypto.randomUUID());
-      }
-      toast(resolveMutationError(res.error, "renter.topup.amountInvalid", t), "error");
-      return;
-    }
-    setStaffAmount("");
-    setStaffReference("");
-    setStaffTopupKey(crypto.randomUUID());
-    setStaffReviewOpen(false);
-    toast(t("renters.detail.staffTopupSuccess"), "success");
-    refreshFinance();
-  };
-
-  const handleTopupReversal = async () => {
-    if (!reversalEntryId) return;
-    const reason = reversalReason.trim();
-    if (reason.length < 3) {
-      toast(t("renter.topup.reversalReasonRequired"), "error");
-      return;
-    }
-    const res = await reverseTopup.mutateAsync({
-      renterId,
-      ledgerEntryId: reversalEntryId,
-      reason,
-      idempotencyKey: reversalKey,
-    });
-    if (!res.success) {
-      toast(resolveMutationError(res.error, "renter.topup.reversalFailed", t), "error");
-      return;
-    }
-    setReversalEntryId(null);
-    setReversalReason("");
-    setReversalKey(crypto.randomUUID());
-    toast(t("renters.detail.staffTopupReversalSuccess"), "success");
-    refreshFinance();
-  };
-
-  const miniappFinanceFooter = (
-    <div className="space-y-3 pt-1">
-      {canWritePayments ? (
-        <div className="rounded-lg border border-indigo-200/60 bg-white/60 p-3 space-y-2">
-          <h4 className="text-xs font-semibold text-indigo-900">{t("renters.detail.staffTopup")}</h4>
-          <p className="text-[11px] text-indigo-900/75 leading-snug">{t("renters.detail.financeMiniappTopupExplain")}</p>
-          <div className="flex flex-wrap items-end gap-2">
-            <div className="field-stack">
-              <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
-                {t("renters.detail.staffTopupAmount")}
-              </label>
-              <input
-                className={inputCls}
-                inputMode="decimal"
-                value={staffAmount}
-                onChange={(e) => setStaffAmount(e.target.value)}
-              />
-            </div>
-            <AppSelect
-              label={t("renters.detail.staffTopupMethod")}
-              value={staffMethod}
-              onChange={(e) => setStaffMethod(e.target.value === "qr" ? "qr" : "cash")}
-            >
-              <option value="cash">{t("renterTopup.method.cash")}</option>
-              <option value="qr">{t("renterTopup.method.qr")}</option>
-            </AppSelect>
-            <button
-              type="button"
-              className={btnMiniappPrimaryCls}
-              disabled={staffTopup.isPending}
-              onClick={handleStaffTopupReview}
-            >
-              {t("renters.detail.staffTopupReview")}
-            </button>
-          </div>
-          <div className="field-stack max-w-md">
-            <label className="text-[10px] text-slate-400 font-sans uppercase tracking-wider font-semibold">
-              {t("renters.detail.staffTopupReference")}
-            </label>
-            <input
-              className={inputCls}
-              value={staffReference}
-              onChange={(e) => setStaffReference(e.target.value)}
-              placeholder={t("renters.detail.staffTopupReferencePlaceholder")}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {canAdjustWallet ? (
-        <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-indigo-200/60 bg-white/60 p-3">
-          <p className="text-xs text-indigo-900/75">{t("renters.detail.walletAdjustHint")}</p>
-          <button type="button" className={btnMiniappSecondaryCls} onClick={() => setAdjustOpen(true)}>
-            {t("renters.detail.walletAdjustAction")}
-          </button>
-        </div>
-      ) : null}
-
-      {canWritePayments ? (
-        <div className="rounded-lg border border-indigo-200/60 bg-white/60 p-3 space-y-2">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <div>
-              <h4 className="text-xs font-semibold text-indigo-900">{t("renters.detail.payoutTitle")}</h4>
-              <p className="text-[11px] text-indigo-900/75 mt-0.5">{t("renters.detail.payoutHint")}</p>
-            </div>
-            <button type="button" className={btnDestructiveOpenCls} onClick={() => setPayoutOpen(true)}>
-              {t("renters.detail.payoutAction")}
-            </button>
-          </div>
-          {payoutPreviewQuery.data ? (
-            <p className="text-xs text-indigo-900/80">
-              {t("renters.detail.payoutRefundable")}:{" "}
-              <span className="font-semibold">
-                {formatCurrency(payoutPreviewQuery.data.quote.refundable)}
-              </span>
-            </p>
-          ) : null}
-        </div>
-      ) : null}
-
-      {finance.miniappDebts.length > 0 ? (
-        <div className="rounded-lg border border-indigo-200/60 bg-white/60 p-3">
-          <h4 className="text-xs font-semibold text-indigo-900 mb-2">{t("renters.detail.miniappDebts")}</h4>
-          <ul className="text-xs space-y-1">
-            {finance.miniappDebts.map((debt) => (
-              <li key={debt.rentalId} className="flex justify-between border-b border-indigo-50 py-1">
-                <span>
-                  {formatDate(debt.rentalDate)} · {locationMap.get(debt.locationId ?? "") ?? debt.timeStart}
-                </span>
-                <span className="text-rose-600 font-semibold">{formatCurrency(debt.debtAmount)}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-
-      {finance.walletEntries.length > 0 ? (
-        <div className="rounded-lg border border-indigo-200/60 bg-white/60 p-3">
-          <h4 className="text-xs font-semibold text-indigo-900 mb-2">{t("renters.detail.walletEntries")}</h4>
-          <ul className="text-xs space-y-1">
-            {finance.walletEntries.map((entry) => (
-              <li key={entry.id} className="flex justify-between items-start gap-2 border-b border-indigo-50 py-1">
-                <span className="min-w-0">
-                  {formatDateTime(entry.createdAt)} · {getWalletEntryLabel(entry.entryType, t)}
-                  {entry.createdByName ? (
-                    <span className="block text-slate-400 truncate">
-                      {t("renters.detail.walletAdjustBy", { name: entry.createdByName })}
-                    </span>
-                  ) : null}
-                  {entry.externalReference ? (
-                    <span className="block text-slate-400 truncate">
-                      {t("renters.detail.staffTopupReference")}: {entry.externalReference}
-                    </span>
-                  ) : null}
-                  {entry.payoutMethod ? (
-                    <span className="block text-slate-400">
-                      {t("renters.detail.payoutMethod")}:{" "}
-                      {getPaymentMethodLabel(entry.payoutMethod as "cash" | "card" | "transfer", t)}
-                    </span>
-                  ) : null}
-                  {entry.correctionReason ? (
-                    <span className="block text-slate-400">{entry.correctionReason}</span>
-                  ) : null}
-                </span>
-                <span className="flex items-center gap-2 shrink-0">
-                  <span
-                    className={isWalletLedgerDebit(entry.entryType) ? "text-rose-600" : "text-slate-700"}
-                  >
-                    {isWalletLedgerDebit(entry.entryType) ? "−" : ""}
-                    {formatCurrency(entry.amount)}
-                  </span>
-                  {canWritePayments && entry.canReverse ? (
-                    <button
-                      type="button"
-                      className="text-rose-600 font-semibold cursor-pointer"
-                      onClick={() => {
-                        setReversalEntryId(entry.id);
-                        setReversalReason("");
-                      }}
-                    >
-                      {t("renters.detail.staffTopupReverse")}
-                    </button>
-                  ) : null}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
-    </div>
-  );
 
   return (
     <div className="space-y-4">
@@ -1426,46 +1039,8 @@ function FinanceTab({
             />
           ) : undefined
         }
-        miniappFooter={miniappFinanceFooter}
       />
 
-      <RenterPackSurchargeReviewPanel
-        renterId={renterId}
-        locationMap={locationMap}
-        enabled={canReviewPackSurcharge}
-        toast={toast}
-        onChanged={refreshFinance}
-      />
-
-      <div className="rounded-lg border border-slate-100 p-3 space-y-2">
-        <h4 className="text-sm font-semibold text-slate-800">{t("renters.detail.reliability")}</h4>
-        <p className="text-xs text-slate-600">
-          {t("renters.detail.reliabilityOnTime")}: {onTime}
-          {" · "}
-          {t("renters.detail.reliabilityUntimely")}: {untimely}
-        </p>
-        {renter.penaltyTariffAppliedAt ? (
-          <p className="text-xs font-medium text-amber-700">{t("renters.detail.reliabilityPenalty")}</p>
-        ) : null}
-        {renter.bookingBannedAt ? (
-          <p className="text-xs font-semibold text-rose-600">{t("renters.detail.reliabilityBanned")}</p>
-        ) : null}
-        {showPenaltyGapBanner ? (
-          <p className="text-xs font-medium text-amber-700 rounded-md bg-amber-50 border border-amber-100 px-2 py-1.5">
-            {t("renters.detail.reliabilityPenaltyGap")}
-          </p>
-        ) : null}
-        {canResetReliability ? (
-          <button
-            type="button"
-            className="py-1.5 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded-lg cursor-pointer disabled:opacity-50"
-            disabled={resetReliability.isPending}
-            onClick={() => setReliabilityResetOpen(true)}
-          >
-            {t("renters.detail.reliabilityReset")}
-          </button>
-        ) : null}
-      </div>
 
       {canWrite && extended ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
@@ -1600,9 +1175,7 @@ function FinanceTab({
               <li key={r.id} className="flex justify-between border-b border-slate-50 py-1">
                 <span>{formatDate(r.rentalDate)} · {locationMap.get(r.locationId)}</span>
                 <span className="text-rose-600 font-semibold">
-                  {isMiniAppRentalChannel(r)
-                    ? formatCurrency(r.debtAmount ?? 0)
-                    : formatCurrency(rentalRemainingAmount(r.fixedAmount, r.paidAmount))}
+                  {formatCurrency(rentalRemainingAmount(r.fixedAmount, r.paidAmount))}
                 </span>
               </li>
             ))}
@@ -1642,155 +1215,6 @@ function FinanceTab({
         toast={toast}
       />
 
-      <RenterWalletPayoutModal
-        open={payoutOpen}
-        renterId={renterId}
-        renterName={renter.displayName}
-        canWriteDocuments={canWriteDocuments}
-        onClose={() => setPayoutOpen(false)}
-        onSuccess={refreshFinance}
-        toast={toast}
-      />
-      <RenterWalletAdjustModal
-        open={adjustOpen}
-        renterId={renterId}
-        renterName={renter.displayName}
-        currentWallet={finance.walletBalance}
-        onClose={() => setAdjustOpen(false)}
-        onSuccess={refreshFinance}
-        toast={toast}
-      />
-
-      <ConfirmDialog
-        open={staffReviewOpen}
-        title={t("renters.detail.staffTopupReviewTitle")}
-        description={
-          <div className="space-y-3 text-sm text-slate-600">
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1">
-              <dt className="text-slate-400">{t("renters.detail.staffTopupReviewRenter")}</dt>
-              <dd className="font-medium text-slate-800">{renter.displayName}</dd>
-              <dt className="text-slate-400">{t("renters.detail.staffTopupAmount")}</dt>
-              <dd className="font-medium text-slate-800">
-                {formatCurrency(staffPreviewAmount)}
-              </dd>
-              <dt className="text-slate-400">{t("renters.detail.staffTopupMethod")}</dt>
-              <dd className="font-medium text-slate-800">
-                {staffMethod === "qr" ? t("renterTopup.method.qr") : t("renterTopup.method.cash")}
-              </dd>
-              {staffReference.trim() ? (
-                <>
-                  <dt className="text-slate-400">{t("renters.detail.staffTopupReference")}</dt>
-                  <dd className="font-medium text-slate-800 break-all">{staffReference.trim()}</dd>
-                </>
-              ) : null}
-            </dl>
-            {staffPreviewQuery.isLoading ? (
-              <p className="text-xs text-slate-400">{t("common.loading.default")}</p>
-            ) : staffPreviewQuery.isError ? (
-              <p className="text-xs text-rose-600">
-                {resolveMutationError(
-                  staffPreviewQuery.error instanceof Error ? staffPreviewQuery.error.message : null,
-                  "renter.topup.previewFailed",
-                  t
-                )}
-              </p>
-            ) : staffPreviewQuery.data ? (
-              <div className="rounded-lg border border-slate-100 bg-slate-50 p-3 space-y-1 text-xs">
-                <p className="font-semibold text-slate-700">{t("renters.detail.staffTopupReviewEffect")}</p>
-                <p>
-                  {t("renters.detail.staffTopupReviewBalanceBefore")}:{" "}
-                  {formatCurrency(staffPreviewQuery.data.effect.walletBalanceBefore)}
-                </p>
-                <p>
-                  {t("renters.detail.staffTopupReviewBalanceAfter")}:{" "}
-                  {formatCurrency(staffPreviewQuery.data.effect.walletBalanceAfter)}
-                </p>
-                <p>
-                  {t("renters.detail.staffTopupReviewDebt")}:{" "}
-                  {formatCurrency(staffPreviewQuery.data.effect.debtToSettle)}
-                </p>
-                <p>
-                  {t("renters.detail.staffTopupReviewHolds")}:{" "}
-                  {staffPreviewQuery.data.effect.holdsToActivate}
-                </p>
-                <p>
-                  {t("renters.detail.staffTopupReviewSpendable")}:{" "}
-                  {formatCurrency(staffPreviewQuery.data.effect.spendableBefore)} →{" "}
-                  {formatCurrency(staffPreviewQuery.data.effect.spendableAfter)}
-                </p>
-              </div>
-            ) : null}
-          </div>
-        }
-        confirmLabel={t("renters.detail.staffTopupConfirm")}
-        pending={staffTopup.isPending}
-        onConfirm={() => void handleStaffTopupConfirm()}
-        onCancel={() => setStaffReviewOpen(false)}
-      />
-
-      <ConfirmDialog
-        open={reliabilityResetOpen}
-        title={t("renters.detail.reliabilityResetTitle")}
-        description={
-          <div className="space-y-3 text-sm text-slate-600">
-            <p>{t("renters.detail.reliabilityResetHint")}</p>
-            <dl className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-xs">
-              <dt className="text-slate-400">{t("renters.detail.reliabilityOnTime")}</dt>
-              <dd className="font-medium text-slate-800">{onTime}</dd>
-              <dt className="text-slate-400">{t("renters.detail.reliabilityUntimely")}</dt>
-              <dd className="font-medium text-slate-800">{untimely}</dd>
-              <dt className="text-slate-400">{t("renters.detail.reliabilityResetAfterOnTime")}</dt>
-              <dd className="font-medium text-slate-800">0</dd>
-              <dt className="text-slate-400">{t("renters.detail.reliabilityResetAfterUntimely")}</dt>
-              <dd className="font-medium text-slate-800">0</dd>
-              <dt className="text-slate-400">{t("renters.detail.reliabilityBanned")}</dt>
-              <dd className="font-medium text-slate-800">
-                {renter.bookingBannedAt ? t("common.yes") : t("common.no")}
-              </dd>
-              <dt className="text-slate-400">{t("renters.detail.reliabilityPenalty")}</dt>
-              <dd className="font-medium text-slate-800">
-                {renter.penaltyTariffAppliedAt ? t("common.yes") : t("common.no")}
-              </dd>
-            </dl>
-            <input
-              className={`${inputCls} w-full`}
-              placeholder={t("renters.detail.reliabilityResetReason")}
-              value={reliabilityResetReason}
-              onChange={(e) => setReliabilityResetReason(e.target.value)}
-            />
-          </div>
-        }
-        confirmLabel={t("renters.detail.reliabilityReset")}
-        pending={resetReliability.isPending}
-        onConfirm={() => void handleResetReliability()}
-        onCancel={() => {
-          setReliabilityResetOpen(false);
-          setReliabilityResetReason("");
-        }}
-      />
-
-      <ConfirmDialog
-        open={!!reversalEntryId}
-        title={t("renters.detail.staffTopupReversalTitle")}
-        description={
-          <div className="space-y-3 text-sm text-slate-600">
-            <p>{t("renters.detail.staffTopupReversalHint")}</p>
-            <input
-              className={`${inputCls} w-full`}
-              placeholder={t("renters.detail.staffTopupReversalReason")}
-              value={reversalReason}
-              onChange={(e) => setReversalReason(e.target.value)}
-            />
-          </div>
-        }
-        confirmLabel={t("renters.detail.staffTopupReverse")}
-        pending={reverseTopup.isPending}
-        onConfirm={() => void handleTopupReversal()}
-        onCancel={() => {
-          setReversalEntryId(null);
-          setReversalReason("");
-        }}
-      />
     </div>
   );
 }

@@ -12,7 +12,6 @@ import {
 } from "lucide-react";
 import type { ToastType } from "../../App";
 import type { RenterCounterpartyType, RenterDebtFilter, RenterDuplicateMatch, RenterStatus } from "../../types";
-import { parseTelegramIdInput } from "../../lib/renterNormalize";
 import { canSeeRenterFinance } from "../../lib/permissions";
 import { useI18n } from "../../hooks/useI18n";
 import { useCan, usePermissions } from "../../hooks/usePermissions";
@@ -68,7 +67,6 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
   const [contactPhone, setContactPhone] = useState("");
   const [contactEmail, setContactEmail] = useState("");
   const [taxId, setTaxId] = useState("");
-  const [telegramId, setTelegramId] = useState("");
 
   const [addFormOpen, setAddFormOpen] = useState(false);
   const [duplicateOpen, setDuplicateOpen] = useState(false);
@@ -104,14 +102,7 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
       contactEmail,
       taxId,
       counterpartyType,
-      telegramId,
     };
-
-    const parsedTg = parseTelegramIdInput(payload.telegramId ?? telegramId);
-    if (!parsedTg.ok) {
-      toast(t("renters.error.telegramIdInvalid"), "error");
-      return false;
-    }
 
     const res = await upsertRenter.mutateAsync({
       displayName: payload.displayName ?? displayName,
@@ -119,7 +110,6 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
       contactPhone: payload.contactPhone ?? contactPhone,
       contactEmail: payload.contactEmail ?? contactEmail,
       taxId: payload.taxId ?? taxId,
-      telegramId: parsedTg.value,
       duplicateCreateReason: duplicateReason,
     });
 
@@ -133,7 +123,6 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
     setContactPhone("");
     setContactEmail("");
     setTaxId("");
-    setTelegramId("");
     setPendingPayload(null);
     setDuplicateOpen(false);
     setAddFormOpen(false);
@@ -166,7 +155,6 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
         contactEmail,
         taxId,
         counterpartyType,
-        telegramId,
       });
       setDuplicateOpen(true);
       return;
@@ -228,17 +216,6 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
           onChange={(e) => setContactEmail(e.target.value)}
         />
       </div>
-      <div className="field-stack">
-        <label className={labelCls} htmlFor="renter-telegram-id">{t("renters.form.telegramId")}</label>
-        <input
-          id="renter-telegram-id"
-          className={inputCls}
-          inputMode="numeric"
-          value={telegramId}
-          onChange={(e) => setTelegramId(e.target.value)}
-          placeholder={t("renters.form.telegramIdPlaceholder")}
-        />
-      </div>
       {(counterpartyType === "sole_proprietor" || counterpartyType === "company") && (
         <div className="field-stack">
           <label className={labelCls} htmlFor="renter-tax-id">{t("renters.form.taxId")}</label>
@@ -288,7 +265,6 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
                 >
                   <option value="">{t("renters.filter.all")}</option>
                   <option value="cashier">{t("renters.filter.debtCashier")}</option>
-                  <option value="miniapp">{t("renters.filter.debtMiniapp")}</option>
                   <option value="any">{t("renters.filter.debtAny")}</option>
                 </AppSelect>
                 <p className="text-[10px] text-slate-400 leading-snug px-0.5">{t("renters.filter.debtHint")}</p>
@@ -335,11 +311,6 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
                             {t("renters.reminder.overdueDebt")}
                           </span>
                         ) : null}
-                        {canSeeFinance && (row.miniappDebt ?? 0) > 0 ? (
-                          <span className="text-[10px] font-semibold text-violet-700 bg-violet-50 px-1.5 py-0.5 rounded">
-                            {t("renters.reminder.miniappDebt")}
-                          </span>
-                        ) : null}
                         {row.hasNextActionDue ? (
                           <span className="text-[10px] font-semibold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">
                             {t("renters.reminder.nextAction")}
@@ -363,11 +334,6 @@ export default function RentersPanel({ toast }: RentersPanelProps) {
                         {canSeeFinance && (row.cashierDebt ?? 0) > 0 ? (
                           <span className="text-rose-600 font-semibold">
                             {t("renters.list.cashierDebt")}: {formatCurrency(row.cashierDebt ?? 0)}
-                          </span>
-                        ) : null}
-                        {canSeeFinance && (row.miniappDebt ?? 0) > 0 ? (
-                          <span className="text-violet-700 font-semibold">
-                            {t("renters.list.miniappDebt")}: {formatCurrency(row.miniappDebt ?? 0)}
                           </span>
                         ) : null}
                       </div>

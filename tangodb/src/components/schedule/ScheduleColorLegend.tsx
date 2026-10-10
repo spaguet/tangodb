@@ -1,4 +1,3 @@
-import type { CSSProperties } from "react";
 import type { OrgModules } from "../../types/organization";
 import { useI18n } from "../../hooks/useI18n";
 import type { I18nKey } from "../../lib/i18n/keys";
@@ -22,19 +21,17 @@ type LegendEntryId =
   | "event"
   | "unpaid"
   | "rental"
-  | "rentalHold"
   | "restricted";
 
 type LegendEntry = {
   id: LegendEntryId;
   labelKey: I18nKey;
   swatchClassName: string;
-  swatchStyle?: CSSProperties;
 };
 
 const LEGEND_ROWS: LegendEntryId[][] = [
   ["group", "personal", "event", "unpaid"],
-  ["rental", "rentalHold", "restricted"],
+  ["rental", "restricted"],
 ];
 
 function swatchClass(colors: {
@@ -44,11 +41,6 @@ function swatchClass(colors: {
 }): string {
   return `relative w-4 h-3 shrink-0 rounded border ${colors.bg} ${colors.border} ${colors.accent}`;
 }
-
-const RENTAL_HOLD_STRIPES: CSSProperties = {
-  backgroundImage:
-    "repeating-linear-gradient(-45deg, transparent, transparent 3px, rgba(255,255,255,0.28) 3px, rgba(255,255,255,0.28) 5px)",
-};
 
 function buildLegendEntryMap(modules: OrgModules): Partial<Record<LegendEntryId, LegendEntry>> {
   const entries: Partial<Record<LegendEntryId, LegendEntry>> = {};
@@ -87,13 +79,6 @@ function buildLegendEntryMap(modules: OrgModules): Partial<Record<LegendEntryId,
     swatchClassName: swatchClass(RENTAL_LESSON_COLOR),
   };
 
-  entries.rentalHold = {
-    id: "rentalHold",
-    labelKey: "schedule.legend.rentalHold",
-    swatchClassName: swatchClass(RENTAL_LESSON_COLOR),
-    swatchStyle: RENTAL_HOLD_STRIPES,
-  };
-
   entries.restricted = {
     id: "restricted",
     labelKey: "schedule.legend.restricted",
@@ -106,7 +91,7 @@ function buildLegendEntryMap(modules: OrgModules): Partial<Record<LegendEntryId,
 function LegendItem({ entry, label }: { entry: LegendEntry; label: string }) {
   return (
     <li className="flex items-center gap-1.5 min-w-0">
-      <span className={entry.swatchClassName} style={entry.swatchStyle} aria-hidden />
+      <span className={entry.swatchClassName} aria-hidden />
       <span className="text-[11px] text-slate-600 leading-tight">{label}</span>
     </li>
   );

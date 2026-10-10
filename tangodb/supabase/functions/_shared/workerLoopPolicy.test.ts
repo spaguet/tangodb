@@ -2,12 +2,9 @@ import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
   MAX_CALENDAR_SYNC_CHAIN_DEPTH,
-  MAX_MAINTENANCE_BATCHES,
-  MAINTENANCE_TIME_BUDGET_MS,
   nextCalendarSyncChainDepth,
   parseChainDepth,
   shouldChainCalendarSync,
-  shouldContinueMaintenance,
   shouldSkipCalendarSyncTick,
 } from "./workerLoopPolicy.ts";
 
@@ -53,79 +50,5 @@ describe("calendar sync chain", () => {
     assert.equal(shouldSkipCalendarSyncTick(0, true), true);
     assert.equal(shouldSkipCalendarSyncTick(0, false), false);
     assert.equal(shouldSkipCalendarSyncTick(1, true), false);
-  });
-});
-
-describe("renter booking maintenance loop", () => {
-  it("stops when the batch made no progress", () => {
-    assert.equal(
-      shouldContinueMaintenance({
-        batches: 1,
-        processed: 4,
-        failed: 0,
-        progressed: false,
-        elapsedMs: 100,
-      }),
-      false
-    );
-  });
-
-  it("stops on failures with nothing processed, instead of retrying immediately", () => {
-    assert.equal(
-      shouldContinueMaintenance({
-        batches: 1,
-        processed: 0,
-        failed: 2,
-        progressed: false,
-        elapsedMs: 100,
-      }),
-      false
-    );
-  });
-
-  it("continues while renters actually leave the due set, within the caps", () => {
-    assert.equal(
-      shouldContinueMaintenance({
-        batches: 1,
-        processed: 20,
-        failed: 0,
-        progressed: true,
-        elapsedMs: 100,
-      }),
-      true
-    );
-    assert.equal(
-      shouldContinueMaintenance({
-        batches: MAX_MAINTENANCE_BATCHES,
-        processed: 20,
-        failed: 0,
-        progressed: true,
-        elapsedMs: 100,
-      }),
-      false
-    );
-    assert.equal(
-      shouldContinueMaintenance({
-        batches: 1,
-        processed: 20,
-        failed: 0,
-        progressed: true,
-        elapsedMs: MAINTENANCE_TIME_BUDGET_MS,
-      }),
-      false
-    );
-  });
-
-  it("stops on an empty claim", () => {
-    assert.equal(
-      shouldContinueMaintenance({
-        batches: 1,
-        processed: 0,
-        failed: 0,
-        progressed: false,
-        elapsedMs: 20,
-      }),
-      false
-    );
   });
 });

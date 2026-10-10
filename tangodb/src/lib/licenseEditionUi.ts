@@ -75,7 +75,6 @@ export function freezeCapabilityKeysForModeDown(
     keys.push(
       "license.edition.freeze.finance",
       "license.edition.freeze.hallRent",
-      "license.edition.freeze.miniApp",
       "license.edition.freeze.googleCalendar"
     );
   }

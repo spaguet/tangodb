@@ -1,7 +1,7 @@
 import { usePermissions } from "./usePermissions";
 import { useOrgEdition } from "./useOrgEdition";
 
-/** Cashier rental + Mini App finance screens — Pro `hall_rent` (E2 / F117). */
+/** Cashier hall-rent finance screens — Pro `hall_rent` (E2 / F117). */
 export function useFinanceRentalScreensEnabled(): { enabled: boolean; resolving: boolean } {
   const { can } = usePermissions();
   const { editionAllows, editionLoading } = useOrgEdition();

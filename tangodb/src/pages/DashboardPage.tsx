@@ -24,10 +24,7 @@ import type { Client, Subscription } from "../types";
 import DemoDashboardBanner from "../components/demo/DemoDashboardBanner";
 import FirstDayChecklist from "../components/onboarding/FirstDayChecklist";
 import VenueRuleExpiryNotice from "../components/venue-costs/VenueRuleExpiryNotice";
-import HallRentalDashboardBlock from "../components/dashboard/HallRentalDashboardBlock";
 import { useVenueCostRuleStatus } from "../hooks/useVenueCosts";
-import { isTopupSlaEscalationRole } from "../lib/showRenterTopupNav";
-
 type DashboardTab = "operational" | "financial";
 
 type DashboardTabItem = PageTabItem & { id: DashboardTab };
@@ -63,9 +60,6 @@ export default function DashboardPage() {
   const scopedOnly = showScopedSummary && !showOperational && !showFinancial;
 
   const operationalEnabled = showOperational && (!showBoth || activeTab === "operational");
-  const financialTabActive = showBoth && activeTab === "financial";
-  const showHallRentalOnDashboard = !financialTabActive;
-
   const clientsQuery = useClientDirectory({ enabled: operationalEnabled });
   const subscriptionsQuery = useSubscriptions({ enabled: operationalEnabled });
   const showOperationalPayments = operationalEnabled && can("payments.read.operational");
@@ -104,7 +98,7 @@ export default function DashboardPage() {
 
   if (scopedOnly) {
     return (
-      <DashboardShell showHallRentalOnDashboard={false}>
+      <DashboardShell>
         <ScopedDashboardView
           lessonsQuery={scopedLessonsQuery}
           scheduleQuery={scopedScheduleQuery}
@@ -118,7 +112,7 @@ export default function DashboardPage() {
 
   if (showFinancial && !showOperational) {
     return (
-      <DashboardShell showHallRentalOnDashboard={false}>
+      <DashboardShell>
         <FinancialDashboard />
       </DashboardShell>
     );
@@ -126,7 +120,7 @@ export default function DashboardPage() {
 
   if (showBoth && activeTab === "financial") {
     return (
-      <DashboardShell showHallRentalOnDashboard={false}>
+      <DashboardShell>
         <DashboardWithTabs activeTab={activeTab} onTabChange={setActiveTab} dashboardTabs={dashboardTabs}>
           <FinancialDashboard />
         </DashboardWithTabs>
@@ -135,7 +129,7 @@ export default function DashboardPage() {
   }
 
   return (
-    <DashboardShell showHallRentalOnDashboard={showHallRentalOnDashboard}>
+    <DashboardShell>
     <OperationalDashboardView
       showBoth={showBoth}
       activeTab={activeTab}
@@ -151,16 +145,9 @@ export default function DashboardPage() {
   );
 }
 
-function DashboardShell({
-  children,
-  showHallRentalOnDashboard,
-}: {
-  children: React.ReactNode;
-  showHallRentalOnDashboard: boolean;
-}) {
+function DashboardShell({ children }: { children: React.ReactNode }) {
   const { role } = usePermissions();
   const venueStatusQuery = useVenueCostRuleStatus({ enabled: role !== "teacher" });
-  const showHallRentalBlock = showHallRentalOnDashboard && isTopupSlaEscalationRole(role);
   const showFirstDayChecklist = role === "owner" || role === "director";
   return (
     <div className="panel-page-stack">
@@ -169,7 +156,6 @@ function DashboardShell({
       {role !== "teacher" && venueStatusQuery.data?.acknowledgementRequired && (
         <VenueRuleExpiryNotice status={venueStatusQuery.data} />
       )}
-      {showHallRentalBlock ? <HallRentalDashboardBlock /> : null}
       {children}
     </div>
   );

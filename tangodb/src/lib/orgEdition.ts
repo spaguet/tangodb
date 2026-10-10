@@ -17,7 +17,6 @@ export type EditionCapability =
   | "finance"
   | "payroll"
   | "hall_rent"
-  | "renter_miniapp"
   | "google_calendar"
   | "calendar_events"
   | "export_operational"
@@ -34,7 +33,6 @@ const PRO_ONLY_CAPABILITIES = new Set<EditionCapability>([
   "finance",
   "payroll",
   "hall_rent",
-  "renter_miniapp",
   "google_calendar",
   "calendar_events",
   "export_financial",
@@ -157,7 +155,6 @@ export function capabilityForPath(pathname: string, search = ""): EditionCapabil
   if (pathname.startsWith("/finance/payroll")) return "payroll";
   if (
     pathname.startsWith("/finance/rental-inbox") ||
-    pathname.startsWith("/finance/renter-topup") ||
     pathname.startsWith("/finance/rental-accruals")
   ) {
     return "hall_rent";
@@ -208,7 +205,6 @@ export function financeSubpathAllowedByEdition(
   }
   if (
     pathname.startsWith("/finance/rental-inbox") ||
-    pathname.startsWith("/finance/renter-topup") ||
     pathname.startsWith("/finance/rental-accruals")
   ) {
     return editionAllows(snapshot, "hall_rent");

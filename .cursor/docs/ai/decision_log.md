@@ -12,6 +12,14 @@
 
 ## Записи
 
+### HALL-RENT-MINIAPP-REMOVED — узел Telegram Mini App снят (2026-10-10)
+
+- **Дата:** 2026-10-10
+- **Решение:** Самообслуживание аренды через Telegram Mini App удалено из продукта (CRM **2.12.18**). Кассовая аренда зала (`channel = cashier`) остаётся: арендаторы, тарифы, входящие оплат, начисления, затраты зала, биллинг, Google Calendar. Приложение `tangodb-renter/`, Edge-функции бота и cron `renter-booking-worker` удалены. Вперёд-миграция `20261223000001_remove_renter_miniapp.sql` снимает cron, обнуляет секреты бота, отменяет будущие confirmed-слоты Mini App и активные серии, выключает `locations.miniapp_enabled`, заменяет промоцию кассы в кошелёк и worker RPC на no-op и отзывает execute у `anon` / `authenticated`. Таблицы ledger / top-up и исторические миграции не дропаются. `renter_miniapp_addon_is_active` не менялся. Guard `actor=renter` на командных маршрутах остаётся. Поле `config.renterMiniappAddon` парсится, чтобы старый JSON не падал; новые заявки add-on по-прежнему `addon_purchase_disabled`.
+- **Контекст:** Владелец попросил полностью убрать узел аренды через Telegram Mini App, включая cron, переменные и связанные места. Касса студии — отдельный контур и не заменяется кабинетом.
+- **Альтернативы:** (1) Дроп таблиц кошелька и переписывание всех security-definer RPC кассы — отвергнуто: кассовые функции всё ещё ссылаются на хелперы, а ledger — исторические деньги. (2) Сделать `renter_miniapp_addon_is_active` всегда false — отвергнуто: `editions_e8_test` и `crm_monthly_subscription_s4_test` проверяют текущий гейт. (3) Оставить приложение выключенным флагом — отвергнуто: нужен полный съём узла.
+- **Почему так:** Будущие слоты Mini App иначе держали бы зал без воркера. No-op attach сохраняет тело `create_rental` кассы. Отзыв PostgREST закрывает вызов RPC из браузера, owner security definer по-прежнему вызывает внутренние хелперы.
+
 ### VER-1 / CRM-EDITIONS-10 — Узел 2.12: код E0–E10, cutover off (2026-10-04)
 
 - **Дата:** 2026-10-04

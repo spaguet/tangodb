@@ -1,17 +1,9 @@
 import { Navigate, useSearchParams } from "react-router-dom";
 import { usePermissions } from "../../hooks/usePermissions";
 import { useI18n } from "../../hooks/useI18n";
-import {
-  canManageVenueCostRules,
-  canReadRentalTariffs,
-  canWriteRentalTariffs,
-  canManageMiniAppRentals,
-} from "../../lib/permissions";
+import { canManageVenueCostRules } from "../../lib/permissions";
 import VenueCostsSettingsPage from "./VenueCostsSettingsPage";
 import RentalBillingProfileSection from "../../components/rental-billing/RentalBillingProfileSection";
-import MiniAppHourRatesSection from "../components/MiniAppHourRatesSection";
-import MiniAppAddonPurchaseSection from "../components/MiniAppAddonPurchaseSection";
-import MiniAppChannelSection from "../components/MiniAppChannelSection";
 
 /** Preserve ?new=1 when old /settings/venue-costs bookmarks are opened. */
 export function VenueCostsLegacyRedirect() {
@@ -22,14 +14,9 @@ export function VenueCostsLegacyRedirect() {
 
 export default function HallRentSettingsPage() {
   const { t } = useI18n();
-  const { can, role, options } = usePermissions();
-  const canReadTariffs = canReadRentalTariffs(role, options);
-  const canWriteTariffs = canWriteRentalTariffs(role, options);
+  const { can, role } = usePermissions();
   const canManageVenue = canManageVenueCostRules(role);
   const canReadVenue = can("finance.read");
-  const canManageChannel = can("settings.manage");
-  const canManageAddon = canManageMiniAppRentals(role, options);
-  const hasAnyBlock = canReadTariffs || canReadVenue || canManageChannel;
 
   return (
     <div className="panel-card-stack max-w-4xl">
@@ -38,40 +25,11 @@ export default function HallRentSettingsPage() {
         <p className="text-xs text-slate-500 mt-1">{t("hallRent.pageSubtitle")}</p>
       </div>
 
-      {!hasAnyBlock && (
+      {!canReadVenue && (
         <div className="rounded-xl border border-slate-200/90 bg-slate-50/80 px-4 py-6 text-center space-y-2">
           <p className="text-sm text-slate-600">{t("hallRent.emptyNoAccess")}</p>
           <p className="text-xs text-slate-500">{t("hallRent.emptyNoAccessHint")}</p>
         </div>
-      )}
-
-      {canReadTariffs && (
-        <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.miniapp.title")}</h3>
-            <p className="text-xs text-slate-500 mt-1">
-              {canWriteTariffs ? t("hallRent.miniapp.subtitle") : t("hallRent.miniapp.subtitleLookup")}
-            </p>
-          </div>
-          <MiniAppHourRatesSection />
-          {canManageAddon ? <MiniAppAddonPurchaseSection /> : null}
-        </section>
-      )}
-
-      {canReadTariffs && !canManageChannel && (
-        <p className="text-xs text-slate-500 bg-amber-50/80 border border-amber-100 rounded-xl px-3.5 py-2.5 leading-relaxed">
-          {t("settings.adminLimitedHint")}
-        </p>
-      )}
-
-      {canManageChannel && (
-        <section className="bg-white rounded-xl border border-slate-200/90 shadow-xs p-4 space-y-3">
-          <div>
-            <h3 className="text-sm font-semibold text-slate-900">{t("hallRent.miniapp.channelTitle")}</h3>
-            <p className="text-xs text-slate-500 mt-1">{t("hallRent.miniapp.channelSubtitle")}</p>
-          </div>
-          <MiniAppChannelSection />
-        </section>
       )}
 
       {canReadVenue && (

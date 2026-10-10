@@ -3,7 +3,6 @@ import type { RentalDisplayLesson } from "../types";
 import {
   canOccupancyReleaseLesson,
   isEditionOccupancyLeftover,
-  isOrgTimezoneMiniAppBlockError,
   withEditionOccupancyFields,
 } from "./scheduleEditionOccupancy";
 
@@ -29,13 +28,5 @@ describe("scheduleEditionOccupancy", () => {
   it("allows release on future leftover rental", () => {
     const marked = { ...rental, editionOccupancy: true };
     expect(canOccupancyReleaseLesson(marked)).toBe(true);
-  });
-
-  it("detects Mini App timezone block message", () => {
-    expect(
-      isOrgTimezoneMiniAppBlockError(
-        "timezone cannot change while Mini App slots are awaiting_payment/active/prepaid_charged"
-      )
-    ).toBe(true);
   });
 });

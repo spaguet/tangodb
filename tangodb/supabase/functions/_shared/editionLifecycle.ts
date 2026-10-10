@@ -58,14 +58,3 @@ export async function shouldPauseGoogleCalendarForOrg(
   }
   return !(await editionAllows(admin, organizationId, "google_calendar"));
 }
-
-/** Skip new Mini App worker enqueue paths (existing slot maintenance stays in SQL). */
-export async function shouldPauseRenterMiniappForOrg(
-  admin: SupabaseClient,
-  organizationId: string
-): Promise<boolean> {
-  if (!(await isEditionsLifecycleEnabled(admin))) {
-    return false;
-  }
-  return !(await editionAllows(admin, organizationId, "renter_miniapp"));
-}

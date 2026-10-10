@@ -56,11 +56,3 @@ export function canOccupancyReleaseLesson(lesson: DisplayLesson): boolean {
   if (lesson.kind === "rental") return lesson.bookingStatus === "confirmed";
   return lesson.kind === "personal" || lesson.kind === "event";
 }
-
-export const ORG_TIMEZONE_MINIAPP_BLOCK_RE =
-  /timezone cannot change while Mini App slots are awaiting_payment\/active\/prepaid_charged/i;
-
-export function isOrgTimezoneMiniAppBlockError(message: string | undefined): boolean {
-  if (!message) return false;
-  return ORG_TIMEZONE_MINIAPP_BLOCK_RE.test(message);
-}

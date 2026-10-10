@@ -327,9 +327,7 @@ export function PanelAccessRoute() {
     return redirectOrEditionUpsell(role, modules, options, location);
   }
 
-  const isRentalInboxRoute =
-    location.pathname.startsWith("/finance/rental-inbox") ||
-    location.pathname.startsWith("/finance/renter-topup");
+  const isRentalInboxRoute = location.pathname.startsWith("/finance/rental-inbox");
   if (isRentalInboxRoute && canAccessRentalInboxRoute(role, modules, options)) {
     if (financeSubpathAllowedByEdition(location.pathname, options.edition)) {
       return <Outlet />;
