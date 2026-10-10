@@ -23,6 +23,8 @@ SET
     WHEN lifecycle = 'awaiting_payment' THEN 'hold_deleted'
     ELSE 'cancelled'
   END,
+  cancelled_at = COALESCE(cancelled_at, now()),
+  cancelled_reason = COALESCE(cancelled_reason, 'miniapp_removed'),
   updated_at = now()
 WHERE channel = 'miniapp'
   AND booking_status = 'confirmed'
