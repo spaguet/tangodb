@@ -155,6 +155,61 @@ export function computeSubscriptionAttendanceStats(
   return stats;
 }
 
+export const subscriptionAttendanceStatsQueryKey = ["subscriptionAttendanceStats"] as const;
+
+/** Visits/absences for one subscription (group attendance + linked personal lessons). */
+export function useSubscriptionAttendanceStats(subscriptionId: string | null) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const queryEnabled = orgEnabled && Boolean(subscriptionId);
+
+  return useQuery({
+    queryKey: withOrgId([...subscriptionAttendanceStatsQueryKey, subscriptionId]),
+    enabled: queryEnabled,
+    queryFn: async () => {
+      const subId = subscriptionId!;
+      const [attendanceRows, lessonRows] = await Promise.all([
+        fetchAllPostgrestRows((from, to) =>
+          supabase
+            .from("attendance")
+            .select("subscription_id, attendance_status")
+            .eq("subscription_id", subId)
+            .order("date", { ascending: false })
+            .order("id")
+            .range(from, to)
+        ),
+        fetchAllPostgrestRows((from, to) =>
+          supabase
+            .from("personal_lessons")
+            .select("subscription_id, attendance_status")
+            .eq("subscription_id", subId)
+            .order("date", { ascending: false })
+            .order("id")
+            .range(from, to)
+        ),
+      ]);
+
+      const attendance = attendanceRows.map(
+        (row) =>
+          ({
+            subscriptionId: String(row.subscription_id),
+            attendanceStatus: row.attendance_status as AttendanceRecord["attendanceStatus"],
+          }) as AttendanceRecord
+      );
+      const personalLessons = lessonRows.map(
+        (row) =>
+          ({
+            subscriptionId: row.subscription_id != null ? String(row.subscription_id) : null,
+            attendanceStatus: (row.attendance_status as PersonalLesson["attendanceStatus"]) ?? null,
+          }) as PersonalLesson
+      );
+
+      const bySubId = computeSubscriptionAttendanceStats(attendance, personalLessons);
+      return bySubId[subId] ?? { visits: 0, absences: 0 };
+    },
+    staleTime: 30 * 1000,
+  });
+}
+
 export function useAttendanceRecords(yearMonth?: string, options?: { enabled?: boolean }) {
   const { enabled, withOrgId } = useOrgQueryScope();
   const baseKey = yearMonth ? [...attendanceQueryKey, yearMonth] : attendanceQueryKey;

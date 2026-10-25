@@ -8,7 +8,6 @@ import {
   useAllocateRentalAdvance,
   useCancelRentalAdvanceAllocation,
   useCreateRentalInvoice,
-  useRecordRentalAdvance,
   useRecordRentalInvoicePayment,
 } from "../../hooks/useRentalInvoices";
 import { useRentalBillingProfile } from "../../hooks/useRentalBillingProfile";
@@ -290,98 +289,6 @@ export function PayRentalInvoiceModal({
           </div>
         </>
       ) : null}
-    </ModalShell>
-  );
-}
-
-export function RecordRentalAdvanceModal({
-  open,
-  renterId,
-  onClose,
-  onSuccess,
-  toast,
-}: {
-  open: boolean;
-  renterId: string;
-  onClose: () => void;
-  onSuccess: () => void;
-  toast: ToastFn;
-}) {
-  const { t } = useI18n();
-  const { settings } = useOrganization();
-  const recordAdvance = useRecordRentalAdvance();
-  const orgTimezone = settings?.timezone ?? "UTC";
-  const closedUntil = settings?.finance_period_closed_until ?? null;
-  const orgToday = orgLocalDateString(orgTimezone);
-  const minOperationDate = minOpenOperationDate(closedUntil);
-
-  const [amount, setAmount] = useState("");
-  const [method, setMethod] = useState<PaymentMethod>("transfer");
-  const [operationDate, setOperationDate] = useState(orgToday);
-  const [idempotencyKey, setIdempotencyKey] = useState("");
-
-  useEffect(() => {
-    if (!open) return;
-    setAmount("");
-    setMethod("transfer");
-    setOperationDate(orgLocalDateString(orgTimezone));
-    setIdempotencyKey(crypto.randomUUID());
-  }, [open, orgTimezone]);
-
-  const handleSubmit = async () => {
-    const value = Number(amount);
-    if (!value || value <= 0) {
-      toast(t("schedule.rental.paymentAmountInvalid"), "error");
-      return;
-    }
-    const res = await recordAdvance.mutateAsync({
-      renterId,
-      amount: value,
-      method,
-      idempotencyKey,
-      operationDate,
-    });
-    if (!res.success) {
-      toast(resolveMutationError(res.error, "rentalInvoices.error.advanceFailed", t), "error");
-      return;
-    }
-    toast(
-      res.alreadyApplied ? t("rentalInvoices.success.advanceAlreadyApplied") : t("rentalInvoices.success.advanceRecorded"),
-      res.alreadyApplied ? "info" : "success"
-    );
-    onSuccess();
-    onClose();
-  };
-
-  return (
-    <ModalShell open={open} title={t("rentalInvoices.advanceTitle")} icon={Wallet} onClose={onClose} pending={recordAdvance.isPending} t={t}>
-      <p className="text-xs text-slate-500 leading-snug">{t("rentalInvoices.advanceHint")}</p>
-      <div>
-        <label className={labelCls}>{t("schedule.rental.paymentAmountLabel")}</label>
-        <input className={fieldCls} type="number" min="0" step="0.01" value={amount} onChange={(e) => setAmount(e.target.value)} />
-      </div>
-      <AppSelect label={t("common.paymentMethod")} value={method} onChange={(e) => setMethod(e.target.value as PaymentMethod)}>
-        {(["cash", "card", "transfer", "other"] as PaymentMethod[]).map((m) => (
-          <option key={m} value={m}>
-            {getPaymentMethodLabel(m, t)}
-          </option>
-        ))}
-      </AppSelect>
-      <DatePickerField
-        label={t("finance.operationDate.label")}
-        value={operationDate}
-        onChange={setOperationDate}
-        min={minOperationDate}
-        max={orgToday}
-      />
-      <div className="flex gap-2 pt-1">
-        <button type="button" onClick={onClose} disabled={recordAdvance.isPending} className={btnCancelCls}>
-          {t("common.cancel")}
-        </button>
-        <button type="button" onClick={() => void handleSubmit()} disabled={recordAdvance.isPending} className={btnAddCls}>
-          {t("rentalInvoices.advanceAction")}
-        </button>
-      </div>
     </ModalShell>
   );
 }

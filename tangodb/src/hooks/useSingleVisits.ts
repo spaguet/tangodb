@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import type { PaymentMethod, SingleVisit } from "../types";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -79,26 +80,30 @@ export function useSingleVisits(filter?: SingleVisitsFilter) {
       };
 
       if (maskFinancial) {
-        let query = supabase
-          .from("single_visits_teacher_v")
-          .select(SINGLE_VISITS_SELECT_TEACHER)
-          .order("visit_date", { ascending: false })
-          .order("created_at", { ascending: false });
-        query = applyRange(query);
-        const { data, error } = await query;
-        if (error) throw error;
-        return (data ?? []).map((row) => mapSingleVisit(row as unknown as Record<string, unknown>));
+        const data = await fetchAllPostgrestRows((from, to) => {
+          let query = supabase
+            .from("single_visits_teacher_v")
+            .select(SINGLE_VISITS_SELECT_TEACHER)
+            .order("visit_date", { ascending: false })
+            .order("created_at", { ascending: false })
+            .order("id", { ascending: false });
+          query = applyRange(query);
+          return query.range(from, to);
+        });
+        return data.map((row) => mapSingleVisit(row as unknown as Record<string, unknown>));
       }
 
-      let query = supabase
-        .from("single_visits")
-        .select(SINGLE_VISITS_SELECT)
-        .order("visit_date", { ascending: false })
-        .order("created_at", { ascending: false });
-      query = applyRange(query);
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []).map((row) => mapSingleVisit(row as unknown as Record<string, unknown>));
+      const data = await fetchAllPostgrestRows((from, to) => {
+        let query = supabase
+          .from("single_visits")
+          .select(SINGLE_VISITS_SELECT)
+          .order("visit_date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false });
+        query = applyRange(query);
+        return query.range(from, to);
+      });
+      return data.map((row) => mapSingleVisit(row as unknown as Record<string, unknown>));
     },
     staleTime: 30 * 1000,
   });

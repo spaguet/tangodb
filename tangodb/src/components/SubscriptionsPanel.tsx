@@ -10,11 +10,7 @@ import { normalizeTelegramContact, openTelegramContact } from "../lib/telegram";
 import { useClients, useClientDirectory } from "../hooks/useClients";
 import { useDisciplines } from "../hooks/useDisciplines";
 import { usePrices } from "../hooks/usePrices";
-import {
-  computeSubscriptionAttendanceStats,
-  useAttendanceRecords,
-} from "../hooks/useAttendance";
-import { usePersonalLessons } from "../hooks/usePersonalLessons";
+import { useSubscriptionAttendanceStats } from "../hooks/useAttendance";
 import {
   useAddSubscription,
   useFinishSubscription,
@@ -73,6 +69,7 @@ import { buildCapacityByGroupId, useGroupCapacitySnapshot } from "../hooks/useGr
 import { useAddGroupWaitlistEntry } from "../hooks/useGroupWaitlist";
 import GroupCapacityOverrideDialog from "./groups/GroupCapacityOverrideDialog";
 import GroupSpotNotificationBanner from "./groups/GroupSpotNotificationBanner";
+import GroupWaitlistPanel from "./groups/GroupWaitlistPanel";
 import { useAccessibleLocations } from "../hooks/useLocations";
 import { DEFAULT_ORG_MODULES, filterGroupTariffsByModules, normalizeOrgModules, shouldShowDisciplinePicker, shouldShowLocationPicker } from "../lib/orgModules";
 import { useSettings } from "../settings/SettingsProvider";
@@ -138,8 +135,6 @@ export default function SubscriptionsPanel({
   const scheduleGroupsQuery = useScheduleGroups();
   const scheduleQuery = useSchedule();
   const pricesQuery = usePrices();
-  const attendanceQuery = useAttendanceRecords();
-  const personalLessonsQuery = usePersonalLessons();
   const { data: activeClients = [], isLoading: activeClientsLoading, isError: activeClientsError, error: activeClientsErr } = activeClientsQuery;
   const { data: directoryClients = [], isLoading: directoryClientsLoading, isError: directoryClientsError, error: directoryClientsErr } = directoryClientsQuery;
   const { data: disciplines = [], isLoading: disciplinesLoading, isError: disciplinesError, error: disciplinesErr } = disciplinesQuery;
@@ -163,24 +158,13 @@ export default function SubscriptionsPanel({
     error: scheduleErr,
   } = scheduleQuery;
   const { data: prices = [], isLoading: pricesLoading, isError: pricesError, error: pricesErr } = pricesQuery;
-  const {
-    data: attendanceRecords = [],
-    isLoading: attendanceLoading,
-    isError: attendanceError,
-    error: attendanceErr,
-  } = attendanceQuery;
-  const {
-    data: personalLessons = [],
-    isLoading: personalLessonsLoading,
-    isError: personalLessonsError,
-    error: personalLessonsErr,
-  } = personalLessonsQuery;
   const addSubscription = useAddSubscription();
   const finishSubscription = useFinishSubscription();
   const recordSubscriptionPayment = useRecordSubscriptionPayment();
   const financePeriod = useFinancePeriodGate();
   const { canAccessPanel } = usePermissions();
   const canManageFreeze = useCan("subscriptions.write") || useCan("attendance.write");
+  const canManageWaitlist = useCan("subscriptions.write");
   const canReplacePartner = useCan("subscriptions.write");
   const canIssueRefund = useCan("refunds.write");
   const { settings, freezePolicy } = useSettings();
@@ -201,8 +185,6 @@ export default function SubscriptionsPanel({
     scheduleGroupsLoading ||
     scheduleLoading ||
     pricesLoading ||
-    attendanceLoading ||
-    personalLessonsLoading ||
     locationsLoading;
   const isError =
     activeClientsError ||
@@ -213,8 +195,6 @@ export default function SubscriptionsPanel({
     scheduleGroupsError ||
     scheduleError ||
     pricesError ||
-    attendanceError ||
-    personalLessonsError ||
     locationsError;
   const error =
     activeClientsErr ??
@@ -225,8 +205,6 @@ export default function SubscriptionsPanel({
     scheduleGroupsErr ??
     scheduleErr ??
     pricesErr ??
-    attendanceErr ??
-    personalLessonsErr ??
     locationsErr;
   const [activeTab, setActiveTab] = useState<"sell" | "active" | "history">(initialTab);
 
@@ -253,6 +231,7 @@ export default function SubscriptionsPanel({
   const [historyMonth, setHistoryMonth] = useState(currentYearMonth);
   const [historyYear, setHistoryYear] = useState(currentYear);
   const [expandedSubId, setExpandedSubId] = useState<string | null>(null);
+  const expandedAttendanceStatsQuery = useSubscriptionAttendanceStats(expandedSubId);
   const [expandedDisciplines, setExpandedDisciplines] = useState<Set<string>>(new Set());
 
   // Sale form states
@@ -793,11 +772,6 @@ export default function SubscriptionsPanel({
     [prices]
   );
 
-  const attendanceStatsBySubId = useMemo(
-    () => computeSubscriptionAttendanceStats(attendanceRecords, personalLessons),
-    [attendanceRecords, personalLessons]
-  );
-
   const filteredActiveRecords = useMemo(
     () =>
       filterActiveSubscriptions(activeRecords, {
@@ -1049,7 +1023,12 @@ export default function SubscriptionsPanel({
                   isPairGroupSubscription(sub);
 
                 const isExpanded = expandedSubId === sub.id;
-                const attendanceStats = attendanceStatsBySubId[sub.id] ?? { visits: 0, absences: 0 };
+                const attendanceStats =
+                  isExpanded && expandedSubId === sub.id
+                    ? (expandedAttendanceStatsQuery.data ?? { visits: 0, absences: 0 })
+                    : { visits: 0, absences: 0 };
+                const attendanceStatsLoading =
+                  isExpanded && expandedSubId === sub.id && expandedAttendanceStatsQuery.isLoading;
 
                 return (
                   <div
@@ -1159,10 +1138,12 @@ export default function SubscriptionsPanel({
                               {t("subscriptions.card.activated", { date: sub.activationDate || "—" })}
                             </p>
                             <p className="text-[11px] text-slate-400 font-sans">
-                              {t("subscriptions.card.visits", {
-                                visits: attendanceStats.visits,
-                                absences: attendanceStats.absences,
-                              })}
+                              {attendanceStatsLoading
+                                ? t("common.loading.data")
+                                : t("subscriptions.card.visits", {
+                                    visits: attendanceStats.visits,
+                                    absences: attendanceStats.absences,
+                                  })}
                             </p>
 
                             {subFreezePolicy.freezeEnabled && sub.category === "group" && !isMonthly ? (
@@ -1257,6 +1238,16 @@ export default function SubscriptionsPanel({
                             clientMap={clientMap}
                           />
                         ) : null}
+
+                        {isExpanded &&
+                          (groupsBySubId[sub.id] ?? []).map((link) => (
+                            <GroupWaitlistPanel
+                              key={link.scheduleGroupId}
+                              classId={link.scheduleGroupId}
+                              canManage={canManageWaitlist}
+                              toast={toast}
+                            />
+                          ))}
 
                         <div className="flex flex-col gap-2 pt-1 text-xs sm:flex-row sm:items-center sm:justify-between">
                           {isMonthly ? (
@@ -1796,6 +1787,16 @@ export default function SubscriptionsPanel({
                     </button>
                   )}
                 </div>
+              </div>
+            )}
+
+            {selectedGroupIds.length === 1 && (
+              <div className="panel-form-full-row-md">
+                <GroupWaitlistPanel
+                  classId={selectedGroupIds[0]!}
+                  canManage={canManageWaitlist}
+                  toast={toast}
+                />
               </div>
             )}
 

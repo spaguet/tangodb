@@ -23,6 +23,8 @@ export const personalLessonsQueryKey = ["personalLessons"] as const;
 export interface UsePersonalLessonsOptions {
   yearMonth?: string;
   dateRange?: { start: string; end: string };
+  /** Fetch only these lesson rows (e.g. ids from month payments). Never pass an empty array — disable the query instead. */
+  lessonIds?: string[];
   paidFilter?: "yes" | "no";
   locationId?: string;
   disciplineId?: string;
@@ -141,10 +143,72 @@ const personalLessonsSelect =
 const personalLessonsSelectTeacher =
   "id, type, client_id1, client_id2, client_id3, client_id4, discipline_id, date, time_start, time_end, paid, subscription_id, location_id, teacher_member_id, attendance_status, price_id";
 
+/** Shared filter chain for `personal_lessons` and `personal_lessons_teacher_v` (types differ). */
+function applyPersonalLessonsFilters<Q>(query: Q, resolved: UsePersonalLessonsOptions): Q {
+  let next: {
+    is: (column: string, value: null) => typeof next;
+    gte: (column: string, value: string) => typeof next;
+    lte: (column: string, value: string) => typeof next;
+    eq: (column: string, value: unknown) => typeof next;
+    or: (filters: string) => typeof next;
+    in: (column: string, values: string[]) => typeof next;
+  } = query as typeof next;
+
+  if (resolved.excludeCancelled) {
+    next = next.is("cancelled_at", null);
+  }
+
+  if (resolved.dateRange) {
+    next = next.gte("date", resolved.dateRange.start).lte("date", resolved.dateRange.end);
+  } else if (resolved.yearMonth) {
+    const [y, m] = resolved.yearMonth.split("-").map(Number);
+    const start = `${y}-${String(m).padStart(2, "0")}-01`;
+    const lastDay = new Date(y, m, 0).getDate();
+    const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
+    next = next.gte("date", start).lte("date", end);
+  }
+
+  if (resolved.paidFilter) {
+    next = next.eq("paid", resolved.paidFilter);
+  }
+
+  if (resolved.locationId) {
+    next = next.eq("location_id", resolved.locationId);
+  }
+
+  if (resolved.teacherMemberId) {
+    next = next.eq("teacher_member_id", resolved.teacherMemberId);
+  }
+
+  if (resolved.disciplineId) {
+    next = next.eq("discipline_id", resolved.disciplineId);
+  }
+
+  if (resolved.attendanceStatus === "unmarked") {
+    next = next.is("attendance_status", null);
+  } else if (resolved.attendanceStatus) {
+    next = next.eq("attendance_status", resolved.attendanceStatus);
+  }
+
+  if (resolved.clientId) {
+    const clientId = resolved.clientId;
+    next = next.or(
+      `client_id1.eq.${clientId},client_id2.eq.${clientId},client_id3.eq.${clientId},client_id4.eq.${clientId}`
+    );
+  }
+
+  if (resolved.lessonIds?.length) {
+    next = next.in("id", resolved.lessonIds);
+  }
+
+  return next as Q;
+}
+
 function buildQueryKeySuffix(options: UsePersonalLessonsOptions): Record<string, unknown> | null {
   const suffix = {
     range: options.dateRange ?? null,
     yearMonth: options.yearMonth ?? null,
+    lessonIds: options.lessonIds?.length ? [...options.lessonIds].sort() : null,
     paid: options.paidFilter ?? null,
     locationId: options.locationId ?? null,
     disciplineId: options.disciplineId ?? null,
@@ -208,114 +272,23 @@ export function usePersonalLessons(options?: UsePersonalLessonsOptions) {
     enabled: queryEnabled,
     queryFn: async () => {
       const selectColumns = maskFinancial ? personalLessonsSelectTeacher : personalLessonsSelect;
-      const useTeacherView = maskFinancial;
 
-      const data = useTeacherView
+      const data = maskFinancial
         ? await fetchAllPostgrestRows((from, to) => {
-            let query = supabase
+            const base = supabase
               .from("personal_lessons_teacher_v")
               .select(selectColumns)
               .order("date", { ascending: false });
-
-            if (resolved.excludeCancelled) {
-              query = query.is("cancelled_at", null);
-            }
-
-            if (resolved.dateRange) {
-              query = query
-                .gte("date", resolved.dateRange.start)
-                .lte("date", resolved.dateRange.end);
-            } else if (resolved.yearMonth) {
-              const [y, m] = resolved.yearMonth.split("-").map(Number);
-              const start = `${y}-${String(m).padStart(2, "0")}-01`;
-              const lastDay = new Date(y, m, 0).getDate();
-              const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-              query = query.gte("date", start).lte("date", end);
-            }
-
-            if (resolved.paidFilter) {
-              query = query.eq("paid", resolved.paidFilter);
-            }
-
-            if (resolved.locationId) {
-              query = query.eq("location_id", resolved.locationId);
-            }
-
-            if (resolved.teacherMemberId) {
-              query = query.eq("teacher_member_id", resolved.teacherMemberId);
-            }
-
-            if (resolved.disciplineId) {
-              query = query.eq("discipline_id", resolved.disciplineId);
-            }
-
-            if (resolved.attendanceStatus === "unmarked") {
-              query = query.is("attendance_status", null);
-            } else if (resolved.attendanceStatus) {
-              query = query.eq("attendance_status", resolved.attendanceStatus);
-            }
-
-            if (resolved.clientId) {
-              const clientId = resolved.clientId;
-              query = query.or(
-                `client_id1.eq.${clientId},client_id2.eq.${clientId},client_id3.eq.${clientId},client_id4.eq.${clientId}`
-              );
-            }
-
-            return query.range(from, to);
+            const filtered = applyPersonalLessonsFilters(base, resolved) as typeof base;
+            return filtered.range(from, to);
           })
         : await fetchAllPostgrestRows((from, to) => {
-            let query = supabase
+            const base = supabase
               .from("personal_lessons")
               .select(selectColumns)
               .order("date", { ascending: false });
-
-            if (resolved.excludeCancelled) {
-              query = query.is("cancelled_at", null);
-            }
-
-            if (resolved.dateRange) {
-              query = query
-                .gte("date", resolved.dateRange.start)
-                .lte("date", resolved.dateRange.end);
-            } else if (resolved.yearMonth) {
-              const [y, m] = resolved.yearMonth.split("-").map(Number);
-              const start = `${y}-${String(m).padStart(2, "0")}-01`;
-              const lastDay = new Date(y, m, 0).getDate();
-              const end = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-              query = query.gte("date", start).lte("date", end);
-            }
-
-            if (resolved.paidFilter) {
-              query = query.eq("paid", resolved.paidFilter);
-            }
-
-            if (resolved.locationId) {
-              query = query.eq("location_id", resolved.locationId);
-            }
-
-            if (resolved.teacherMemberId) {
-              query = query.eq("teacher_member_id", resolved.teacherMemberId);
-            }
-
-            if (resolved.disciplineId) {
-              query = query.eq("discipline_id", resolved.disciplineId);
-            }
-
-            if (resolved.attendanceStatus === "unmarked") {
-              query = query.is("attendance_status", null);
-            } else if (resolved.attendanceStatus) {
-              query = query.eq("attendance_status", resolved.attendanceStatus);
-            }
-
-            if (resolved.clientId) {
-              const clientId = resolved.clientId;
-              query = query.or(
-                `client_id1.eq.${clientId},client_id2.eq.${clientId},client_id3.eq.${clientId},client_id4.eq.${clientId}`
-              );
-            }
-
-            return query.range(from, to);
+            const filtered = applyPersonalLessonsFilters(base, resolved) as typeof base;
+            return filtered.range(from, to);
           });
 
       return data.map((row) =>
@@ -721,7 +694,15 @@ export function useMarkPersonalLessonAttendance() {
         rollback(context);
         return;
       }
-      if (result?.success) invalidatePersonalLessonRelatedQueries(queryClient, organizationId);
+      if (result?.success) {
+        const opts = { refetchType: "active" as const };
+        void queryClient.invalidateQueries({
+          ...orgScopedQueryFilter(personalLessonsQueryKey, organizationId),
+          ...opts,
+        });
+        void queryClient.invalidateQueries({ queryKey: ["schedule"], ...opts });
+        void queryClient.invalidateQueries({ queryKey: subscriptionsQueryKey, ...opts });
+      }
     },
   });
 }

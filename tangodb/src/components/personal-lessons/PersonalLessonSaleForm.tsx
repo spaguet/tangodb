@@ -23,6 +23,7 @@ import {
   translateMutationBlockedMessage,
   useOnlineStatus,
 } from "../../hooks/useOnlineStatus";
+import { useScheduleSlotsForConflict } from "../../hooks/useSchedule";
 import { findScheduleConflict, formatScheduleConflictToast } from "../../lib/scheduleConflicts";
 import type { PersonalLessonRef, ScheduleSlotRef } from "../../lib/scheduleConflicts";
 import {
@@ -456,14 +457,40 @@ export default function PersonalLessonSaleForm({
     return { start: min, end: max };
   }, [isScheduleCell, freebusySlots, scheduleRepeatOverCap]);
 
+  const entryDateRange = useMemo(() => {
+    if (isScheduleCell) return null;
+    const dates = lessonEntries.map((entry) => entry.date).filter(Boolean);
+    if (dates.length === 0) return null;
+    let min = dates[0];
+    let max = dates[0];
+    for (const date of dates) {
+      if (date < min) min = date;
+      if (date > max) max = date;
+    }
+    return { start: min, end: max };
+  }, [isScheduleCell, lessonEntries]);
+
+  const effectiveConflictDateRange = conflictCheckDateRange ?? entryDateRange;
+
   const lessonsInRangeQuery = usePersonalLessons({
-    dateRange: conflictCheckDateRange ?? undefined,
+    dateRange: effectiveConflictDateRange ?? undefined,
     excludeCancelled: true,
-    enabled: Boolean(conflictCheckDateRange),
+    enabled: Boolean(effectiveConflictDateRange),
   });
 
+  const narrowScheduleQuery = useScheduleSlotsForConflict({
+    locationId: effectiveLocationId,
+    dateRange: effectiveConflictDateRange,
+    enabled: scheduleSlots.length === 0 && Boolean(effectiveConflictDateRange && effectiveLocationId),
+  });
+
+  const resolvedScheduleSlots = useMemo(
+    () => (scheduleSlots.length > 0 ? scheduleSlots : (narrowScheduleQuery.data ?? [])),
+    [scheduleSlots, narrowScheduleQuery.data]
+  );
+
   const personalLessonsForConflict = useMemo(() => {
-    if (!conflictCheckDateRange) return personalLessons;
+    if (!effectiveConflictDateRange) return personalLessons;
     return (lessonsInRangeQuery.data ?? []).map((lesson) => ({
       id: lesson.id,
       date: lesson.date,
@@ -472,7 +499,7 @@ export default function PersonalLessonSaleForm({
       locationId: lesson.locationId,
       clientDisplay: lesson.clientDisplay,
     }));
-  }, [conflictCheckDateRange, lessonsInRangeQuery.data, personalLessons]);
+  }, [effectiveConflictDateRange, lessonsInRangeQuery.data, personalLessons]);
 
   const pType = participantTypeFromCount(bookingClients.length);
 
@@ -890,7 +917,7 @@ export default function PersonalLessonSaleForm({
     }
 
     let lessonsForConflict = personalLessonsForConflict;
-    if (conflictCheckDateRange) {
+    if (effectiveConflictDateRange) {
       const { data: rangeLessons } = await lessonsInRangeQuery.refetch();
       lessonsForConflict = (rangeLessons ?? []).map((lesson) => ({
         id: lesson.id,
@@ -902,6 +929,12 @@ export default function PersonalLessonSaleForm({
       }));
     }
 
+    let slotsForConflict = resolvedScheduleSlots;
+    if (scheduleSlots.length === 0 && effectiveConflictDateRange && effectiveLocationId) {
+      const { data: rangeSlots } = await narrowScheduleQuery.refetch();
+      slotsForConflict = rangeSlots ?? [];
+    }
+
     for (const slot of slots) {
       const conflict = findScheduleConflict(
         {
@@ -911,7 +944,7 @@ export default function PersonalLessonSaleForm({
           locationId: effectiveLocationId,
         },
         lessonsForConflict,
-        scheduleSlots,
+        slotsForConflict,
         t,
         locale
       );

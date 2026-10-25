@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import type { SubscriptionGroupLink } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
@@ -21,9 +22,10 @@ export function useSubscriptionGroups(options?: { enabled?: boolean }) {
     queryKey: withOrgId(subscriptionGroupsQueryKey),
     enabled: queryEnabled,
     queryFn: async () => {
-      const { data, error } = await supabase.from("subscription_groups").select("*");
-      if (error) throw error;
-      return (data ?? []).map((row) => mapSubscriptionGroupLink(row as Record<string, unknown>));
+      const data = await fetchAllPostgrestRows((from, to) =>
+        supabase.from("subscription_groups").select("*").order("id").range(from, to)
+      );
+      return data.map((row) => mapSubscriptionGroupLink(row as Record<string, unknown>));
     },
     staleTime: 30 * 1000,
   });

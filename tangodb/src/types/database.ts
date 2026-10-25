@@ -11083,6 +11083,22 @@ export type Database = {
         Args: { p_payload: Json }
         Returns: Json
       }
+      create_price_with_relations: {
+        Args: {
+          p_billing_model: string
+          p_category: string
+          p_description: string
+          p_discipline_ids: string[]
+          p_duration_minutes: number
+          p_label: string
+          p_lessons: number
+          p_location_id: string
+          p_price: number
+          p_teacher_member_ids: string[]
+          p_type: string
+        }
+        Returns: Json
+      }
       create_rental: { Args: { p_payload: Json }; Returns: Json }
       create_rental_invoice: { Args: { p_payload: Json }; Returns: Json }
       create_rental_series: { Args: { p_payload: Json }; Returns: Json }
@@ -12941,6 +12957,22 @@ export type Database = {
       }
       update_organization_renter_channel: {
         Args: { p_payload: Json }
+        Returns: Json
+      }
+      update_price_meta: {
+        Args: {
+          p_description: string
+          p_discipline_ids: string[]
+          p_duration_minutes: number
+          p_label: string
+          p_location_id: string
+          p_price_id: string
+          p_set_duration: boolean
+          p_set_location: boolean
+          p_sync_disciplines: boolean
+          p_sync_teachers: boolean
+          p_teacher_member_ids: string[]
+        }
         Returns: Json
       }
       update_payment_in_place: {

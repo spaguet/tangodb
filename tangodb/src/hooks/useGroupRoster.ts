@@ -151,29 +151,6 @@ export function useAddGroupRosterClient() {
   });
 }
 
-export function useRemoveGroupRosterClient() {
-  const queryClient = useQueryClient();
-  const { organizationId } = useOrgQueryScope();
-
-  return useMutation({
-    mutationFn: async (vars: { scheduleGroupId: string; clientId: string }) => {
-      const { data, error } = await supabase.rpc("remove_group_roster_client", {
-        p_schedule_group_id: vars.scheduleGroupId,
-        p_client_id: vars.clientId,
-      });
-      if (error) return { success: false as const, error: error.message };
-      const result = data as { success?: boolean; error?: string } | null;
-      if (!result?.success) {
-        return { success: false as const, error: result?.error ?? "common.saveFailed" };
-      }
-      return { success: true as const };
-    },
-    onSuccess: () => {
-      invalidateOrgScopedQueries(queryClient, groupRosterQueryKey, organizationId);
-    },
-  });
-}
-
 export function useMarkRosterAttendance() {
   const queryClient = useQueryClient();
   const { organizationId } = useOrgQueryScope();

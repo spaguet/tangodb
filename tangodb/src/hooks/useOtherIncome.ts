@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { applyCreatedAtUtcRange, orgCreatedAtUtcRange } from "../lib/orgFinanceDate";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import type { OtherIncome, PaymentMethod } from "../types";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -27,7 +28,8 @@ function buildOtherIncomeQuery(filter?: OtherIncomeFilter, timezone = "UTC") {
   const query = supabase
     .from("other_income")
     .select("id, calendar_event_id, amount, currency, method, method_comment, created_at")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false });
 
   return applyCreatedAtUtcRange(query, orgCreatedAtUtcRange(filter ?? {}, timezone));
 }
@@ -42,20 +44,11 @@ export function useOtherIncome(filter?: OtherIncomeFilter) {
     queryKey: withOrgId([...otherIncomeQueryKey, filter ?? {}, timezone]),
     enabled: queryEnabled,
     queryFn: async () => {
-      const { data, error } = await buildOtherIncomeQuery(filter, timezone);
-      if (error) throw error;
-      return (data ?? []).map((row) => mapOtherIncome(row as Record<string, unknown>));
+      const data = await fetchAllPostgrestRows((from, to) =>
+        buildOtherIncomeQuery(filter, timezone).range(from, to)
+      );
+      return data.map((row) => mapOtherIncome(row as Record<string, unknown>));
     },
     staleTime: 30 * 1000,
   });
-}
-
-export function useOtherIncomeTrend(endMonth: string, monthCount = 6) {
-  const [y, m] = endMonth.split("-").map(Number);
-  const start = new Date(y, m - 1 - (monthCount - 1), 1);
-  const dateFrom = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, "0")}-01`;
-  const lastDay = new Date(y, m, 0).getDate();
-  const dateTo = `${y}-${String(m).padStart(2, "0")}-${String(lastDay).padStart(2, "0")}`;
-
-  return useOtherIncome({ dateFrom, dateTo });
 }

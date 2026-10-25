@@ -60,24 +60,15 @@ function OperationalExportSection() {
 
   const clientsQuery = useClientDirectory();
   const subscriptionsQuery = useSubscriptions();
-  const personalLessonsQuery = usePersonalLessons({ enabled: personalLessonsEnabled });
-  const attendanceQuery = useAttendanceRecords();
+  const personalLessonsQuery = usePersonalLessons({
+    yearMonth: statsMonth,
+    enabled: false,
+  });
+  const attendanceQuery = useAttendanceRecords(statsMonth, { enabled: false });
 
-  const isLoading =
-    clientsQuery.isLoading ||
-    subscriptionsQuery.isLoading ||
-    (personalLessonsEnabled && personalLessonsQuery.isLoading) ||
-    attendanceQuery.isLoading;
-  const isError =
-    clientsQuery.isError ||
-    subscriptionsQuery.isError ||
-    (personalLessonsEnabled && personalLessonsQuery.isError) ||
-    attendanceQuery.isError;
-  const error =
-    clientsQuery.error ??
-    subscriptionsQuery.error ??
-    (personalLessonsEnabled ? personalLessonsQuery.error : null) ??
-    attendanceQuery.error;
+  const isLoading = clientsQuery.isLoading || subscriptionsQuery.isLoading;
+  const isError = clientsQuery.isError || subscriptionsQuery.isError;
+  const error = clientsQuery.error ?? subscriptionsQuery.error;
 
   const isViewingCurrentMonth = statsMonth === currentYearMonth();
 
@@ -107,11 +98,26 @@ function OperationalExportSection() {
     if (exporting) return;
     setExporting(true);
     try {
+      const attendanceResult = await attendanceQuery.refetch();
+      if (attendanceResult.isError || attendanceResult.data === undefined) {
+        toast(t("common.exportFailed"), "error");
+        return;
+      }
+      let personalLessons: NonNullable<typeof personalLessonsQuery.data> = [];
+      if (personalLessonsEnabled) {
+        const personalResult = await personalLessonsQuery.refetch();
+        if (personalResult.isError || personalResult.data === undefined) {
+          toast(t("common.exportFailed"), "error");
+          return;
+        }
+        personalLessons = personalResult.data;
+      }
+
       const result = await exportAllDashboardCsv({
         clients: clientsQuery.data ?? [],
         subscriptions: subscriptionsQuery.data ?? [],
-        personalLessons: personalLessonsQuery.data ?? [],
-        attendanceRecords: attendanceQuery.data ?? [],
+        personalLessons: personalLessons ?? [],
+        attendanceRecords: attendanceResult.data ?? [],
         statsMonth,
         locale,
       });

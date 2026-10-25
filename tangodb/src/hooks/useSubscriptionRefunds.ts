@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import {
@@ -23,20 +24,19 @@ export function useSubscriptionRefunds(options?: { subscriptionId?: string; enab
     queryKey: withOrgId([...subscriptionRefundsQueryKey, options?.subscriptionId ?? "all"]),
     enabled: queryEnabled,
     queryFn: async () => {
-      let query = supabase
-        .from("subscription_refunds")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (options?.subscriptionId) {
-        query = query.eq("subscription_id", options.subscriptionId);
-      }
-
-      const { data, error } = await query;
-      if (error) throw error;
-      return (data ?? []).map((row) =>
-        mapSubscriptionRefund(row as unknown as Record<string, unknown>)
-      );
+      const subscriptionId = options?.subscriptionId;
+      const data = await fetchAllPostgrestRows((from, to) => {
+        let query = supabase
+          .from("subscription_refunds")
+          .select("*")
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false });
+        if (subscriptionId) {
+          query = query.eq("subscription_id", subscriptionId);
+        }
+        return query.range(from, to);
+      });
+      return data.map((row) => mapSubscriptionRefund(row as unknown as Record<string, unknown>));
     },
     staleTime: 30 * 1000,
   });

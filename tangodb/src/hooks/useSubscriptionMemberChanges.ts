@@ -1,4 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import type { SubscriptionMemberChange, SubscriptionMemberChangeStatus } from "../types";
 import { useOrgQueryScope } from "./useOrgQueryScope";
@@ -67,13 +68,16 @@ export function useAllSubscriptionMemberChanges(options?: { enabled?: boolean })
     queryKey: withOrgId([...subscriptionMemberChangesQueryKey, "all"]),
     enabled: orgEnabled && (options?.enabled ?? true),
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("subscription_member_changes")
-        .select("*")
-        .order("effective_date", { ascending: false })
-        .order("created_at", { ascending: false });
-      if (error) throw error;
-      return (data ?? []).map((row) => mapMemberChange(row as Record<string, unknown>));
+      const data = await fetchAllPostgrestRows((from, to) =>
+        supabase
+          .from("subscription_member_changes")
+          .select("*")
+          .order("effective_date", { ascending: false })
+          .order("created_at", { ascending: false })
+          .order("id", { ascending: false })
+          .range(from, to)
+      );
+      return data.map((row) => mapMemberChange(row as Record<string, unknown>));
     },
     staleTime: 30 * 1000,
   });

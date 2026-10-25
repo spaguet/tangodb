@@ -4,10 +4,11 @@ import { supabase } from "../lib/supabase";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { usePermissions } from "./usePermissions";
 import { useScheduleGroups } from "./useScheduleGroups";
-import { useLessonSubstitutes } from "./useLessonSubstitutes";
-import { substituteLocationIds } from "../lib/lessonSubstitute";
+import {
+  fetchTeacherSubstituteSlotLocationMap,
+  substituteLocationIds,
+} from "../lib/lessonSubstitute";
 import { useOrganization } from "../organization/OrganizationProvider";
-import { useSchedule } from "./useSchedule";
 import type { MemberRole, TeacherScope } from "../types/organization";
 
 export interface Location {
@@ -67,14 +68,18 @@ export function useLocations() {
 }
 
 export function useAccessibleLocations() {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const query = useLocations();
   const scheduleGroupsQuery = useScheduleGroups();
-  const substitutesQuery = useLessonSubstitutes();
-  const scheduleQuery = useSchedule({
-    enabled: (substitutesQuery.data?.length ?? 0) > 0,
-  });
   const { role, scope } = usePermissions();
   const { memberId } = useOrganization();
+
+  const teacherSubstituteSlotsQuery = useQuery({
+    queryKey: withOrgId(["accessibleLocations", "teacherSubstituteSlots", memberId]),
+    enabled: orgEnabled && role === "teacher" && Boolean(memberId),
+    queryFn: () => fetchTeacherSubstituteSlotLocationMap(memberId!),
+    staleTime: 60 * 1000,
+  });
 
   const groupScopeLocationIds = useMemo(
     () => locationIdsFromScheduleGroupScope(scope, scheduleGroupsQuery.data ?? []),
@@ -82,12 +87,19 @@ export function useAccessibleLocations() {
   );
 
   const substituteLocIds = useMemo(() => {
-    const slotLocationById = new Map<string, string | null>();
-    for (const slot of scheduleQuery.data ?? []) {
-      if (slot.id) slotLocationById.set(slot.id, slot.locationId ?? null);
-    }
-    return substituteLocationIds(substitutesQuery.data ?? [], memberId, slotLocationById);
-  }, [substitutesQuery.data, memberId, scheduleQuery.data]);
+    if (role !== "teacher" || !memberId) return [];
+    const slotLocationById = teacherSubstituteSlotsQuery.data ?? new Map<string, string | null>();
+    const rows = [...slotLocationById.keys()].map((scheduleSlotId) => ({
+      id: "",
+      occurrenceKind: "group" as const,
+      occurrenceDate: "",
+      scheduleSlotId,
+      personalLessonId: null,
+      originalTeacherMemberId: "",
+      substituteTeacherMemberId: memberId,
+    }));
+    return substituteLocationIds(rows, memberId, slotLocationById);
+  }, [role, memberId, teacherSubstituteSlotsQuery.data]);
 
   const locations = useMemo(
     () =>

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import type { DebtorEntry } from "../lib/financeReports";
 import { useOrgQueryScope } from "./useOrgQueryScope";
@@ -52,15 +53,17 @@ export function useFinancialDebtors(options?: { enabled?: boolean }) {
     queryKey: withOrgId([...financialDebtorsQueryKey]),
     enabled: queryEnabled,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("financial_debtors_v")
-        .select(FINANCIAL_DEBTORS_SELECT)
-        .order("amount", { ascending: false })
-        .order("client_display", { ascending: true });
+      const data = await fetchAllPostgrestRows((from, to) =>
+        supabase
+          .from("financial_debtors_v")
+          .select(FINANCIAL_DEBTORS_SELECT)
+          .order("amount", { ascending: false })
+          .order("client_display", { ascending: true })
+          .order("id", { ascending: true })
+          .range(from, to)
+      );
 
-      if (error) throw error;
-
-      return (data ?? []).map((row) => mapFinancialDebtor(row as Record<string, unknown>));
+      return data.map((row) => mapFinancialDebtor(row as Record<string, unknown>));
     },
     staleTime: 30 * 1000,
   });

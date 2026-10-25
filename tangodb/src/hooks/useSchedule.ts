@@ -20,6 +20,7 @@ import { useRentalsForWeek, rentalsQueryKey } from "./useRentals";
 import { scheduleGroupsQueryKey } from "./useScheduleGroups";
 import { groupCapacityQueryKey } from "./useGroupCapacity";
 import { kickCalendarSyncInBackground } from "../lib/googleCalendarApi";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { applySubstitutesToGroupDisplay, applySubstitutesToPersonalDisplay } from "../lib/lessonSubstitute";
 import { useLessonSubstitutes } from "./useLessonSubstitutes";
 
@@ -59,9 +60,6 @@ export interface GroupScheduleSlotInput {
   timeEnd: string;
 }
 
-/** @deprecated alias */
-export type DisciplineScheduleSlotInput = GroupScheduleSlotInput;
-
 export interface ScheduleForWeekData {
   slots: ScheduleSlot[];
   groupLessons: GroupDisplayLesson[];
@@ -69,6 +67,67 @@ export interface ScheduleForWeekData {
   eventLessons: EventDisplayLesson[];
   rentalLessons: RentalDisplayLesson[];
   lessons: DisplayLesson[];
+}
+
+export const scheduleSlotsConflictQueryKey = ["schedule", "conflict"] as const;
+
+/** Group slots that may conflict with personal lessons in a date range at one location. */
+export function useScheduleSlotsForConflict(options?: {
+  locationId?: string | null;
+  dateRange?: { start: string; end: string } | null;
+  enabled?: boolean;
+}) {
+  const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
+  const locationId = options?.locationId ?? null;
+  const dateRange = options?.dateRange ?? null;
+  const queryEnabled =
+    orgEnabled &&
+    (options?.enabled ?? true) &&
+    Boolean(locationId) &&
+    Boolean(dateRange?.start && dateRange?.end);
+
+  return useQuery({
+    queryKey: withOrgId([
+      ...scheduleSlotsConflictQueryKey,
+      locationId,
+      dateRange?.start ?? null,
+      dateRange?.end ?? null,
+    ]),
+    enabled: queryEnabled,
+    queryFn: async () => {
+      const start = dateRange!.start;
+      const end = dateRange!.end;
+      const data = await fetchAllPostgrestRows((from, to) =>
+        supabase
+          .from(scheduleTable)
+          .select(
+            "id, day_of_week, time, time_end, discipline_id, group_name, location_id, valid_from, valid_to"
+          )
+          .eq("location_id", locationId!)
+          .lte("valid_from", end)
+          .or(`valid_to.is.null,valid_to.gte.${start}`)
+          .order("day_of_week")
+          .order("time")
+          .order("id")
+          .range(from, to)
+      );
+      return data.map((row) => {
+        const slot = mapScheduleSlot(row as Record<string, unknown>);
+        return {
+          id: slot.id,
+          dayOfWeek: slot.dayOfWeek,
+          time: slot.time,
+          timeEnd: slot.timeEnd,
+          disciplineId: slot.disciplineId,
+          groupName: slot.groupName,
+          locationId: slot.locationId,
+          validFrom: slot.validFrom,
+          validTo: slot.validTo,
+        };
+      });
+    },
+    staleTime: 5 * 60 * 1000,
+  });
 }
 
 export function useSchedule(options?: { enabled?: boolean }) {
@@ -79,13 +138,16 @@ export function useSchedule(options?: { enabled?: boolean }) {
     queryKey: withOrgId(scheduleQueryKey),
     enabled: queryEnabled,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from(scheduleTable)
-        .select("*")
-        .order("day_of_week")
-        .order("time");
-      if (error) throw error;
-      return (data ?? []).map(mapScheduleSlot);
+      const data = await fetchAllPostgrestRows((from, to) =>
+        supabase
+          .from(scheduleTable)
+          .select("*")
+          .order("day_of_week")
+          .order("time")
+          .order("id")
+          .range(from, to)
+      );
+      return data.map((row) => mapScheduleSlot(row as Record<string, unknown>));
     },
     staleTime: 5 * 60 * 1000,
   });
@@ -108,7 +170,10 @@ export function useScheduleForWeek(
     excludeCancelled: true,
   });
 
-  const substitutesQuery = useLessonSubstitutes({ enabled: queryEnabled });
+  const substitutesQuery = useLessonSubstitutes({
+    enabled: queryEnabled,
+    dateRange: { start: weekStartISO, end: weekEndISO },
+  });
 
   const cancellationsQuery = useQuery({
     queryKey: withOrgId(["scheduleCancellations", "week", weekStartISO, weekEndISO]),
@@ -138,15 +203,18 @@ export function useScheduleForWeek(
     queryKey: withOrgId(["schedule", "week", weekStartISO]),
     enabled: queryEnabled,
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from(scheduleTable)
-        .select("*")
-        .lte("valid_from", weekEndISO)
-        .or(`valid_to.is.null,valid_to.gte.${weekStartISO}`)
-        .order("day_of_week")
-        .order("time");
-      if (error) throw error;
-      return (data ?? []).map(mapScheduleSlot);
+      const data = await fetchAllPostgrestRows((from, to) =>
+        supabase
+          .from(scheduleTable)
+          .select("*")
+          .lte("valid_from", weekEndISO)
+          .or(`valid_to.is.null,valid_to.gte.${weekStartISO}`)
+          .order("day_of_week")
+          .order("time")
+          .order("id")
+          .range(from, to)
+      );
+      return data.map((row) => mapScheduleSlot(row as Record<string, unknown>));
     },
     staleTime: 60 * 1000,
     placeholderData: keepPreviousData,
@@ -558,8 +626,18 @@ export function useEditGroupSchedule() {
         return { success: true as const };
       };
 
-      const rollbackClose = async () => {
-        await supabase.from(scheduleTable).update({ valid_to: existingValidTo }).eq("id", slotId);
+      const rollbackClose = async (): Promise<ScheduleWriteResult> => {
+        const { error: rollbackError } = await supabase
+          .from(scheduleTable)
+          .update({ valid_to: existingValidTo })
+          .eq("id", slotId);
+        if (rollbackError) {
+          return {
+            success: false as const,
+            error: "schedule.error.editCloseRollbackFailed",
+          };
+        }
+        return { success: true as const };
       };
 
       if (liveOnEditDate && existingValidFrom === editDate) {
@@ -589,7 +667,8 @@ export function useEditGroupSchedule() {
       if (successorId && successorId !== slotId) {
         const updated = await updateScheduleSlotsByIds([successorId], writePayload);
         if (!updated.success) {
-          await rollbackClose();
+          const rollback = await rollbackClose();
+          if (!rollback.success) return rollback;
           return updated;
         }
         return { success: true as const };
@@ -597,7 +676,8 @@ export function useEditGroupSchedule() {
 
       const inserted = await insertSuccessor();
       if (!inserted.success) {
-        await rollbackClose();
+        const rollback = await rollbackClose();
+        if (!rollback.success) return rollback;
         return inserted;
       }
       return { success: true as const };

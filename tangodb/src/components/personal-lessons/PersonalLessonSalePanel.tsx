@@ -1,7 +1,5 @@
 import { useMemo } from "react";
 import { Ticket } from "lucide-react";
-import { useSchedule } from "../../hooks/useSchedule";
-import { usePersonalLessons } from "../../hooks/usePersonalLessons";
 import { useTeamMembers } from "../../hooks/useTeamMembers";
 import { useI18n } from "../../hooks/useI18n";
 import { useAccessibleLocations } from "../../hooks/useLocations";
@@ -15,42 +13,12 @@ interface PersonalLessonSalePanelProps {
 
 export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePanelProps) {
   const { t } = useI18n();
-  const scheduleQuery = useSchedule();
-  const personalLessonsQuery = usePersonalLessons();
   const teamQuery = useTeamMembers();
   const { locations } = useAccessibleLocations();
 
   const teacherOptions = useMemo(
     () => (teamQuery.data ?? []).filter(isActiveLessonConductingMember),
     [teamQuery.data]
-  );
-
-  const scheduleSlots = useMemo(
-    () =>
-      (scheduleQuery.data ?? []).map((slot) => ({
-        id: slot.id,
-        dayOfWeek: slot.dayOfWeek,
-        time: slot.time,
-        timeEnd: slot.timeEnd,
-        disciplineId: slot.disciplineId,
-        groupName: slot.groupName,
-        locationId: slot.locationId,
-        validFrom: slot.validFrom,
-        validTo: slot.validTo,
-      })),
-    [scheduleQuery.data]
-  );
-
-  const personalLessons = useMemo(
-    () =>
-      (personalLessonsQuery.data ?? []).map((lesson) => ({
-        id: lesson.id,
-        date: lesson.date,
-        timeStart: lesson.timeStart,
-        timeEnd: lesson.timeEnd,
-        locationId: lesson.locationId,
-      })),
-    [personalLessonsQuery.data]
   );
 
   return (
@@ -76,8 +44,8 @@ export default function PersonalLessonSalePanel({ toast }: PersonalLessonSalePan
         <PersonalLessonSaleForm
           mode="standalone"
           teacherOptions={teacherOptions}
-          scheduleSlots={scheduleSlots}
-          personalLessons={personalLessons}
+          scheduleSlots={[]}
+          personalLessons={[]}
           toast={toast}
           onSuccess={() => {
             toast(t("personal.sell.success"), "success");

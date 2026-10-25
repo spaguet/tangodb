@@ -2,16 +2,9 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { ChevronDown, ChevronUp, Circle, CircleCheck, X } from "lucide-react";
 import { useBeginnerHints } from "../../hooks/useBeginnerHints";
+import { useFirstDayChecklistExists } from "../../hooks/useFirstDayChecklistExists";
 import { useI18n } from "../../hooks/useI18n";
 import { useOrganization } from "../../organization/OrganizationProvider";
-import { useLocations } from "../../hooks/useLocations";
-import { useDisciplines } from "../../hooks/useDisciplines";
-import { usePrices } from "../../hooks/usePrices";
-import { useClientDirectory } from "../../hooks/useClients";
-import { useSchedule } from "../../hooks/useSchedule";
-import { useSubscriptions } from "../../hooks/useSubscriptions";
-import { usePersonalLessons } from "../../hooks/usePersonalLessons";
-import { useAttendanceRecords } from "../../hooks/useAttendance";
 import { normalizeOrgModules } from "../../lib/orgModules";
 import { useOrgEdition } from "../../hooks/useOrgEdition";
 import { PLACEHOLDER_ORG_NAMES } from "../../types/organization";
@@ -44,6 +37,15 @@ export default function FirstDayChecklist() {
   const modules = normalizeOrgModules(settings?.modules);
   const { editionAllows } = useOrgEdition();
 
+  const checklistActive = Boolean(organizationId) && showFirstDayChecklist;
+  const trackSaleStep = editionAllows("group_subscriptions");
+
+  const exists = useFirstDayChecklistExists({
+    checklistActive,
+    personalLessonsModule: modules.personal_lessons,
+    trackSaleStep,
+  });
+
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
@@ -67,15 +69,6 @@ export default function FirstDayChecklist() {
       return next;
     });
   }, [organizationId]);
-
-  const locationsQuery = useLocations();
-  const disciplinesQuery = useDisciplines();
-  const pricesQuery = usePrices();
-  const clientsQuery = useClientDirectory();
-  const scheduleQuery = useSchedule();
-  const subscriptionsQuery = useSubscriptions();
-  const personalQuery = usePersonalLessons({ enabled: modules.personal_lessons });
-  const attendanceQuery = useAttendanceRecords(undefined, { enabled: true });
 
   const steps = useMemo<ChecklistStepDef[]>(() => {
     const salePath =
@@ -111,35 +104,37 @@ export default function FirstDayChecklist() {
       !!settings.currency_code &&
       !!settings.timezone;
 
+    const saleDone =
+      exists.hasSubscription || (modules.personal_lessons ? exists.hasPersonalLesson : false);
+
     return {
       studio: studioReady,
-      location: (locationsQuery.data?.length ?? 0) > 0,
-      discipline: (disciplinesQuery.data?.length ?? 0) > 0,
-      prices: (pricesQuery.data?.length ?? 0) > 0,
-      client: (clientsQuery.data?.length ?? 0) > 0,
-      schedule: (scheduleQuery.data?.length ?? 0) > 0,
-      sale:
-        (subscriptionsQuery.data?.length ?? 0) > 0 ||
-        (personalQuery.data?.length ?? 0) > 0,
-      attendance: (attendanceQuery.data?.length ?? 0) > 0,
+      location: exists.hasLocation,
+      discipline: exists.hasDiscipline,
+      prices: exists.hasPrices,
+      client: exists.hasClient,
+      schedule: exists.hasSchedule,
+      sale: saleDone,
+      attendance: exists.hasAttendance,
     } satisfies Record<ChecklistStepId, boolean>;
   }, [
     organization?.name,
     settings,
-    locationsQuery.data,
-    disciplinesQuery.data,
-    pricesQuery.data,
-    clientsQuery.data,
-    scheduleQuery.data,
-    subscriptionsQuery.data,
-    personalQuery.data,
-    attendanceQuery.data,
+    exists.hasLocation,
+    exists.hasDiscipline,
+    exists.hasPrices,
+    exists.hasClient,
+    exists.hasSchedule,
+    exists.hasSubscription,
+    exists.hasPersonalLesson,
+    exists.hasAttendance,
+    modules.personal_lessons,
   ]);
 
   const completedCount = steps.filter((s) => done[s.id]).length;
   const allDone = completedCount === steps.length;
 
-  if (!organizationId || allDone || !showFirstDayChecklist) return null;
+  if (!checklistActive || allDone) return null;
 
   const nextStep = steps.find((s) => !done[s.id]);
 

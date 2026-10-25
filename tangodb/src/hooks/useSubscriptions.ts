@@ -1,16 +1,10 @@
-import { useMemo } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
-import {
-  computeMonthlyExpiresAt,
-  formatClientName,
-  normalizeSubscriptionPairMonth,
-} from "../lib/utils";
-import type { ActiveSubscription, BillingModel, Subscription } from "../types";
+import { computeMonthlyExpiresAt, normalizeSubscriptionPairMonth } from "../lib/utils";
+import type { BillingModel, Subscription } from "../types";
 import { useOrganization } from "../organization/OrganizationProvider";
 import { isRestrictedReceptionAdmin } from "../lib/permissions";
-import { useClientDirectory } from "./useClients";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 import { subscriptionGroupsQueryKey } from "./useSubscriptionGroups";
 import { groupCapacityQueryKey } from "./useGroupCapacity";
@@ -75,48 +69,6 @@ export function useSubscriptions(options?: { enabled?: boolean }) {
     },
     staleTime: 30 * 1000,
   });
-}
-
-export function useActiveSubscriptions() {
-  const subscriptionsQuery = useSubscriptions();
-  const clientsQuery = useClientDirectory();
-
-  const data = useMemo((): ActiveSubscription[] => {
-    const subscriptions = subscriptionsQuery.data ?? [];
-    const clients = clientsQuery.data ?? [];
-    const clientMap = Object.fromEntries(clients.map((c) => [c.id, c]));
-
-    return subscriptions
-      .filter((s) => s.status === "active")
-      .map((s) => {
-        const c1 = clientMap[s.clientId1];
-        const c2 = s.clientId2 ? clientMap[s.clientId2] : null;
-        const c3 = s.clientId3 ? clientMap[s.clientId3] : null;
-
-        return {
-          subId: s.id,
-          type: s.type,
-          pairMonth: s.pairMonth,
-          client1: c1 ? formatClientName(c1.lastName, c1.firstName) : s.clientId1,
-          client2: c2 ? formatClientName(c2.lastName, c2.firstName) : "",
-          client3: c3 ? formatClientName(c3.lastName, c3.firstName) : "",
-          client1tg: c1?.telegram || "",
-          client2tg: c2?.telegram || "",
-          client3tg: c3?.telegram || "",
-          lessonsTotal: s.lessonsTotal,
-          lessonsLeft: s.lessonsLeft,
-          freezeUsed: s.freezeUsed,
-          activationDate: s.activationDate,
-        };
-      });
-  }, [subscriptionsQuery.data, clientsQuery.data]);
-
-  return {
-    data,
-    isLoading: subscriptionsQuery.isLoading || clientsQuery.isLoading,
-    isError: subscriptionsQuery.isError || clientsQuery.isError,
-    error: subscriptionsQuery.error ?? clientsQuery.error,
-  };
 }
 
 export function useAddSubscription() {

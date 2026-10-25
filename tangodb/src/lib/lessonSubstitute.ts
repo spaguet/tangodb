@@ -4,6 +4,7 @@ import type {
   PersonalDisplayLesson,
   PersonalLesson,
 } from "../types";
+import { fetchAllPostgrestRows } from "./postgrestRange";
 import { supabase } from "./supabase";
 
 export type LessonOccurrenceKind = "group" | "personal";
@@ -64,16 +65,73 @@ export function mapLessonSubstituteRow(row: Record<string, unknown>): LessonSubs
   };
 }
 
-export async function fetchLessonSubstitutes(): Promise<LessonSubstituteRow[]> {
-  const { data, error } = await supabase
-    .from("lesson_occurrence_substitutes")
-    .select(
-      "id, occurrence_kind, occurrence_date, schedule_slot_id, personal_lesson_id, original_teacher_member_id, substitute_teacher_member_id"
-    )
-    .order("occurrence_date", { ascending: true });
+export type LessonSubstitutesDateRange = { start: string; end: string };
 
-  if (error) throw error;
-  return ((data as unknown as Record<string, unknown>[] | null) ?? []).map(mapLessonSubstituteRow);
+export async function fetchLessonSubstitutes(
+  options?: { dateRange?: LessonSubstitutesDateRange }
+): Promise<LessonSubstituteRow[]> {
+  const dateRange = options?.dateRange;
+  const data = await fetchAllPostgrestRows((from, to) => {
+    let query = supabase
+      .from("lesson_occurrence_substitutes")
+      .select(
+        "id, occurrence_kind, occurrence_date, schedule_slot_id, personal_lesson_id, original_teacher_member_id, substitute_teacher_member_id"
+      )
+      .order("occurrence_date", { ascending: true })
+      .order("id", { ascending: true });
+
+    if (dateRange) {
+      query = query.gte("occurrence_date", dateRange.start).lte("occurrence_date", dateRange.end);
+    }
+
+    return query.range(from, to);
+  });
+  return data.map((row) => mapLessonSubstituteRow(row as Record<string, unknown>));
+}
+
+const SUBSTITUTE_SLOT_LOCATION_CHUNK = 200;
+
+/** Slot id → location for group substitutes where memberId is the substitute teacher. */
+export async function fetchTeacherSubstituteSlotLocationMap(
+  memberId: string
+): Promise<Map<string, string | null>> {
+  const substituteRows = await fetchAllPostgrestRows((from, to) =>
+    supabase
+      .from("lesson_occurrence_substitutes")
+      .select("schedule_slot_id")
+      .eq("substitute_teacher_member_id", memberId)
+      .not("schedule_slot_id", "is", null)
+      .order("id", { ascending: true })
+      .range(from, to)
+  );
+
+  const slotIds = [
+    ...new Set(
+      substituteRows
+        .map((row) => (row.schedule_slot_id != null ? String(row.schedule_slot_id) : ""))
+        .filter(Boolean)
+    ),
+  ];
+
+  const slotLocationById = new Map<string, string | null>();
+  if (slotIds.length === 0) return slotLocationById;
+
+  for (let i = 0; i < slotIds.length; i += SUBSTITUTE_SLOT_LOCATION_CHUNK) {
+    const chunk = slotIds.slice(i, i + SUBSTITUTE_SLOT_LOCATION_CHUNK);
+    const { data, error } = await supabase
+      .from("schedule_slots")
+      .select("id, location_id")
+      .in("id", chunk);
+    if (error) throw error;
+    for (const row of data ?? []) {
+      slotLocationById.set(
+        String(row.id),
+        row.location_id != null ? String(row.location_id) : null
+      );
+    }
+  }
+
+  return slotLocationById;
 }
 
 export async function assignLessonSubstituteRpc(

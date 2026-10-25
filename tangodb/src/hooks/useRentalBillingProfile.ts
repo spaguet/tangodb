@@ -129,45 +129,6 @@ export function useRentalInvoiceDocument(invoiceId: string | null) {
   });
 }
 
-export function useExportRentalInvoiceDocuments() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (input: { invoiceIds: string[]; renterId?: string }) => {
-      const { data, error } = await supabase.rpc("export_rental_invoice_documents", {
-        p_invoice_ids: input.invoiceIds,
-      });
-      if (error) return { success: false as const, error: error.message };
-
-      const result = data as {
-        success?: boolean;
-        error?: string;
-        export_batch_id?: string;
-        documents?: Record<string, unknown>[];
-      } | null;
-
-      if (!result?.success || !result.documents) {
-        return { success: false as const, error: result?.error ?? "rentalBilling.error.exportFailed" };
-      }
-
-      return {
-        success: true as const,
-        exportBatchId: result.export_batch_id ?? "",
-        documents: result.documents.map(mapInvoiceDocument),
-      };
-    },
-    onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: rentalInvoicesQueryKey, refetchType: "active" });
-      if (variables.renterId) {
-        void queryClient.invalidateQueries({
-          queryKey: [...rentalInvoicesQueryKey, "renter-invoices", variables.renterId],
-          refetchType: "active",
-        });
-      }
-    },
-  });
-}
-
 export function fiscalInputToRpcPayload(fiscal?: RentalFiscalInput) {
   if (!fiscal) return {};
   return {

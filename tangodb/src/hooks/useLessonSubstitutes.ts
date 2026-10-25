@@ -5,19 +5,28 @@ import {
   fetchLessonSubstitutes,
   type AssignLessonSubstituteInput,
   type ClearLessonSubstituteInput,
+  type LessonSubstitutesDateRange,
 } from "../lib/lessonSubstitute";
 import { useOrgQueryScope } from "./useOrgQueryScope";
 
 export const lessonSubstitutesQueryKey = ["lessonOccurrenceSubstitutes"] as const;
 
-export function useLessonSubstitutes(options?: { enabled?: boolean }) {
+export function useLessonSubstitutes(options?: {
+  enabled?: boolean;
+  dateRange?: LessonSubstitutesDateRange;
+}) {
   const { enabled: orgEnabled, withOrgId } = useOrgQueryScope();
   const queryEnabled = orgEnabled && (options?.enabled ?? true);
+  const dateRange = options?.dateRange;
 
   return useQuery({
-    queryKey: withOrgId(lessonSubstitutesQueryKey),
+    queryKey: withOrgId([
+      ...lessonSubstitutesQueryKey,
+      dateRange?.start ?? null,
+      dateRange?.end ?? null,
+    ]),
     enabled: queryEnabled,
-    queryFn: fetchLessonSubstitutes,
+    queryFn: () => fetchLessonSubstitutes({ dateRange }),
     staleTime: 60 * 1000,
   });
 }
@@ -28,6 +37,10 @@ function invalidateSubstituteQueries(
   void queryClient.invalidateQueries({ queryKey: lessonSubstitutesQueryKey, refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: ["schedule"], refetchType: "active" });
   void queryClient.invalidateQueries({ queryKey: ["personalLessons"], refetchType: "active" });
+  void queryClient.invalidateQueries({
+    queryKey: ["accessibleLocations", "teacherSubstituteSlots"],
+    refetchType: "active",
+  });
 }
 
 export function useAssignLessonSubstitute() {

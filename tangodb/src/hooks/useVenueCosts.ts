@@ -714,35 +714,3 @@ export function useFinanceCosts(dateFrom: string, dateTo: string, enabled = true
     staleTime: 30_000,
   });
 }
-
-/** Resolve pending_unpriced closures for a date range (e.g. dashboard month). */
-export function useRecalculatePendingVenueCosts() {
-  const invalidate = useInvalidateVenueCosts();
-
-  return useMutation({
-    mutationFn: async (input: { dateFrom: string; dateTo: string; idempotencyKey?: string }) => {
-      const { data, error } = await supabase.rpc("recalculate_pending_venue_costs", {
-        p_date_from: input.dateFrom,
-        p_date_to: input.dateTo,
-        p_idempotency_key: input.idempotencyKey ?? crypto.randomUUID(),
-      });
-      if (error) return { success: false as const, error: error.message, resolvedCount: 0 };
-      const result = data as RpcObject | null;
-      if (!result?.success) {
-        return {
-          success: false as const,
-          error: String(result?.error_code ?? "recalculate_pending_venue_costs_failed"),
-          resolvedCount: 0,
-        };
-      }
-      return {
-        success: true as const,
-        resolvedCount: Number(result.resolved_count) || 0,
-        alreadyApplied: result.already_applied === true,
-      };
-    },
-    onSuccess: (result) => {
-      if (result.success) invalidate();
-    },
-  });
-}

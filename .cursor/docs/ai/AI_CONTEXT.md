@@ -35,6 +35,7 @@ project/
 | Тариф персонального урока, длительность, раздельный платёж | `tangodb_personal_tariff_duration_payments.md` |
 | Промпты реализации того же контура | `tangodb_personal_tariff_duration_payments_prompts.md` |
 | Аудит CRM 2026-08-19 + промпты починки | `.cursor/docs/ai/crm_audit_2026-08-19.md` |
+| Аудит CRM 2026-10-25 + промпты P01–P08 (код аудита не менялся) | `.cursor/docs/ai/crm_audit_2026-10-25.md` |
 | Аудит безопасности CRM 2026-08-22 + промпты S01–S40 + хвост восьмой сверки | `.cursor/docs/ai/crm_security_audit_2026-08-22.md` |
 | Снятый узел Telegram Mini App (история, не реализовывать) | `.cursor/docs/ai/renter_telegram_miniapp.md`, `.cursor/docs/ai/renter_miniapp_audit_2026-09-03.md`. Узел удалён в CRM **2.12.18** (см. `decision_log.md` HALL-RENT-MINIAPP-REMOVED). Кассовая аренда зала жива. |
 | Месячная подписка CRM + платформенный бот поддержки | `.cursor/docs/ai/crm_monthly_subscription_and_support_bot.md` (§1–§15 спека; **§16 промпты S0–S7** с чекбоксами) |

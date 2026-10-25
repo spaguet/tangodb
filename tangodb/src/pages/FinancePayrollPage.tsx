@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, Fragment } from "react";
+import { useMemo, useState, Fragment } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import {
   ChevronDown,
@@ -6,6 +6,7 @@ import {
   ChevronRight,
   ChevronUp,
   Plus,
+  RefreshCw,
   Wallet,
   X,
 } from "lucide-react";
@@ -306,6 +307,7 @@ function RecordPaymentModal({
 
 function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
   const { t, locale } = useI18n();
+  const toast = useToast();
   const { can } = usePermissions();
   const canWrite = can("payroll.write");
   const personalLessonsEnabled = usePersonalLessonsModuleEnabled();
@@ -317,17 +319,29 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
   const monthRange = monthDateRange(yearMonth);
   const paymentsQuery = usePayments({ dateFrom: monthRange.dateFrom, dateTo: monthRange.dateTo });
   const scheduleQuery = useSchedule();
-  const personalLessonsQuery = usePersonalLessons({ enabled: personalLessonsEnabled });
+  const personalLessonIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const payment of paymentsQuery.data ?? []) {
+      if (payment.personalLessonId) ids.add(payment.personalLessonId);
+    }
+    return [...ids];
+  }, [paymentsQuery.data]);
+  const personalLessonsQuery = usePersonalLessons({
+    enabled: personalLessonsEnabled && personalLessonIds.length > 0,
+    lessonIds: personalLessonIds.length > 0 ? personalLessonIds : undefined,
+  });
   const singleVisitsQuery = useSingleVisits({ yearMonth });
   const subscriptionGroupsQuery = useSubscriptionGroups();
 
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(null);
   const [paymentTarget, setPaymentTarget] = useState<TeacherSettlement | null>(null);
 
-  useEffect(() => {
-    if (!canWrite) return;
-    void recalculate.mutateAsync(yearMonth);
-  }, [yearMonth, canWrite]);
+  const handleRecalculate = async () => {
+    const result = await recalculate.mutateAsync(yearMonth);
+    if (!result.success) {
+      toast(resolveMutationError(result.error, "finance.payroll.error.recalculate", t), "error");
+    }
+  };
 
   const payrollMembers = useMemo(
     () => (teamQuery.data ?? []).filter((m) => m.is_active),
@@ -385,8 +399,7 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
     scheduleQuery.isLoading ||
     personalLessonsQuery.isLoading ||
     singleVisitsQuery.isLoading ||
-    subscriptionGroupsQuery.isLoading ||
-    recalculate.isPending
+    subscriptionGroupsQuery.isLoading
   ) {
     return <LoadingState label={t("finance.payroll.loading")} />;
   }
@@ -403,6 +416,19 @@ function AdminPayrollTable({ yearMonth }: { yearMonth: string }) {
 
   return (
     <>
+      {canWrite && (
+        <div className="px-3 pt-3 flex justify-end">
+          <button
+            type="button"
+            onClick={() => void handleRecalculate()}
+            disabled={recalculate.isPending}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-indigo-700 bg-indigo-50 hover:bg-indigo-100 rounded-lg cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${recalculate.isPending ? "animate-spin" : ""}`} />
+            {recalculate.isPending ? t("common.saving") : t("finance.payroll.recalculate")}
+          </button>
+        </div>
+      )}
       <div className="overflow-x-auto">
         <table className="w-full text-sm font-sans">
           <thead>

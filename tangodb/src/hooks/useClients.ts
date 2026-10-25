@@ -131,7 +131,6 @@ export function useClients(options?: { includeArchived?: boolean; enabled?: bool
   });
 }
 
-export const useActiveClients = () => useClients();
 export const useClientDirectory = (options?: { enabled?: boolean }) =>
   useClients({ includeArchived: true, enabled: options?.enabled });
 

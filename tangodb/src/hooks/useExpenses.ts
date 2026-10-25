@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { monthDateRange } from "../lib/financeReports";
 import { isFinancePeriodClosed } from "../lib/orgFinanceDate";
+import { fetchAllPostgrestRows } from "../lib/postgrestRange";
 import { supabase } from "../lib/supabase";
 import type { Expense, ExpenseCategory, ExpenseInput } from "../types/expense";
 import { useOrganization } from "../organization/OrganizationProvider";
@@ -33,7 +34,11 @@ export interface ExpensesFilter {
 }
 
 function buildExpensesQuery(filter?: ExpensesFilter) {
-  let query = supabase.from("expenses").select(EXPENSES_SELECT).order("expense_date", { ascending: false });
+  let query = supabase
+    .from("expenses")
+    .select(EXPENSES_SELECT)
+    .order("expense_date", { ascending: false })
+    .order("id", { ascending: false });
 
   if (filter?.dateFrom) query = query.gte("expense_date", filter.dateFrom);
   if (filter?.dateTo) query = query.lte("expense_date", filter.dateTo);
@@ -72,9 +77,10 @@ export function useExpenses(filter?: ExpensesFilter) {
     queryKey: withOrgId([...expensesQueryKey, filter ?? {}]),
     enabled: queryEnabled,
     queryFn: async () => {
-      const { data, error } = await buildExpensesQuery(filter);
-      if (error) throw error;
-      return (data ?? []).map((row) => mapExpense(row as unknown as Record<string, unknown>));
+      const data = await fetchAllPostgrestRows((from, to) =>
+        buildExpensesQuery(filter).range(from, to)
+      );
+      return data.map((row) => mapExpense(row as unknown as Record<string, unknown>));
     },
     staleTime: 30 * 1000,
   });

@@ -24,6 +24,7 @@ const RPC_ERROR_KEY_MAP: Record<string, I18nKey> = {
   conflict: "schedule.rental.conflict",
   request_failed: "common.saveFailed",
   request_save_failed: "common.saveFailed",
+  edition_forbidden: "finance.payroll.error.editionForbidden",
 };
 
 export function isI18nKey(value: string): value is I18nKey {
