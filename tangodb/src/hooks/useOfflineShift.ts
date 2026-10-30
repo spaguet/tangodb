@@ -17,12 +17,14 @@ import {
   saveShiftSnapshot,
 } from "../lib/offline/storage";
 import { reportOfflineEvent } from "../lib/offline/monitoring";
+import { clearStaffPushOnNamespaceChange } from "../lib/staffPush/fcmClient";
 import { useOfflineStore } from "../store/offline";
 import type {
   AttendanceMarkStatus,
   OfflineAttendanceOperation,
   OfflineNamespace,
   OfflinePaymentDraft,
+  OfflineQueue,
   ShiftSnapshot,
 } from "../lib/offline/types";
 import type { SubForDate } from "../types";
@@ -229,6 +231,18 @@ export function useSaveOfflinePaymentDraft() {
   );
 }
 
+async function wipeOfflineNamespace(
+  ns: OfflineNamespace,
+  setSnapshot: (s: ShiftSnapshot | null) => void,
+  setQueue: (q: OfflineQueue | null) => void
+) {
+  await clearStaffPushOnNamespaceChange();
+  await clearOfflineData(ns);
+  setSnapshot(null);
+  setQueue(null);
+  reportOfflineEvent("namespace_cleared");
+}
+
 export function useClearOfflineNamespace() {
   const ns = useOfflineNamespace();
   const setSnapshot = useOfflineStore((s) => s.setSnapshot);
@@ -236,10 +250,7 @@ export function useClearOfflineNamespace() {
 
   return useCallback(async () => {
     if (!ns) return;
-    await clearOfflineData(ns);
-    setSnapshot(null);
-    setQueue(null);
-    reportOfflineEvent("namespace_cleared");
+    await wipeOfflineNamespace(ns, setSnapshot, setQueue);
   }, [ns, setSnapshot, setQueue]);
 }
 
@@ -287,29 +298,44 @@ export function useOfflineReconciliation() {
 
 /** Call on logout / org switch — blocks stale queue from leaking */
 export function useOfflineSecurityReset() {
-  const clear = useClearOfflineNamespace();
-  const prevNsRef = useRef<string | null>(null);
+  const setSnapshot = useOfflineStore((s) => s.setSnapshot);
+  const setQueue = useOfflineStore((s) => s.setQueue);
+  const prevNsRef = useRef<OfflineNamespace | null>(null);
   const ns = useOfflineNamespace();
   const { session } = useAuth();
 
-  useEffect(() => {
-    const key = ns ? `${ns.userId}:${ns.organizationId}` : null;
-    if (prevNsRef.current != null && prevNsRef.current !== key) {
-      void clear();
-    }
-    prevNsRef.current = key;
-  }, [ns?.userId, ns?.organizationId, clear]);
+  const wipePrevious = useCallback(
+    async (target: OfflineNamespace) => {
+      await wipeOfflineNamespace(target, setSnapshot, setQueue);
+    },
+    [setSnapshot, setQueue]
+  );
 
   useEffect(() => {
-    if (!session) {
-      void clear();
+    const prev = prevNsRef.current;
+
+    if (ns) {
+      if (
+        prev &&
+        (prev.userId !== ns.userId || prev.organizationId !== ns.organizationId)
+      ) {
+        void wipePrevious(prev);
+      }
+      prevNsRef.current = ns;
+      return;
     }
-  }, [session, clear]);
+
+    if (prev) {
+      void wipePrevious(prev);
+      prevNsRef.current = null;
+    }
+  }, [ns?.userId, ns?.organizationId, wipePrevious]);
 
   useEffect(() => {
     const onHide = () => {
-      if (document.visibilityState === "hidden" && !session) {
-        void clear();
+      if (document.visibilityState === "hidden" && !session && prevNsRef.current) {
+        void wipePrevious(prevNsRef.current);
+        prevNsRef.current = null;
       }
     };
     document.addEventListener("visibilitychange", onHide);
@@ -318,5 +344,5 @@ export function useOfflineSecurityReset() {
       document.removeEventListener("visibilitychange", onHide);
       window.removeEventListener("pagehide", onHide);
     };
-  }, [session, clear]);
+  }, [session, wipePrevious]);
 }

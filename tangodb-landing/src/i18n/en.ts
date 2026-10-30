@@ -230,6 +230,34 @@ export const en = {
   "privacy.crm.title": "CRM registration and trial",
   "privacy.crm.text":
     "When you click “Start free” you go to tangodb.vercel.app/register. Data you enter in the CRM is governed by separate product terms and is owned by your studio.",
+  "privacy.androidApp.title": "TangoDB staff app (Android APK)",
+  "privacy.androidApp.text":
+    "The optional staff app uses the same login as the CRM. It stores a local attendance journal snapshot on the device for offline group check-in, queues marks until you sync, and can show lesson reminders. Notifications mention lesson time and type only — not student phone numbers or payment amounts. You can turn notifications off inside the app.",
   "privacy.contact.title": "Contact",
   "privacy.contact.text": "Questions about this policy — email us at",
+  "download.backLink": "Back to home",
+  "download.title": "TangoDB for staff",
+  "download.subtitle":
+    "Install the Android app for owners, admins, teachers, and accountants. Sign in with the same email and password as the CRM website.",
+  "download.meta.label": "Current release",
+  "download.meta.version": "Version",
+  "download.meta.date": "Release date",
+  "download.meta.size": "File size",
+  "download.meta.sha256": "SHA-256 checksum",
+  "download.cta": "Download APK",
+  "download.ctaHint":
+    "Android shows a warning because the file is not from Google Play. That is expected — follow the steps below.",
+  "download.requirements.title": "Supported phones",
+  "download.requirements.body":
+    "Android 8.0 or newer with an updated system WebView (Chrome 80 or newer). Some phones without Google services may need a WebView update before the app opens.",
+  "download.steps.title": "Install steps",
+  "download.steps.1": "Download the APK file using the button above.",
+  "download.steps.2": "When Android warns that the app is unknown, choose to install anyway.",
+  "download.steps.3": "Allow installation from your browser or file manager when asked — only for this download.",
+  "download.steps.4": "Open TangoDB and sign in with your staff account.",
+  "download.sharedPhone":
+    "Do not leave a signed-in phone unattended at the front desk. Sign out when your shift ends until a screen lock is available in the app.",
+  "download.updates": "Updates install on top of the previous version inside the app when a new APK is available.",
+  "download.privacyLink": "Privacy policy",
+  "download.support": "If installation fails, email",
 } as const;

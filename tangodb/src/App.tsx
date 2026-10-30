@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { BrowserRouter, Navigate, Outlet, Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import {
@@ -35,18 +35,8 @@ import AcceptInvitePage from "./auth/AcceptInvitePage";
 import OnboardingWizardPage from "./auth/OnboardingWizardPage";
 import { OrganizationProvider } from "./organization/OrganizationProvider";
 import { SettingsProvider } from "./settings/SettingsProvider";
-import SettingsLayout from "./settings/SettingsLayout";
-import SettingsIndexRedirect from "./settings/SettingsIndexRedirect";
-import GeneralSettingsPage from "./settings/pages/GeneralSettingsPage";
-import OrganizationSettingsPage from "./settings/pages/OrganizationSettingsPage";
-import SubscriptionSettingsPage from "./settings/pages/SubscriptionSettingsPage";
-import DisciplinesSettingsPage from "./settings/pages/DisciplinesSettingsPage";
-import HallRentSettingsPage, { VenueCostsLegacyRedirect } from "./settings/pages/HallRentSettingsPage";
-import LocationsSettingsPage from "./settings/pages/LocationsSettingsPage";
-import DataExportPage from "./settings/pages/DataExportPage";
 import TeamSettingsPage from "./settings/pages/TeamSettingsPage";
-import LicenseSettingsPage from "./settings/pages/LicenseSettingsPage";
-import IntegrationsSettingsPage from "./settings/pages/IntegrationsSettingsPage";
+import SettingsPage from "./pages/SettingsPage";
 import OrgSwitcher from "./organization/OrgSwitcher";
 import SettingsAccessNotice from "./settings/components/SettingsAccessNotice";
 import { useUIStore } from "./store/ui";
@@ -104,22 +94,15 @@ import DeveloperContacts from "./components/license/DeveloperContacts";
 import SupportDeveloperMessageButton from "./components/support/SupportDeveloperMessageButton";
 import AccountBeginnerHintsMenu from "./components/onboarding/AccountBeginnerHintsMenu";
 import PanelBeginnerHelpButton from "./components/onboarding/PanelBeginnerHelpButton";
+import PhoneAppLayout from "./components/phone/PhoneAppLayout";
+import { isNativeCrmShell } from "./lib/platform";
+import { ToastContext, TOAST_STYLES, type ToastType, useToast } from "./lib/toastContext";
 
-export type ToastType = "success" | "error" | "info";
+export { useToast, type ToastType };
 
-const ToastContext = createContext<((msg: string, type?: ToastType) => void) | null>(null);
-
-export function useToast() {
-  const ctx = useContext(ToastContext);
-  if (!ctx) throw new Error("useToast must be used within AppLayout");
-  return ctx;
+function CrmWorkspaceLayout() {
+  return isNativeCrmShell() ? <PhoneAppLayout /> : <AppLayout />;
 }
-
-const TOAST_STYLES: Record<ToastType, { icon: typeof Info; accent: string }> = {
-  success: { icon: CheckCircle2, accent: "text-green-600" },
-  error: { icon: AlertTriangle, accent: "text-rose-600" },
-  info: { icon: Info, accent: "text-indigo-500" },
-};
 
 function ScrollableNav({ children, refreshKey }: { children: React.ReactNode; refreshKey?: unknown }) {
   const { t } = useI18n();
@@ -624,7 +607,7 @@ export default function App() {
                 <Route path="/onboarding" element={<ErrorBoundary><OnboardingWizardPage /></ErrorBoundary>} />
                 <Route path="/license-required" element={<ErrorBoundary><LicenseRequiredPage /></ErrorBoundary>} />
                 <Route element={<PanelAccessRoute />}>
-                <Route element={<AppLayout />}>
+                <Route element={<CrmWorkspaceLayout />}>
                   <Route index element={<ErrorBoundary><DashboardPage /></ErrorBoundary>} />
                   <Route path="clients" element={<ErrorBoundary><ClientsPage /></ErrorBoundary>} />
                   <Route path="renters" element={<ErrorBoundary><RentersPage /></ErrorBoundary>} />
@@ -640,20 +623,7 @@ export default function App() {
                   <Route path="prices" element={<ErrorBoundary><PricesPage /></ErrorBoundary>} />
                   <Route path="finance/*" element={<ErrorBoundary><FinancePage /></ErrorBoundary>} />
                   <Route path="settings/team" element={<ErrorBoundary><TeamSettingsPage /></ErrorBoundary>} />
-                  <Route path="settings" element={<ErrorBoundary><SettingsLayout /></ErrorBoundary>}>
-                    <Route index element={<ErrorBoundary><SettingsIndexRedirect /></ErrorBoundary>} />
-                    <Route path="general" element={<ErrorBoundary><GeneralSettingsPage /></ErrorBoundary>} />
-                    <Route path="organization" element={<ErrorBoundary><OrganizationSettingsPage /></ErrorBoundary>} />
-                    <Route path="subscriptions" element={<ErrorBoundary><SubscriptionSettingsPage /></ErrorBoundary>} />
-                    <Route path="disciplines" element={<ErrorBoundary><DisciplinesSettingsPage /></ErrorBoundary>} />
-                    <Route path="locations" element={<ErrorBoundary><LocationsSettingsPage /></ErrorBoundary>} />
-                    <Route path="hall-rent" element={<ErrorBoundary><HallRentSettingsPage /></ErrorBoundary>} />
-                    <Route path="rental-tariffs" element={<Navigate to="/prices?section=hall-rent" replace />} />
-                    <Route path="venue-costs" element={<VenueCostsLegacyRedirect />} />
-                    <Route path="data" element={<ErrorBoundary><DataExportPage /></ErrorBoundary>} />
-                    <Route path="integrations" element={<ErrorBoundary><IntegrationsSettingsPage /></ErrorBoundary>} />
-                    <Route path="license" element={<ErrorBoundary><LicenseSettingsPage /></ErrorBoundary>} />
-                  </Route>
+                  <Route path="settings/*" element={<ErrorBoundary><SettingsPage /></ErrorBoundary>} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
                 </Route>

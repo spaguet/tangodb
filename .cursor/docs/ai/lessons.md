@@ -7,6 +7,18 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-10-30 — CRM Android release на агент-машине без JDK
+
+- **Ошибка:** `release-crm-android.mjs` не собрал APK: `JAVA_HOME is not set`, `adb` отсутствует, `updates.tangodb.app` недоступен для автозаливки без R2-секретов.
+- **Причина:** выпускной APK и smoke на телефоне требуют JDK, Android SDK, keystore и доступ к update-origin; это не часть git.
+- **Как избежать:** на машине разработчика: `android/keystore.properties` + `npm run release:crm-android`; залить `dist-crm-release/` по `UPLOAD.md`; подставить `sha256`/размер в `tangodb-landing/src/config.ts`; проверить Turnstile на APK вручную.
+
+### 2026-10-30 — Спека Android считала, что выход уже стирает офлайн-снимок
+
+- **Ошибка:** `crm_android_app.md` писала, что `useOfflineSecurityReset` удаляет снимок и очередь при выходе и смене студии. На общем телефоне это читалось как уже закрытый риск.
+- **Причина:** `useClearOfflineNamespace` замыкает текущий `ns`. Когда сессия или студия уже пропали, `ns === null` и `clear()` выходит сразу. `useOfflineShiftLoader` обнуляет только память. IndexedDB `tangodb-offline` предыдущего ключа остаётся.
+- **Как избежать:** удалять предыдущий ключ `${userId}:${organizationId}`, а не текущий пустой. Обрыв сети выходом не считать. Не заводить второе офлайн-хранилище. Канон — `crm_android_app.md` §8 и промпт A1.
+
 ### 2026-10-25 — Просмотр зарплат перезаписывал settlements; гейт выплаты ломал uuid
 
 - **Ошибка:** `AdminPayrollTable` на каждый mount вызывал `recalculate_teacher_settlement`; ошибка RPC не показывалась (хук возвращает `{ success: false }`, не throw). `record_teacher_settlement_payment` при запрете редакции делал `RETURN jsonb_build_object(...)` из функции `RETURNS uuid`. Код `edition_forbidden` без записи в `RPC_ERROR_KEY_MAP` превращался в общий fallback.

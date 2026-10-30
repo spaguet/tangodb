@@ -9,6 +9,7 @@
 - `tangodb/` — основное приложение (React + Vite, TanStack Query, Zustand, Supabase). Vercel: корневой `vercel.json` (`cd tangodb && npm run build`), production `https://tangodb.vercel.app`.
 - Кабинет арендатора Telegram Mini App (`tangodb-renter/`, Edge `renter-telegram-*` / `renter-booking-worker` / `renter-qr-upload`, cron `renter-booking-worker`) снят в **2.12.18**. Кассовая аренда зала в `tangodb/` остаётся.
 - `tangodb-dev-console/` — админ-консоль (React + Vite, Supabase)
+- Android-приложение сотрудников: оболочка **Capacitor 7** в `tangodb/android` + `capacitor.config.ts` (`app.tangodb.crm`, `webDir` = `dist`, `targetSdk` **35**, `minSdk` **26**). Телефонный UI только при `Capacitor.isNativePlatform()` (`lib/platform.ts`), экраны в `components/phone/` (A1 журнал/расписание; A2 — обёртки `ClientsPanel`, `SubscriptionsPanel`, `PersonalLessonsPageContainer`, `RentersPanel`; A3 — `FinancePage`; A4 — `SettingsPage`, `PricesPage`, `TeamSettingsPage`; A5 — локальные напоминания из снимка + FCM; **A6** — OTA-пачка `dist` через подписанный manifest и `WebView.setServerBasePath`, origin `https://localhost`). Спека и очередь A1–AL: `.cursor/docs/ai/crm_android_app.md` (**ANDROID-1**). Один APK на все студии, установка файлом без Google Play.
 
 ## Platform payment config
 
@@ -109,7 +110,7 @@
 - **Очередь:** store `queues` — офлайн-отметки групповой посещаемости (`pending/syncing/applied/conflict/failed/cancelled`) и черновики оплат (напоминания без реквизитов).
 - **Синхронизация:** RPC `sync_offline_mark_attendance` + `operation_idempotency` scope `offline_mark_attendance`; экран `OfflineReconciliationDialog`; cross-tab lock (`navigator.locks` / localStorage fallback).
 - **UI:** `OfflineBanner` (режим офлайн, счётчики, ссылка на сверку), `OfflineLimitedState` (нет/просрочен снимок), `useOnlineStatus.justConnectionRestored`.
-- **Безопасность:** `useOfflineSecurityReset` очищает данные при logout / смене org / user.
+- **Безопасность:** `useOfflineSecurityReset` задуман очищать данные при logout / смене org. На 2026-10-30 `useClearOfflineNamespace` при уже пустом `ns` выходит сразу и IndexedDB не удаляет; в памяти снимок снимает `useOfflineShiftLoader`. Починку предыдущего ключа делает очередь A1 спеки `crm_android_app.md` §8, отдельный протокол не заводят.
 
 ## Google Calendar sync (GCAL)
 

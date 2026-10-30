@@ -24,8 +24,9 @@ import { PricingSection } from "./components/PricingSection";
 import { TrustSection } from "./components/TrustSection";
 
 import { useI18n } from "./hooks/useI18n";
-import { PRIVACY_PATH } from "./config";
+import { PRIVACY_PATH, ANDROID_DOWNLOAD_PATH } from "./config";
 import { PrivacyPage } from "./components/PrivacyPage";
+import { DownloadPage } from "./components/DownloadPage";
 import { useLandingAnalytics } from "./hooks/useLandingAnalytics";
 
 
@@ -38,9 +39,14 @@ export default function App() {
 
   const normalizedPath = window.location.pathname.replace(/\/$/, "") || "/";
   const isPrivacyPage = normalizedPath === PRIVACY_PATH;
+  const isDownloadPage = normalizedPath === ANDROID_DOWNLOAD_PATH;
 
   if (isPrivacyPage) {
     return <PrivacyPage locale={locale} onLocaleChange={setLocale} t={t} />;
+  }
+
+  if (isDownloadPage) {
+    return <DownloadPage locale={locale} onLocaleChange={setLocale} t={t} />;
   }
 
 

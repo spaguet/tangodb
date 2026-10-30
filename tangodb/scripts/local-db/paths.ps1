@@ -1,0 +1,11 @@
+$script:LocalDbRoot = "D:\TangoDB\local-crm-db"
+$script:LocalDbData = Join-Path $LocalDbRoot "data"
+$script:LocalDbBackups = Join-Path $LocalDbRoot "backups"
+$script:LocalDbLogs = Join-Path $LocalDbRoot "logs"
+$script:LocalDbConfig = Join-Path $LocalDbRoot "config"
+$script:LocalDbBin = Join-Path $LocalDbRoot "bin"
+$script:LocalDbPort = 5433
+$script:PgsqlBin = "C:\pgsql\bin"
+$script:LocalDbUrl = "postgresql://postgres:postgres@127.0.0.1:$LocalDbPort/postgres"
+$script:LocalApiPort = 54321
+$script:PostgrestPort = 54341

@@ -1,0 +1,8 @@
+{
+  "appVersion": "2.13.6",
+  "bundleHash": "fill-after-pack",
+  "bundleUrl": "https://updates.tangodb.app/android/web-bundle/tangodb-web-bundle-fill.zip",
+  "sha256": "fill-after-pack",
+  "releaseNotes": "Кратко: что изменилось в экранах.",
+  "signature": "fill-after-sign-crm-web-bundle-manifest.mjs"
+}

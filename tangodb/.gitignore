@@ -1,6 +1,7 @@
 node_modules/
 build/
 dist/
+dist-crm-web-bundle/
 coverage/
 .DS_Store
 *.log
@@ -10,3 +11,11 @@ tangodb_export.json
 .import-mappings/
 
 .vercel
+
+# Android release artifacts (never commit)
+*.apk
+*.keystore
+android/keystore.properties
+dist-crm-release/
+*.jks
+android/local.properties

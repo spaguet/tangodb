@@ -425,6 +425,10 @@ verify_jwt = false
 verify_jwt = false
 # Cron: CRON_SECRET. Outbound email/Telegram drain. Never getUpdates.
 
+[functions.crm-staff-push-worker]
+verify_jwt = false
+# Cron: CRON_SECRET. FCM drain for staff lesson alerts. Secret: FCM_SERVICE_ACCOUNT_JSON.
+
 [functions.dev-console-platform-bot]
 verify_jwt = true
 # Developer JWT. Detect = getMe + one-shot getUpdates. Never setWebhook.

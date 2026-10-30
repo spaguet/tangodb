@@ -1,0 +1,8 @@
+{
+  "versionCode": 2,
+  "versionName": "2.13.1",
+  "minVersionCode": 1,
+  "apkUrl": "https://updates.tangodb.app/android/tangodb-crm-2.13.1.apk",
+  "sha256": "fill-after-release-build",
+  "releaseNotes": "Кратко: что нового в оболочке."
+}

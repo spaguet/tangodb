@@ -8,6 +8,7 @@ import { useBeginnerHints } from "../../hooks/useBeginnerHints";
 import { useSettings } from "../../settings/SettingsProvider";
 import { usePermissions } from "../../hooks/usePermissions";
 import { btnHeaderSignOutCls } from "../ui/buttonStyles";
+import { usePhoneOfflineExitConfirm } from "../phone/PhoneOfflineExitGuard";
 
 interface AccountBeginnerHintsMenuProps {
   fullWidth?: boolean;
@@ -16,6 +17,7 @@ interface AccountBeginnerHintsMenuProps {
 export default function AccountBeginnerHintsMenu({ fullWidth = false }: AccountBeginnerHintsMenuProps) {
   const { t } = useI18n();
   const { signOut } = useAuth();
+  const confirmOfflineExit = usePhoneOfflineExitConfirm();
   const toast = useToast();
   const { restoreAllHints, showBeginnerHints } = useBeginnerHints();
   const { updateSettings, isUpdating } = useSettings();
@@ -84,8 +86,12 @@ export default function AccountBeginnerHintsMenu({ fullWidth = false }: AccountB
               type="button"
               role="menuitem"
               onClick={() => {
-                setOpen(false);
-                signOut();
+                void (async () => {
+                  setOpen(false);
+                  const proceed = await confirmOfflineExit("logout");
+                  if (!proceed) return;
+                  await signOut();
+                })();
               }}
               className={`w-full px-3 py-2 text-left border-t border-slate-100 ${btnHeaderSignOutCls.replace("inline-flex ", "")}`}
             >

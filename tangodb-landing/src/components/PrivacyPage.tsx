@@ -85,6 +85,10 @@ export function PrivacyPage({ locale, onLocaleChange, t }: Props) {
             <p>{t("privacy.crm.text")}</p>
           </Section>
 
+          <Section title={t("privacy.androidApp.title")}>
+            <p>{t("privacy.androidApp.text")}</p>
+          </Section>
+
           <Section title={t("privacy.contact.title")}>
             <p>
               {t("privacy.contact.text")}{" "}

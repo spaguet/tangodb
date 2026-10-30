@@ -24,6 +24,21 @@ export const CRM_REGISTER_URL = "https://tangodb.vercel.app/register";
 
 export const PRIVACY_PATH = "/privacy";
 
+/** Public staff APK download page (no CRM login). */
+export const ANDROID_DOWNLOAD_PATH = "/download";
+
+/**
+ * Release metadata for the landing download page.
+ * APK file is hosted on the update origin (not in git). Fill sha256/size after each release build.
+ */
+export const CRM_APK_DOWNLOAD = {
+  version: "2.13.6",
+  date: "2026-10-30",
+  sizeBytes: null as number | null,
+  sha256: "",
+  url: "https://updates.tangodb.app/android/tangodb-crm-2.13.6.apk",
+} as const;
+
 export const CONTACTS = {
   email: "omowdance@gmail.com",
   telegramUrl: "https://t.me/omow_second",

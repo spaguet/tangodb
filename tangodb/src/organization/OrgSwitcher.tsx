@@ -6,12 +6,14 @@ import { useDismissOnRouteChange } from "../hooks/useDismissOnRouteChange";
 import { useI18n } from "../hooks/useI18n";
 import { memberRoleLabel } from "../hooks/useTeamMembers";
 import { organizationMembershipLabel, organizationPublicName } from "../lib/organizationDisplayName";
+import { usePhoneOfflineExitConfirm } from "../components/phone/PhoneOfflineExitGuard";
 
 export default function OrgSwitcher() {
   const navigate = useNavigate();
   const location = useLocation();
   const { t, locale } = useI18n();
   const { memberships, organization, settings, setActiveOrganization } = useOrganization();
+  const confirmOfflineExit = usePhoneOfflineExitConfirm();
   const [open, setOpen] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -42,6 +44,8 @@ export default function OrgSwitcher() {
 
     setLoadingId(organizationId);
     try {
+      const proceed = await confirmOfflineExit("orgSwitch");
+      if (!proceed) return;
       await setActiveOrganization(organizationId);
       setOpen(false);
       navigate(location.pathname, { replace: true });
