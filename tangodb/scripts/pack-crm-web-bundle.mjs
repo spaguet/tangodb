@@ -66,10 +66,11 @@ writeFileSync(finalPath, zipBytes);
 rmSync(stagingZip, { force: true });
 
 const appVersion = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
+const updateOrigin = (process.env.VITE_CRM_APK_UPDATE_ORIGIN || "https://updates.tangodb.app").replace(/\/$/, "");
 const stub = {
   appVersion,
   bundleHash,
-  bundleUrl: `https://updates.tangodb.app/android/web-bundle/${finalName}`,
+  bundleUrl: `${updateOrigin}/android/web-bundle/${finalName}`,
   sha256,
   releaseNotes: "",
   signature: "",

@@ -33,10 +33,10 @@ export const ANDROID_DOWNLOAD_PATH = "/download";
  */
 export const CRM_APK_DOWNLOAD = {
   version: "2.13.6",
-  date: "2026-10-30",
-  sizeBytes: null as number | null,
-  sha256: "",
-  url: "https://updates.tangodb.app/android/tangodb-crm-2.13.6.apk",
+  date: "2026-11-01",
+  sizeBytes: 4602406,
+  sha256: "be1a95ab170a2584fbb6f1a937a29b2ca740b631e95916fbd5521032661f0219",
+  url: "https://spaguet.github.io/android/tangodb-crm-2.13.6.apk",
 } as const;
 
 export const CONTACTS = {

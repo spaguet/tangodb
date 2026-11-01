@@ -16,6 +16,7 @@ tangodb_export.json
 *.apk
 *.keystore
 android/keystore.properties
+android/RELEASE_KEY_BACKUP.txt
 dist-crm-release/
 *.jks
 android/local.properties

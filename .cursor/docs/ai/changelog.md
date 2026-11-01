@@ -1,3 +1,5 @@
+2026-11-01 — chore(android) **2.13.6**: выпускной APK подписан локальным keystore (файл не в git), origin обновлений `https://spaguet.github.io` (домен `updates.tangodb.app` не резолвится). Страница `/download` — версия, размер и SHA-256.
+
 2026-10-30 — chore(android) **2.13.6**: скрипты `release-crm-android.mjs`, `upload-crm-updates.mjs`, `generate-crm-web-bundle-keys.mjs`; signing gradle + `keystore.properties.example`; лендинг `/download` → **2.13.6**. Supabase: migration staff push + deploy `crm-staff-push-worker`.
 
 2026-10-30 — feat(android) **2.13.6** / промпт **A6**: OTA-пачка экранов на origin оболочки — подписанный manifest (`/android/web-bundle/latest.json`, Ed25519, публичный ключ в APK), SHA-256 zip, атомарная распаковка `WebBundleInstallerPlugin`, `WebView.setServerBasePath` + persist (IndexedDB `tangodb-offline` на `https://localhost`); проверка/установка в `PhoneWebBundleBridge`; скрипты `pack-crm-web-bundle.mjs` / `sign-crm-web-bundle-manifest.mjs`.
