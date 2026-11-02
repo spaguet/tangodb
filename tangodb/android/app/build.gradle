@@ -1,7 +1,7 @@
 apply plugin: 'com.android.application'
 
-def crmVersionCode = System.getenv("CRM_ANDROID_VERSION_CODE") ?: "7"
-def crmVersionName = System.getenv("CRM_ANDROID_VERSION_NAME") ?: "2.13.6"
+def crmVersionCode = System.getenv("CRM_ANDROID_VERSION_CODE") ?: "8"
+def crmVersionName = System.getenv("CRM_ANDROID_VERSION_NAME") ?: "2.13.7"
 
 android {
     namespace "app.tangodb.crm"

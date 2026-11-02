@@ -114,6 +114,11 @@ export const EN: Record<I18nKey, string> = {
   "auth.login.telegramBotEnvMissing": "Set VITE_TELEGRAM_BOT_USERNAME in .env.local",
   "auth.login.noAccount": "No account yet?",
   "auth.login.registerLink": "Register",
+  "auth.login.nativeBrowser": "Sign in with the browser",
+  "auth.login.nativeBrowserHint":
+    "The robot check often does not finish inside the app. Sign-in opens in the browser and comes back here.",
+  "auth.login.nativeHandoffHint": "After you sign in, you will return to the TangoDB app.",
+  "auth.login.nativeReturnFailed": "Sign-in could not be finished. Try again.",
   "auth.developerContact.label": "Contact the developer:",
   "auth.register.subtitle": "Create account",
   "auth.register.pageTitle": "Register · TangoDB",

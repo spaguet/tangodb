@@ -114,6 +114,11 @@ export const RU: Record<I18nKey, string> = {
   "auth.login.telegramBotEnvMissing": "Укажите VITE_TELEGRAM_BOT_USERNAME в .env.local",
   "auth.login.noAccount": "Нет аккаунта?",
   "auth.login.registerLink": "Регистрация",
+  "auth.login.nativeBrowser": "Войти через браузер",
+  "auth.login.nativeBrowserHint":
+    "Проверка «не робот» внутри приложения часто не завершается. Вход откроется в браузере и вернётся сюда.",
+  "auth.login.nativeHandoffHint": "После входа вы вернётесь в приложение TangoDB.",
+  "auth.login.nativeReturnFailed": "Не удалось завершить вход. Попробуйте ещё раз.",
   "auth.developerContact.label": "Связаться с разработчиком:",
   "auth.register.subtitle": "Регистрация",
   "auth.register.pageTitle": "Регистрация · TangoDB",

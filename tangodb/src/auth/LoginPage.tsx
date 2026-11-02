@@ -1,6 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "./AuthProvider";
+import { isNativeCrmShell } from "../lib/platform";
+import {
+  isNativeAuthHandoffSearch,
+  NATIVE_AUTH_RETURN_FAILED_EVENT,
+} from "../lib/nativeAuthHandoff";
+import { openNativeLoginInBrowser, returnSessionToNativeShell } from "../lib/nativeAuthReturn";
 import {
   AuthButton,
   AuthDeveloperContact,
@@ -18,7 +24,7 @@ import AuthSupportHelpBlock from "../components/support/AuthSupportHelpBlock";
 
 export default function LoginPage() {
   const { t, locale } = useGuestI18n();
-  const { signInWithEmail } = useAuth();
+  const { signInWithEmail, session } = useAuth();
   const navigate = useNavigate();
 
   const [email, setEmail] = useState("");
@@ -28,10 +34,36 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
+  const [browserOpening, setBrowserOpening] = useState(false);
+  const nativeShell = isNativeCrmShell();
+  const nativeHandoff = isNativeAuthHandoffSearch(window.location.search);
+  const showBrowserLogin = nativeShell && isTurnstileConfigured();
+  const handoffPending = useRef(false);
 
   useEffect(() => {
     document.title = t("auth.login.pageTitle");
   }, [t, locale]);
+
+  useEffect(() => {
+    if (!nativeShell) return;
+    const onFailed = () => setError(t("auth.login.nativeReturnFailed"));
+    window.addEventListener(NATIVE_AUTH_RETURN_FAILED_EVENT, onFailed);
+    return () => window.removeEventListener(NATIVE_AUTH_RETURN_FAILED_EVENT, onFailed);
+  }, [nativeShell, t]);
+
+  useEffect(() => {
+    if (!handoffPending.current || !nativeHandoff || nativeShell || !session?.access_token || !session.refresh_token) {
+      return;
+    }
+    handoffPending.current = false;
+    let cancelled = false;
+    void returnSessionToNativeShell(session, rememberMe).catch((err) => {
+      if (!cancelled) setError(parseAuthError(err, locale));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [nativeHandoff, nativeShell, session, rememberMe, locale]);
 
   const goAfterLogin = () => {
     navigate("/", { replace: true });
@@ -46,10 +78,13 @@ export default function LoginPage() {
         setError(t("auth.register.captchaRequired"));
         return;
       }
+      if (nativeHandoff && !nativeShell) handoffPending.current = true;
       const nextSession = await signInWithEmail(email.trim(), password, rememberMe, turnstileToken);
+      if (nativeHandoff && !nativeShell) return;
       requestOrganizationSelectionAfterLogin(nextSession.user.id);
       goAfterLogin();
     } catch (err) {
+      handoffPending.current = false;
       setError(parseAuthError(err, locale));
       setTurnstileResetKey((k) => k + 1);
       setTurnstileToken(null);
@@ -68,6 +103,30 @@ export default function LoginPage() {
       )}
 
       <AuthError message={error} />
+
+      {showBrowserLogin && (
+        <div className="space-y-3">
+          <p className="text-sm text-slate-600">{t("auth.login.nativeBrowserHint")}</p>
+          <AuthButton
+            type="button"
+            variant="secondary"
+            loading={browserOpening}
+            onClick={() => {
+              setError(null);
+              setBrowserOpening(true);
+              void openNativeLoginInBrowser()
+                .catch(() => setError(t("auth.login.nativeReturnFailed")))
+                .finally(() => setBrowserOpening(false));
+            }}
+          >
+            {t("auth.login.nativeBrowser")}
+          </AuthButton>
+        </div>
+      )}
+
+      {nativeHandoff && !nativeShell && (
+        <p className="text-sm text-slate-600">{t("auth.login.nativeHandoffHint")}</p>
+      )}
 
       <form onSubmit={handleEmailLogin} className="space-y-4">
         <AuthField

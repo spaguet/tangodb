@@ -95,6 +95,7 @@ import SupportDeveloperMessageButton from "./components/support/SupportDeveloper
 import AccountBeginnerHintsMenu from "./components/onboarding/AccountBeginnerHintsMenu";
 import PanelBeginnerHelpButton from "./components/onboarding/PanelBeginnerHelpButton";
 import PhoneAppLayout from "./components/phone/PhoneAppLayout";
+import NativeAuthReturnBridge from "./components/phone/NativeAuthReturnBridge";
 import { isNativeCrmShell } from "./lib/platform";
 import { ToastContext, TOAST_STYLES, type ToastType, useToast } from "./lib/toastContext";
 
@@ -567,6 +568,7 @@ export default function App() {
           <SettingsProvider>
           {/* Query updates starved RR7 startTransition: URL changed, Outlet stayed. */}
           <BrowserRouter useTransitions={false}>
+            <NativeAuthReturnBridge />
             <RecoveryGate>
             <Routes>
               <Route

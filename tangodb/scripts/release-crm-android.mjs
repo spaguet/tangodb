@@ -66,7 +66,7 @@ if (!existsSync(join(root, "src/lib/crmWebBundle/crmWebBundleManifestPublicKey.p
 }
 
 const appVersion = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
-const versionCode = process.env.CRM_ANDROID_VERSION_CODE?.trim() || "7";
+const versionCode = process.env.CRM_ANDROID_VERSION_CODE?.trim() || "8";
 
 console.log(`Release CRM Android ${appVersion} (versionCode ${versionCode}), origin ${updateOrigin}`);
 

@@ -6,6 +6,8 @@ import { useEnsureOwnMemberProfile } from "../hooks/useEnsureOwnMemberProfile";
 import { useApplyScheduledSubscriptionMemberChanges } from "../hooks/useApplyScheduledSubscriptionMemberChanges";
 import { useGuestI18n } from "../hooks/useI18n";
 import { getOrganizationIdFromSession, isRenterActorFromSession } from "../lib/authClaims";
+import { isNativeAuthHandoffSearch } from "../lib/nativeAuthHandoff";
+import { isNativeCrmShell } from "../lib/platform";
 import { isSyntheticTelegramEmail } from "../lib/telegram";
 import EditionUpsellScreen from "../components/edition/EditionUpsellScreen";
 import {
@@ -120,6 +122,11 @@ export function GuestRoute({ children }: { children: React.ReactNode }) {
   if (session) {
     if (isRenterActorFromSession(session)) {
       return <RenterActorDenied />;
+    }
+    // Stay on the site login until the shell imports this session. Opening the CRM here
+    // would leave a second copy after the local sign-out.
+    if (isNativeAuthHandoffSearch(window.location.search) && !isNativeCrmShell()) {
+      return <>{children}</>;
     }
     return <Navigate to="/" replace />;
   }
