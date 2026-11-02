@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useGuestI18n } from "../../hooks/useI18n";
+import { isNativeCrmShell } from "../../lib/platform";
 
 declare global {
   interface Window {
@@ -127,6 +128,13 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
   }, [resetKey]);
 
   if (!SITE_KEY) {
+    if (isNativeCrmShell()) {
+      return (
+        <p className="text-xs text-slate-600">
+          {t("auth.login.nativeBrowserHint")}
+        </p>
+      );
+    }
     return (
       <p className="text-xs text-slate-400">
         {t("auth.captcha.devDisabled")}

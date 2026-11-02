@@ -1,3 +1,5 @@
+2026-11-02 — fix(android) **2.13.8**: если APK/пачка экранов собраны без `VITE_TURNSTILE_SITE_KEY`, на входе показывалось «Captcha отключена в режиме разработки» и не было «Войти через браузер». На оболочке кнопка браузера всегда; без ключа in-app «Войти» отключена. `release-crm-android.mjs` требует ключ (или `CRM_ANDROID_ALLOW_MISSING_TURNSTILE=1`).
+
 2026-11-01 — fix(android) **2.13.7** / versionCode **8**: вход в APK. Turnstile в WebView на `https://localhost` часто не выдаёт токен, поэтому форма не пускала дальше. WebView принимает сторонние cookie iframe проверки. Если токена всё ещё нет — вход через Custom Tab на сайт и одна сессия обратно в оболочку (`tangodb://auth-return`, без второй копии и без отключения captcha). Нужен новый APK: intent-filter и versionCode не приезжают пачкой экранов.
 
 2026-11-01 — chore(android) **2.13.6**: выпускной APK подписан локальным keystore (файл не в git), origin обновлений `https://spaguet.github.io` (домен `updates.tangodb.app` не резолвится). Страница `/download` — версия, размер и SHA-256.

@@ -61,6 +61,21 @@ function sha256File(path) {
 
 loadEnvLocal();
 
+function assertTurnstileSiteKeyForRelease() {
+  const key = process.env.VITE_TURNSTILE_SITE_KEY?.trim();
+  if (key && key !== "your-turnstile-site-key") return;
+  const allow = process.env.CRM_ANDROID_ALLOW_MISSING_TURNSTILE === "1";
+  const msg =
+    "VITE_TURNSTILE_SITE_KEY is missing in tangodb/.env.local — the APK will show captcha as disabled and in-app login may fail on production. Copy the site key from Vercel env, or set CRM_ANDROID_ALLOW_MISSING_TURNSTILE=1 to build anyway (browser handoff still works).";
+  if (allow) {
+    console.warn(msg);
+    return;
+  }
+  throw new Error(msg);
+}
+
+assertTurnstileSiteKeyForRelease();
+
 if (!existsSync(join(root, "src/lib/crmWebBundle/crmWebBundleManifestPublicKey.pem"))) {
   run(process.execPath, ["scripts/generate-crm-web-bundle-keys.mjs"]);
 }

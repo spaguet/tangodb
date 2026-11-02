@@ -37,7 +37,8 @@ export default function LoginPage() {
   const [browserOpening, setBrowserOpening] = useState(false);
   const nativeShell = isNativeCrmShell();
   const nativeHandoff = isNativeAuthHandoffSearch(window.location.search);
-  const showBrowserLogin = nativeShell && isTurnstileConfigured();
+  const showBrowserLogin = nativeShell;
+  const nativeNeedsBrowserCaptcha = nativeShell && !isTurnstileConfigured();
   const handoffPending = useRef(false);
 
   useEffect(() => {
@@ -162,7 +163,9 @@ export default function LoginPage() {
           onToken={setTurnstileToken}
           onError={() => setTurnstileToken(null)}
         />
-        <AuthButton loading={loading}>{t("auth.login.submit")}</AuthButton>
+        <AuthButton loading={loading} disabled={nativeNeedsBrowserCaptcha}>
+          {t("auth.login.submit")}
+        </AuthButton>
       </form>
 
       <p className="text-sm text-slate-500 text-center">
