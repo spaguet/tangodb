@@ -9,6 +9,10 @@ const config: CapacitorConfig = {
   },
   server: {
     androidScheme: "https",
+    // Same host as the live CRM so Turnstile accepts the widget inside the WebView.
+    // `localhost` makes the Cloudflare challenge iframe fail ("cannot connect").
+    // Local files still come from the Capacitor asset server; this is not server.url.
+    hostname: "tangodb.vercel.app",
   },
 };
 

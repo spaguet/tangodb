@@ -1,3 +1,5 @@
+2026-11-03 — fix(android) **2.13.11** / versionCode **10**: вход в CRM внутри APK. Origin оболочки — `https://tangodb.vercel.app` (локальные файлы Capacitor, не `server.url`), Turnstile в форме как на сайте. Кнопка «Войти через браузер» с экрана входа убрана. Старый офлайн-снимок на `https://localhost` после обновления не подхватывается.
+
 2026-11-03 — fix(android) **2.13.10**: Turnstile в WebView на `https://localhost` показывал «не удалось подключиться к сайту»; в оболочке виджет не монтируется, вход с captcha — «Войти через браузер», in-app «Войти» без токена отключена.
 
 2026-11-03 — release(android) **2.13.9** / versionCode **9**: production-сборка с `VITE_TURNSTILE_SITE_KEY` (`.env.production.local`), OTA-пачка экранов и APK на `spaguet.github.io`; лендинг `/download` — **2.13.9**, SHA-256 и размер.

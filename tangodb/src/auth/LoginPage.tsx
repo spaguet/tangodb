@@ -37,10 +37,9 @@ export default function LoginPage() {
   const [browserOpening, setBrowserOpening] = useState(false);
   const nativeShell = isNativeCrmShell();
   const nativeHandoff = isNativeAuthHandoffSearch(window.location.search);
-  const showBrowserLogin = nativeShell;
-  /** In-app Turnstile is not mounted in the shell; captcha runs in Custom Tab handoff. */
+  const legacyLocalhostShell = nativeShell && window.location.hostname !== "tangodb.vercel.app";
   const nativeBlockInAppLogin =
-    nativeShell && (!isTurnstileConfigured() || !turnstileToken);
+    nativeShell && (!isTurnstileConfigured() || !turnstileToken || legacyLocalhostShell);
   const handoffPending = useRef(false);
 
   useEffect(() => {
@@ -107,9 +106,8 @@ export default function LoginPage() {
 
       <AuthError message={error} />
 
-      {showBrowserLogin && (
+      {legacyLocalhostShell && (
         <div className="space-y-3">
-          <p className="text-sm text-slate-600">{t("auth.login.nativeBrowserHint")}</p>
           <AuthButton
             type="button"
             variant="secondary"

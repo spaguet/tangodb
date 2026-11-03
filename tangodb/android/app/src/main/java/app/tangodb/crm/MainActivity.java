@@ -11,7 +11,7 @@ public class MainActivity extends BridgeActivity {
         registerPlugin(ApkInstallerPlugin.class);
         registerPlugin(WebBundleInstallerPlugin.class);
         super.onCreate(savedInstanceState);
-        // Turnstile's challenge iframe is third-party on https://localhost.
+        // Turnstile challenge iframe is third-party on the shell origin.
         WebView webView = getBridge() != null ? getBridge().getWebView() : null;
         if (webView != null) {
             CookieManager cookies = CookieManager.getInstance();

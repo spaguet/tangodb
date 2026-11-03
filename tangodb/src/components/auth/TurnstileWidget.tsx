@@ -78,9 +78,9 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
       return;
     }
 
-    // Turnstile challenge iframe often fails on Capacitor origin (https://localhost) — WebView shows
-    // "cannot connect to website". Staff APK uses browser handoff on LoginPage instead.
-    if (isNativeCrmShell()) {
+    // Old shells are still https://localhost. The challenge iframe fails there.
+    // New APK uses server.hostname tangodb.vercel.app (see capacitor.config.ts).
+    if (isNativeCrmShell() && window.location.hostname !== "tangodb.vercel.app") {
       return;
     }
 
@@ -133,21 +133,18 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
     };
   }, [resetKey]);
 
-  if (isNativeCrmShell()) {
-    if (!SITE_KEY) {
-      return (
-        <p className="text-xs text-slate-600">
-          {t("auth.login.nativeBrowserHint")}
-        </p>
-      );
-    }
-    return null;
-  }
-
   if (!SITE_KEY) {
     return (
       <p className="text-xs text-slate-400">
         {t("auth.captcha.devDisabled")}
+      </p>
+    );
+  }
+
+  if (isNativeCrmShell() && window.location.hostname !== "tangodb.vercel.app") {
+    return (
+      <p className="text-xs text-slate-600">
+        {t("auth.login.nativeBrowserHint")}
       </p>
     );
   }
