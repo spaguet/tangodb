@@ -78,6 +78,12 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
       return;
     }
 
+    // Turnstile challenge iframe often fails on Capacitor origin (https://localhost) — WebView shows
+    // "cannot connect to website". Staff APK uses browser handoff on LoginPage instead.
+    if (isNativeCrmShell()) {
+      return;
+    }
+
     let cancelled = false;
 
     async function mount() {
@@ -127,14 +133,18 @@ export default function TurnstileWidget({ onToken, onError, resetKey = 0 }: Turn
     };
   }, [resetKey]);
 
-  if (!SITE_KEY) {
-    if (isNativeCrmShell()) {
+  if (isNativeCrmShell()) {
+    if (!SITE_KEY) {
       return (
         <p className="text-xs text-slate-600">
           {t("auth.login.nativeBrowserHint")}
         </p>
       );
     }
+    return null;
+  }
+
+  if (!SITE_KEY) {
     return (
       <p className="text-xs text-slate-400">
         {t("auth.captcha.devDisabled")}

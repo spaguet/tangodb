@@ -7,6 +7,12 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-11-03 — Turnstile в APK: «не удалось подключиться к веб-сайту»
+
+- **Ошибка:** после включения site key в сборке в форме входа внутри iframe Turnstile — стандартная ошибка WebView о недоступности сайта.
+- **Причина:** origin оболочки Capacitor — `https://localhost`; challenge Cloudflare в iframe часто не проходит (hostname виджета, сеть, блокировки), даже при third-party cookies.
+- **Как избежать:** в APK не монтировать Turnstile в WebView — вход с captcha через «Войти через браузер» (Custom Tab + `tangodb://auth-return`). OTA/web-only патч **2.13.10**. Если когда-либо вернуть виджет в оболочку — добавить `localhost` в hostnames виджета Turnstile в Cloudflare.
+
 ### 2026-11-02 — APK показывал «Captcha отключена в режиме разработки»
 
 - **Ошибка:** на телефоне на экране входа текст про dev-режим, кнопки «Войти через браузер» не было.

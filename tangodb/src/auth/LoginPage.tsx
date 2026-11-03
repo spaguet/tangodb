@@ -38,7 +38,9 @@ export default function LoginPage() {
   const nativeShell = isNativeCrmShell();
   const nativeHandoff = isNativeAuthHandoffSearch(window.location.search);
   const showBrowserLogin = nativeShell;
-  const nativeNeedsBrowserCaptcha = nativeShell && !isTurnstileConfigured();
+  /** In-app Turnstile is not mounted in the shell; captcha runs in Custom Tab handoff. */
+  const nativeBlockInAppLogin =
+    nativeShell && (!isTurnstileConfigured() || !turnstileToken);
   const handoffPending = useRef(false);
 
   useEffect(() => {
@@ -163,7 +165,7 @@ export default function LoginPage() {
           onToken={setTurnstileToken}
           onError={() => setTurnstileToken(null)}
         />
-        <AuthButton loading={loading} disabled={nativeNeedsBrowserCaptcha}>
+        <AuthButton loading={loading} disabled={nativeBlockInAppLogin}>
           {t("auth.login.submit")}
         </AuthButton>
       </form>
