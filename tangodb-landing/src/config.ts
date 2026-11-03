@@ -32,11 +32,11 @@ export const ANDROID_DOWNLOAD_PATH = "/download";
  * APK file is hosted on the update origin (not in git). Fill sha256/size after each release build.
  */
 export const CRM_APK_DOWNLOAD = {
-  version: "2.13.7",
-  date: "2026-11-01",
-  sizeBytes: 4604214,
-  sha256: "096ced02ce8f5730cda7a1ba255582369ddd35040718230efbc1b204bf9bbb27",
-  url: "https://spaguet.github.io/android/tangodb-crm-2.13.7.apk",
+  version: "2.13.9",
+  date: "2026-11-03",
+  sizeBytes: 4604742,
+  sha256: "8aef899ec8b67825f69b2b6c369f651edfae9e3b284a56876ec44bc0a6c9a383",
+  url: "https://spaguet.github.io/android/tangodb-crm-2.13.9.apk",
 } as const;
 
 export const CONTACTS = {

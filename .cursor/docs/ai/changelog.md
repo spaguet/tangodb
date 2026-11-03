@@ -1,3 +1,5 @@
+2026-11-03 — release(android) **2.13.9** / versionCode **9**: production-сборка с `VITE_TURNSTILE_SITE_KEY` (`.env.production.local`), OTA-пачка экранов и APK на `spaguet.github.io`; лендинг `/download` — **2.13.9**, SHA-256 и размер.
+
 2026-11-02 — fix(android) **2.13.8**: если APK/пачка экранов собраны без `VITE_TURNSTILE_SITE_KEY`, на входе показывалось «Captcha отключена в режиме разработки» и не было «Войти через браузер». На оболочке кнопка браузера всегда; без ключа in-app «Войти» отключена. `release-crm-android.mjs` требует ключ (или `CRM_ANDROID_ALLOW_MISSING_TURNSTILE=1`).
 
 2026-11-01 — fix(android) **2.13.7** / versionCode **8**: вход в APK. Turnstile в WebView на `https://localhost` часто не выдаёт токен, поэтому форма не пускала дальше. WebView принимает сторонние cookie iframe проверки. Если токена всё ещё нет — вход через Custom Tab на сайт и одна сессия обратно в оболочку (`tangodb://auth-return`, без второй копии и без отключения captcha). Нужен новый APK: intent-filter и versionCode не приезжают пачкой экранов.
