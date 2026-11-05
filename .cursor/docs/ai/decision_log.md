@@ -19,6 +19,7 @@
 - **Контекст:** На `https://localhost` iframe проверки Cloudflare в WebView показывал «не удалось подключиться к сайту». Пользователю нужен вход внутри приложения.
 - **Альтернативы:** (1) Оставить только «Войти через браузер» — отвергнуто. (2) Добавить `localhost` в hostname виджета Turnstile — не снимает сбой iframe в WebView. (3) Открыть весь CRM с `server.url` на Vercel — ломает офлайн-снимок и пачку экранов.
 - **Почему так:** Виджет Turnstile уже разрешён для `tangodb.vercel.app`. IndexedDB `tangodb-offline` переезжает на новый origin один раз (старый снимок на `localhost` не подхватывается).
+- **Откат 2026-11-05:** hostname оболочки вернули на `localhost`. Сборка **2.13.11** зашила в APK локальный `VITE_SUPABASE_URL` из `.env.local` (Vite не перезаписывает уже заданный process.env), телефон получал «Не удалось выполнить запрос». Подмена origin на домен сайта перехватывает все запросы к этому хосту локальным сервером Capacitor. Captcha в оболочке открывается отдельным WebView на живой `https://tangodb.vercel.app/native-captcha`. Release-скрипт берёт hosted URL из `.env.production.local`.
 
 ### ANDROID-1 — приложение сотрудников для Android без Google Play (2026-10-29)
 

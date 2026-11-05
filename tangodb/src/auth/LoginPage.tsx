@@ -6,7 +6,7 @@ import {
   isNativeAuthHandoffSearch,
   NATIVE_AUTH_RETURN_FAILED_EVENT,
 } from "../lib/nativeAuthHandoff";
-import { openNativeLoginInBrowser, returnSessionToNativeShell } from "../lib/nativeAuthReturn";
+import { returnSessionToNativeShell } from "../lib/nativeAuthReturn";
 import {
   AuthButton,
   AuthDeveloperContact,
@@ -17,6 +17,7 @@ import {
 } from "./AuthLayout";
 import { parseAuthError } from "./authErrors";
 import TurnstileWidget, { isTurnstileConfigured } from "../components/auth/TurnstileWidget";
+import { InAppCaptcha } from "../lib/inAppCaptcha";
 import { useGuestI18n } from "../hooks/useI18n";
 import { getRememberMePreference } from "../lib/supabase";
 import { requestOrganizationSelectionAfterLogin } from "../organization/organizationSelectionIntent";
@@ -34,12 +35,10 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const [turnstileResetKey, setTurnstileResetKey] = useState(0);
-  const [browserOpening, setBrowserOpening] = useState(false);
+  const [captchaOpening, setCaptchaOpening] = useState(false);
   const nativeShell = isNativeCrmShell();
   const nativeHandoff = isNativeAuthHandoffSearch(window.location.search);
-  const legacyLocalhostShell = nativeShell && window.location.hostname !== "tangodb.vercel.app";
-  const nativeBlockInAppLogin =
-    nativeShell && (!isTurnstileConfigured() || !turnstileToken || legacyLocalhostShell);
+  const nativeBlockInAppLogin = nativeShell && !turnstileToken;
   const handoffPending = useRef(false);
 
   useEffect(() => {
@@ -69,6 +68,20 @@ export default function LoginPage() {
 
   const goAfterLogin = () => {
     navigate("/", { replace: true });
+  };
+
+  const openInAppCaptcha = () => {
+    setError(null);
+    setCaptchaOpening(true);
+    void InAppCaptcha.requestToken()
+      .then(({ token }) => setTurnstileToken(token))
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : "";
+        if (message.toLowerCase().includes("cancel")) return;
+        setTurnstileToken(null);
+        setError(t("auth.captcha.loadFailed"));
+      })
+      .finally(() => setCaptchaOpening(false));
   };
 
   const handleEmailLogin = async (e: React.FormEvent) => {
@@ -106,25 +119,6 @@ export default function LoginPage() {
 
       <AuthError message={error} />
 
-      {legacyLocalhostShell && (
-        <div className="space-y-3">
-          <AuthButton
-            type="button"
-            variant="secondary"
-            loading={browserOpening}
-            onClick={() => {
-              setError(null);
-              setBrowserOpening(true);
-              void openNativeLoginInBrowser()
-                .catch(() => setError(t("auth.login.nativeReturnFailed")))
-                .finally(() => setBrowserOpening(false));
-            }}
-          >
-            {t("auth.login.nativeBrowser")}
-          </AuthButton>
-        </div>
-      )}
-
       {nativeHandoff && !nativeShell && (
         <p className="text-sm text-slate-600">{t("auth.login.nativeHandoffHint")}</p>
       )}
@@ -158,11 +152,23 @@ export default function LoginPage() {
           </label>
           <AuthLink to="/auth/forgot-password">{t("auth.login.forgotPasswordLink")}</AuthLink>
         </div>
-        <TurnstileWidget
-          resetKey={turnstileResetKey}
-          onToken={setTurnstileToken}
-          onError={() => setTurnstileToken(null)}
-        />
+        {nativeShell ? (
+          turnstileToken ? (
+            <p className="text-xs text-slate-600" role="status">
+              {t("auth.captcha.verified")}
+            </p>
+          ) : (
+            <AuthButton type="button" variant="secondary" loading={captchaOpening} onClick={openInAppCaptcha}>
+              {t("auth.login.nativeCaptchaButton")}
+            </AuthButton>
+          )
+        ) : (
+          <TurnstileWidget
+            resetKey={turnstileResetKey}
+            onToken={setTurnstileToken}
+            onError={() => setTurnstileToken(null)}
+          />
+        )}
         <AuthButton loading={loading} disabled={nativeBlockInAppLogin}>
           {t("auth.login.submit")}
         </AuthButton>

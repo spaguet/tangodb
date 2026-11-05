@@ -10,6 +10,7 @@ public class MainActivity extends BridgeActivity {
     public void onCreate(Bundle savedInstanceState) {
         registerPlugin(ApkInstallerPlugin.class);
         registerPlugin(WebBundleInstallerPlugin.class);
+        registerPlugin(InAppCaptchaPlugin.class);
         super.onCreate(savedInstanceState);
         // Turnstile challenge iframe is third-party on the shell origin.
         WebView webView = getBridge() != null ? getBridge().getWebView() : null;

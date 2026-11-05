@@ -115,6 +115,7 @@ export const EN: Record<I18nKey, string> = {
   "auth.login.noAccount": "No account yet?",
   "auth.login.registerLink": "Register",
   "auth.login.nativeBrowser": "Sign in with the browser",
+  "auth.login.nativeCaptchaButton": "Complete the check",
   "auth.login.nativeBrowserHint":
     "The robot check often does not finish inside the app. Sign-in opens in the browser and comes back here.",
   "auth.login.nativeHandoffHint": "After you sign in, you will return to the TangoDB app.",

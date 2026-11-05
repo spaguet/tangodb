@@ -110,6 +110,7 @@ export type I18nKey =
   | "auth.login.noAccount"
   | "auth.login.registerLink"
   | "auth.login.nativeBrowser"
+  | "auth.login.nativeCaptchaButton"
   | "auth.login.nativeBrowserHint"
   | "auth.login.nativeHandoffHint"
   | "auth.login.nativeReturnFailed"

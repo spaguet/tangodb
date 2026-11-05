@@ -24,6 +24,7 @@ import {
   RecoveryGate,
 } from "./auth/ProtectedRoute";
 import LoginPage from "./auth/LoginPage";
+import NativeCaptchaPage from "./auth/NativeCaptchaPage";
 import RegisterPage from "./auth/RegisterPage";
 import ForgotPasswordPage from "./auth/ForgotPasswordPage";
 import ResetPasswordPage from "./auth/ResetPasswordPage";
@@ -581,6 +582,7 @@ export default function App() {
                   </GuestRoute>
                 }
               />
+              <Route path="/native-captcha" element={<NativeCaptchaPage />} />
               <Route
                 path="/register"
                 element={

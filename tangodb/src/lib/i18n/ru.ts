@@ -115,6 +115,7 @@ export const RU: Record<I18nKey, string> = {
   "auth.login.noAccount": "Нет аккаунта?",
   "auth.login.registerLink": "Регистрация",
   "auth.login.nativeBrowser": "Войти через браузер",
+  "auth.login.nativeCaptchaButton": "Пройти проверку",
   "auth.login.nativeBrowserHint":
     "Проверка «не робот» внутри приложения часто не завершается. Вход откроется в браузере и вернётся сюда.",
   "auth.login.nativeHandoffHint": "После входа вы вернётесь в приложение TangoDB.",

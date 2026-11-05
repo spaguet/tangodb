@@ -2,8 +2,7 @@ import { App } from "@capacitor/app";
 import { Browser } from "@capacitor/browser";
 import { isNativeCrmShell } from "./platform";
 
-/** Capacitor shell origin (`capacitor.config.ts` → `server.hostname`) plus local defaults. */
-const IN_APP_HOSTS = new Set(["localhost", "127.0.0.1", "tangodb.vercel.app"]);
+const IN_APP_HOSTS = new Set(["localhost", "127.0.0.1"]);
 
 const EXTERNAL_PATH_PREFIXES = [
   "/auth/forgot-password",

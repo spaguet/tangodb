@@ -7,11 +7,17 @@
 - **Дата:** YYYY-MM-DD
 - **Ошибка:** что пошло не так
 
+### 2026-11-05 — APK входил в локальную базу, captcha в оболочке пустая
+
+- **Ошибка:** после 2.13.11 на телефоне не было виджета captcha, вход писал «Не удалось выполнить запрос».
+- **Причина:** `release-crm-android.mjs` клал `.env.local` в `process.env`, а Vite не перезаписывает уже заданные переменные. В APK попал `VITE_SUPABASE_URL=http://192.168.5.18:54321`. Подмена `server.hostname` на `tangodb.vercel.app` не показывает виджет: локальный сервер Capacitor перехватывает этот хост.
+- **Как избежать:** перед release проверять, что URL базы — `https://*.supabase.co`. Hosted-значения держать в `.env.production.local` и давать им приоритет над `.env.local`. Captcha в APK — отдельный WebView на живой сайт, не iframe в `https://localhost`.
+
 ### 2026-11-03 — Turnstile в APK: «не удалось подключиться к веб-сайту»
 
 - **Ошибка:** после включения site key в сборке в форме входа внутри iframe Turnstile — стандартная ошибка WebView о недоступности сайта.
 - **Причина:** origin оболочки Capacitor — `https://localhost`; challenge Cloudflare в iframe часто не проходит (hostname виджета, сеть, блокировки), даже при third-party cookies.
-- **Как избежать:** origin оболочки должен совпадать с hostname виджета Turnstile (`tangodb.vercel.app` в `capacitor.config.ts`, с **2.13.11**). `localhost` в WebView iframe проверки не держит. `server.url` на прод не ставить.
+- **Как избежать:** не встраивать iframe Turnstile в WebView оболочки. Проверка идёт отдельным окном на живой `https://tangodb.vercel.app/native-captcha` (с **2.13.12**). `server.hostname` не подменять на домен сайта и `server.url` на прод не ставить.
 
 ### 2026-11-02 — APK показывал «Captcha отключена в режиме разработки»
 

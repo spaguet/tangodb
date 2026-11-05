@@ -115,7 +115,7 @@ Google Play Защита на части телефонов может допо�
 
 Проект Capacitor живёт в том же приложении: `tangodb/capacitor.config.ts` и каталог `tangodb/android` (оба появятся в **A0**, в **2.12.26** в репозитории отсутствуют). `webDir` указывает на `tangodb/dist`, отдельный пакет со своей копией экранов не заводят. Каталог после первой сборки не переименовывают.
 
-Экраны открываются с origin оболочки. С **2.13.11** это `https://tangodb.vercel.app` (`server.hostname` в `capacitor.config.ts`, без `server.url`): локальные файлы Capacitor, тот же hostname, что у виджета Turnstile. Обновление экранов подменяет файлы внутри этого origin. WebView на живой адрес сайта не переводят. Сессия и IndexedDB `tangodb-offline` привязаны к origin; смена hostname сбрасывает старый снимок с `https://localhost`.
+Экраны открываются с origin оболочки `https://localhost`. WebView на живой адрес сайта не переводят. Сессия и IndexedDB `tangodb-offline` привязаны к этому origin. Проверка Turnstile в оболочке идёт отдельным окном на `https://tangodb.vercel.app/native-captcha` (с **2.13.12**): iframe Cloudflare на `localhost` не открывается.
 
 ---
 

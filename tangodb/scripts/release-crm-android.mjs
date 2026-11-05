@@ -61,6 +61,52 @@ function sha256File(path) {
 
 loadEnvLocal();
 
+/** `.env.local` is already in process.env, and Vite will not override it. Release must use the hosted project. */
+const RELEASE_ENV_KEYS = [
+  "VITE_SUPABASE_URL",
+  "VITE_SUPABASE_ANON_KEY",
+  "VITE_SITE_URL",
+  "VITE_TURNSTILE_SITE_KEY",
+  "VITE_CRM_APK_UPDATE_ORIGIN",
+];
+
+function loadProductionReleaseEnv() {
+  const path = join(root, ".env.production.local");
+  if (!existsSync(path)) return;
+  for (const line of readFileSync(path, "utf8").split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq === -1) continue;
+    const key = trimmed.slice(0, eq).trim();
+    if (!RELEASE_ENV_KEYS.includes(key)) continue;
+    let val = trimmed.slice(eq + 1).trim();
+    if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+      val = val.slice(1, -1).replace(/\\n/g, "\n");
+    }
+    if (val) process.env[key] = val;
+  }
+}
+
+loadProductionReleaseEnv();
+
+function assertReleaseSupabaseUrl() {
+  const url = process.env.VITE_SUPABASE_URL?.trim() ?? "";
+  const local =
+    !url.startsWith("https://") ||
+    url.includes("localhost") ||
+    url.includes("127.0.0.1") ||
+    /https?:\/\/192\.168\./.test(url) ||
+    /https?:\/\/10\./.test(url);
+  if (local) {
+    throw new Error(
+      `Release APK would call a local Supabase (${url || "empty"}). Put the hosted VITE_SUPABASE_URL in tangodb/.env.production.local. .env.local is for the laptop only.`
+    );
+  }
+}
+
+assertReleaseSupabaseUrl();
+
 function assertTurnstileSiteKeyForRelease() {
   const key = process.env.VITE_TURNSTILE_SITE_KEY?.trim();
   if (key && key !== "your-turnstile-site-key") return;
