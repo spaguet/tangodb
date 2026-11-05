@@ -8,7 +8,6 @@ import {
 } from "../../lib/staffPush/preferences";
 import { useState } from "react";
 import { LocalNotifications } from "@capacitor/local-notifications";
-import { PushNotifications } from "@capacitor/push-notifications";
 
 export default function PhoneNotificationsCard() {
   const { t } = useI18n();
@@ -20,7 +19,6 @@ export default function PhoneNotificationsCard() {
 
   const enableWithPermissions = async () => {
     await LocalNotifications.requestPermissions();
-    await PushNotifications.requestPermissions();
     await setLessonRemindersEnabled(true);
     writeNotificationsPromptDismissed();
     setShowPrompt(false);

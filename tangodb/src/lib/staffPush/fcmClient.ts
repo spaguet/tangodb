@@ -1,8 +1,14 @@
-import { PushNotifications } from "@capacitor/push-notifications";
 import { getCrmInstallId } from "./installId";
 import { readLessonRemindersEnabled } from "./preferences";
 import { cancelAllLocalLessonReminders } from "./localReminders";
 import { staffPushRpc } from "./rpc";
+
+/**
+ * Release APKs do not ship google-services.json. Calling the Capacitor push plugin
+ * then throws Default FirebaseApp is not initialized and kills the process on launch,
+ * because lesson reminders default to on and the permission stays granted.
+ */
+const FCM_CONFIGURED = false;
 
 let pushListenersBound = false;
 
@@ -13,11 +19,14 @@ export async function revokeStaffPushRegistration(): Promise<void> {
   } catch {
     // offline / web
   }
-  try {
-    await PushNotifications.removeAllListeners();
-    await PushNotifications.unregister();
-  } catch {
-    // not native
+  if (FCM_CONFIGURED) {
+    try {
+      const { PushNotifications } = await import("@capacitor/push-notifications");
+      await PushNotifications.removeAllListeners();
+      await PushNotifications.unregister();
+    } catch {
+      // not native or Firebase missing
+    }
   }
   pushListenersBound = false;
   await cancelAllLocalLessonReminders();
@@ -32,9 +41,10 @@ async function registerTokenWithServer(token: string): Promise<void> {
   });
 }
 
-function bindPushListeners(): void {
-  if (pushListenersBound) return;
+async function bindPushListeners(): Promise<void> {
+  if (pushListenersBound || !FCM_CONFIGURED) return;
   pushListenersBound = true;
+  const { PushNotifications } = await import("@capacitor/push-notifications");
 
   void PushNotifications.addListener("registration", (event) => {
     void registerTokenWithServer(event.value);
@@ -46,20 +56,25 @@ function bindPushListeners(): void {
 }
 
 export async function ensureStaffPushRegistration(role: string | null): Promise<void> {
+  if (!FCM_CONFIGURED) return;
   if (role === "accountant" || !readLessonRemindersEnabled()) {
     await revokeStaffPushRegistration();
     return;
   }
 
-  bindPushListeners();
+  await bindPushListeners();
 
-  let perm = await PushNotifications.checkPermissions();
-  if (perm.receive === "prompt") {
-    perm = await PushNotifications.requestPermissions();
+  try {
+    const { PushNotifications } = await import("@capacitor/push-notifications");
+    let perm = await PushNotifications.checkPermissions();
+    if (perm.receive === "prompt") {
+      perm = await PushNotifications.requestPermissions();
+    }
+    if (perm.receive !== "granted") return;
+    await PushNotifications.register();
+  } catch {
+    // Firebase is not initialized in this build
   }
-  if (perm.receive !== "granted") return;
-
-  await PushNotifications.register();
 }
 
 export async function clearStaffPushOnNamespaceChange(): Promise<void> {
