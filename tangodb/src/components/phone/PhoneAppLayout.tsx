@@ -43,17 +43,16 @@ import PhoneNotificationsBridge from "./PhoneNotificationsBridge";
 import PhoneNotificationsCard from "./PhoneNotificationsCard";
 import PhoneAttendancePanel from "./PhoneAttendancePanel";
 import PhoneSchedulePanel from "./PhoneSchedulePanel";
-import PhoneTodayPanel from "./PhoneTodayPanel";
-import { renderPhonePanel } from "./phonePanelRoutes";
+import DashboardPage from "../../pages/DashboardPage";
 import { PhoneOfflineExitGuardProvider } from "./PhoneOfflineExitGuard";
 import { useUIStore } from "../../store/ui";
 import PhoneRouteSync from "./PhoneRouteSync";
 
 function PhonePanelBody({ pathname }: { pathname: string }) {
-  if (pathname === "/") return <PhoneTodayPanel />;
+  if (pathname === "/") return <DashboardPage />;
   if (pathname === "/attendance") return <PhoneAttendancePanel />;
   if (pathname === "/schedule") return <PhoneSchedulePanel />;
-  return renderPhonePanel(pathname);
+  return <Outlet />;
 }
 
 export default function PhoneAppLayout() {
@@ -235,9 +234,6 @@ export default function PhoneAppLayout() {
             ) : (
               <PhonePanelBody pathname={location.pathname} />
             )}
-            <div className="hidden">
-              <Outlet />
-            </div>
           </section>
 
           <footer className="px-4 pb-2 text-center text-[10px] text-slate-400">

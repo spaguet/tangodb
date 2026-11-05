@@ -569,7 +569,8 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         </div>
       </div>
 
-      {/* Add form — secondary on mobile (U-210) */}
+      {/* Add form — only on active list (not archive) */}
+      {activeTab === "active" ? (
       <RequirePermission
         action="clients.create"
         fallback={
@@ -758,6 +759,7 @@ export default function ClientsPanel({ toast }: ClientsPanelProps) {
         </div>
       </div>
       </RequirePermission>
+      ) : null}
 
       {/* Edit modal */}
       <AnimatePresence>
