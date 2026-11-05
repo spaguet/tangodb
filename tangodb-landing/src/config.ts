@@ -30,9 +30,10 @@ export const ANDROID_DOWNLOAD_PATH = "/download";
 /**
  * Release metadata for the landing download page.
  * APK file is hosted on the update origin (not in git). Fill sha256/size after each release build.
+ * When CRM semver bumps before a new APK is on Pages, keep url/sha256/size on the last published file.
  */
 export const CRM_APK_DOWNLOAD = {
-  version: "2.13.13",
+  version: "2.13.14",
   date: "2026-11-05",
   sizeBytes: 4606138,
   sha256: "4d57c8e62c17b23c1afc64e244731f30c3e75fa5861fdd9fc6f62da3cdd5d4e5",
