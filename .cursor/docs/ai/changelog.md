@@ -1,3 +1,5 @@
+2026-11-05 — release(android) **2.13.14** / versionCode **13**: APK + подписанная OTA-пачка экранов на `spaguet.github.io`; лендинг `/download` — **2.13.14**, SHA-256 и размер.
+
 2026-11-05 — fix(landing): `/download` — версия и ссылка снова **2.13.13** (единственный APK на `spaguet.github.io`); убрана путаница «на странице 2.13.14, файл 2.13.13».
 
 2026-11-05 — chore(landing): `/download` — CRM **2.13.14** (демо и метаданные); деплой Pages только при изменении `tangodb-landing/`. APK на origin пока **2.13.13** (файл и SHA-256), до сборки `release:crm-android` с JDK.
